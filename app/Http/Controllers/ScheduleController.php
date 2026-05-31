@@ -125,6 +125,13 @@ class ScheduleController extends Controller
 
         // FIX #1: Pre-compute takenSlotIds per resource+date — hindari O(n²) flatten di view
         // Structure: ['resourceId_date' => [slotId1, slotId2, ...]]
+        // Important Schedules — harus didefinisikan SEBELUM loop takenSlotsMap
+        $importantSchedules = \App\Models\ImportantSchedule::with(['startSlot', 'endSlot'])
+            ->whereBetween('date', [$weekStart, $weekEnd])
+            ->whereIn('resource_id', $resourceIds)
+            ->get()
+            ->groupBy(fn($s) => $s->resource_id . '_' . $s->date->toDateString());
+
         $takenSlotsMap = [];
         foreach ($resources as $resource) {
             foreach ($weekDates as $day => $date) {
@@ -142,11 +149,29 @@ class ScheduleController extends Controller
                         && $schedules->has($resource->id . '_' . $dayEn . '_' . $ts->id);
                 })->pluck('id')->map(fn($id) => (int) $id)->toArray();
 
-                $takenSlotsMap[$key] = array_values(array_unique(array_merge($bookedIds, $scheduledIds)));
+                // Slot dari jadwal penting
+                $importantIds = [];
+                if (isset($importantSchedules[$key])) {
+                    $allNonBreakIds = $timeSlots->where('is_break', false)->pluck('id')->map(fn($id) => (int)$id)->toArray();
+                    foreach ($importantSchedules[$key] as $event) {
+                        if ($event->is_full_day) {
+                            $importantIds = array_merge($importantIds, $allNonBreakIds);
+                        } else {
+                            $startOrder = $event->startSlot?->slot_order ?? 0;
+                            $endOrder   = $event->endSlot?->slot_order   ?? 0;
+                            foreach ($timeSlots->where('is_break', false) as $ts) {
+                                if ($ts->slot_order >= $startOrder && $ts->slot_order <= $endOrder) {
+                                    $importantIds[] = (int) $ts->id;
+                                }
+                            }
+                        }
+                    }
+                }
+                $takenSlotsMap[$key] = array_values(array_unique(array_merge($bookedIds, $scheduledIds, $importantIds)));
             }
         }
 
-        // FIX #4: Pre-compute isSlotPast per slot (hanya untuk hari ini)
+       // FIX #4: Pre-compute isSlotPast per slot (hanya untuk hari ini)
         $today = Carbon::today();
         $slotPastMap = $timeSlots->mapWithKeys(function ($slot) use ($today) {
             $slotTime = Carbon::parse($slot->start_time)->setDateFrom($today);
@@ -166,7 +191,7 @@ class ScheduleController extends Controller
             'weekDates', 'weekStart', 'weekEnd', 'organizations',
             'prevWeek', 'nextWeek', 'teachers',
             'slotMeta', 'dateMeta', 'takenSlotsMap', 'slotPastMap',
-            'firstNonBreakId', 'sunRowspan'
+            'firstNonBreakId', 'sunRowspan', 'importantSchedules'
         ))->with('days', $this->days)->with('dayMapReverse', $this->dayMapReverse);
     }
 
