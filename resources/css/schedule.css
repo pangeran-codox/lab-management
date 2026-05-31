@@ -506,3 +506,57 @@ td.td-sun[rowspan] .bk-btn {
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ============================================================
+   Tambahkan ke schedule.css — dukungan Jadwal Penting
+   ============================================================ */
+
+/* ─── SLOT CELL — sc-important ───────────────── */
+.sc-important {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 1.5px solid #fcd34d;
+}
+.sc-important .sc-name    { color: #78350f; }
+.sc-important .sc-subject { color: #92400e; }
+.sc-important .sc-status  { color: #b45309; }
+
+/* ─── DETAIL MODAL — header per type ─────────── */
+
+/* Jadwal Penting */
+.detail-head--important {
+    background: linear-gradient(135deg, #78350f, #92400e);
+}
+.detail-head--important .detail-type    { color: rgba(253,230,138,.7); }
+.detail-head--important .detail-teacher { color: #fef3c7; }
+
+/* Jadwal Tetap — sudah ada di schedule.css, tambahkan kalau belum */
+.detail-head--tetap {
+    background: linear-gradient(135deg, var(--g9), var(--g8));
+}
+.detail-head--tetap .detail-type    { color: rgba(172,200,162,.55); }
+.detail-head--tetap .detail-teacher { color: #fff; }
+
+/* Approved */
+.detail-head--approved {
+    background: linear-gradient(135deg, #14532d, #166534);
+}
+.detail-head--approved .detail-type    { color: rgba(134,239,172,.6); }
+.detail-head--approved .detail-teacher { color: #f0fdf4; }
+
+/* Pending */
+.detail-head--pending {
+    background: linear-gradient(135deg, #78350f, #92400e);
+}
+.detail-head--pending .detail-type    { color: rgba(253,230,138,.6); }
+.detail-head--pending .detail-teacher { color: #fffbeb; }
+
+/* ─── BADGE bawah detail-body ─────────────────── */
+.detail-badge {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 13px; border-radius: 999px;
+    margin-top: 4px; align-self: flex-start;
+}
+.detail-badge--important { background: #fef3c7; color: #78350f; border: 1.5px solid #fcd34d; }
+.detail-badge--approved  { background: #f0fdf4; color: #166534; border: 1.5px solid #86efac; }
+.detail-badge--pending   { background: #fffbeb; color: #92400e; border: 1.5px solid #fcd34d; }

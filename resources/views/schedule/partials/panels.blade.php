@@ -7,6 +7,7 @@
     - $slotPastMap[$slot->id] = bool
     - $firstNonBreakId      = id slot non-break pertama
     - $sunRowspan           = total timeslots
+    - $importantSchedules   = grouped by 'resourceId_date'
 --}}
 <div id="panels-wrap">
 @foreach($resources as $i => $resource)
@@ -40,25 +41,116 @@
                     <tr>
                         <th class="col-time">JAM</th>
                         @foreach($days as $day)
-                        @php $dm = $dateMeta[$day]; @endphp
-                        <th class="{{ $dm['isToday'] ? 'th-today' : '' }} {{ $day === 'Minggu' ? 'th-sun' : '' }}">
-                            <div>{{ $day }}</div>
-                            <div style="margin-top:2px;font-weight:400">
-                                @if($dm['isToday'])
-                                    <span style="background:var(--g9);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px">
-                                        {{ $dm['dm'] }}
+                        @php
+                            $dm = $dateMeta[$day];
+                            $date = $dm['date'];
+                            // Cek apakah hari ini ada jadwal penting untuk resource ini
+                            $dayImpEvents = ($day !== 'Minggu')
+                                ? ($importantSchedules->get($resource->id . '_' . $date) ?? collect())
+                                : collect();
+                            $hasImpEvent = $dayImpEvents->isNotEmpty();
+                            $firstImpEvent = $dayImpEvents->first();
+                        @endphp
+                        <th class="{{ $dm['isToday'] ? 'th-today' : '' }} {{ $day === 'Minggu' ? 'th-sun' : '' }} {{ $hasImpEvent ? 'th-important' : '' }}"
+                            style="{{ $hasImpEvent ? 'border-bottom: 2.5px solid ' . ($firstImpEvent->color ?? '#f97316') . ';' : '' }}">
+                            @if($hasImpEvent)
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                                    <span style="font-size:9px;font-weight:700;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:999px;padding:1px 7px;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis">
+                                        📌 {{ Str::limit($firstImpEvent->title, 12) }}
                                     </span>
-                                @else
-                                    <span style="font-size:10px;color:{{ $day === 'Minggu' ? '#fca5a5' : 'var(--muted)' }}">
-                                        {{ $dm['dm'] }}
-                                    </span>
-                                @endif
-                            </div>
+                                    <div>{{ $day }}</div>
+                                    <div style="margin-top:1px;font-weight:400">
+                                        <span style="font-size:10px;color:{{ $dm['isToday'] ? '#c2410c' : '#fb923c' }}">
+                                            {{ $dm['dm'] }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @else
+                                <div>{{ $day }}</div>
+                                <div style="margin-top:2px;font-weight:400">
+                                    @if($dm['isToday'])
+                                        <span style="background:var(--g9);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px">
+                                            {{ $dm['dm'] }}
+                                        </span>
+                                    @else
+                                        <span style="font-size:10px;color:{{ $day === 'Minggu' ? '#fca5a5' : 'var(--muted)' }}">
+                                            {{ $dm['dm'] }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
                         </th>
                         @endforeach
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- ── BANNER ROW jadwal penting ── --}}
+                    @php
+                        // Cek apakah ada hari yang punya jadwal penting minggu ini
+                        $hasBannerRow = false;
+                        foreach ($days as $_bday) {
+                            if ($_bday === 'Minggu') continue;
+                            $_bdate = $dateMeta[$_bday]['date'];
+                            if ($importantSchedules->has($resource->id . '_' . $_bdate)) {
+                                $hasBannerRow = true;
+                                break;
+                            }
+                        }
+                    @endphp
+                    @if($hasBannerRow)
+                    <tr style="background:#fffbf5">
+                        <td class="col-time" style="background:#fffbf5;border-right:1px solid #f0f0f0">
+                            <div style="font-size:9px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.06em">Event</div>
+                        </td>
+                        @foreach($days as $day)
+                        @php
+                            $dm = $dateMeta[$day];
+                            $date = $dm['date'];
+                            $dayImpEvents = ($day !== 'Minggu')
+                                ? ($importantSchedules->get($resource->id . '_' . $date) ?? collect())
+                                : collect();
+                            $hasImpEvent = $dayImpEvents->isNotEmpty();
+                            $firstImpEvent = $dayImpEvents->first();
+                        @endphp
+                        @if($day === 'Minggu')
+                            <td style="background:rgba(254,226,226,.1);border-right:1px solid #f5f5f5"></td>
+                        @elseif($hasImpEvent)
+                            <td style="padding:4px 3px;background:#fff7ed;border-left:1.5px solid {{ $firstImpEvent->color ?? '#f97316' }};border-right:1.5px solid {{ $firstImpEvent->color ?? '#f97316' }}">
+                                <div style="display:flex;align-items:center;gap:5px;background:#ffedd5;border:1px solid #fed7aa;border-radius:8px;padding:5px 7px">
+                                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#c2410c" stroke-width="2" style="flex-shrink:0">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    </svg>
+                                    <div style="min-width:0">
+                                        <div style="font-size:10px;font-weight:700;color:#7c2d12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                            {{ $firstImpEvent->title }}
+                                        </div>
+                                        <div style="font-size:9px;color:#c2410c;margin-top:1px">
+                                            {{ $firstImpEvent->type_label }}
+                                            @if(!$firstImpEvent->is_full_day && $firstImpEvent->startSlot && $firstImpEvent->endSlot)
+                                                · {{ $firstImpEvent->startSlot->name }} – {{ $firstImpEvent->endSlot->name }}
+                                            @else
+                                                · Seharian
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                {{-- Jika ada lebih dari 1 event di hari yang sama --}}
+                                @foreach($dayImpEvents->skip(1) as $_extraEv)
+                                <div style="display:flex;align-items:center;gap:5px;background:#ffedd5;border:1px solid #fed7aa;border-radius:8px;padding:4px 7px;margin-top:3px">
+                                    <div style="font-size:9px;font-weight:700;color:#7c2d12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                        {{ $_extraEv->title }}
+                                    </div>
+                                </div>
+                                @endforeach
+                            </td>
+                        @else
+                            <td style="background:#fffbf5;border-right:1px solid #f5f5f5"></td>
+                        @endif
+                        @endforeach
+                    </tr>
+                    @endif
+
+                    {{-- ── SLOT ROWS ── --}}
                     @foreach($timeSlots as $slot)
                     @php $isBreak = $slot->is_break ?? false; @endphp
 
@@ -78,19 +170,36 @@
 
                         @foreach($days as $day)
                         @php
-                            $dm         = $dateMeta[$day];
-                            $date       = $dm['date'];
-                            $dayEn      = $dayMapReverse[$day];
-                            $isSun      = $day === 'Minggu';
-                            $sk         = $resource->id . '_' . $dayEn . '_' . $slot->id;
-                            $bk         = $resource->id . '_' . $date . '_' . $slot->id;
-                            $sched      = $schedules->get($sk)?->first();
-                            $book       = $bookings->get($bk)?->first();
-                            $isSlotPast = $dm['isToday'] && ($slotPastMap[$slot->id] ?? false);
-                            $sunKey     = $resource->id . '_' . $date;
-                            $sunBook    = $sundayBookings->get($sunKey)?->first();
-                            // FIX #1: takenSlotsMap sudah di-compute di controller — O(1) lookup
+                            $dm           = $dateMeta[$day];
+                            $date         = $dm['date'];
+                            $dayEn        = $dayMapReverse[$day];
+                            $isSun        = $day === 'Minggu';
+                            $sk           = $resource->id . '_' . $dayEn . '_' . $slot->id;
+                            $bk           = $resource->id . '_' . $date . '_' . $slot->id;
+                            $sched        = $schedules->get($sk)?->first();
+                            $book         = $bookings->get($bk)?->first();
+                            $isSlotPast   = $dm['isToday'] && ($slotPastMap[$slot->id] ?? false);
+                            $sunKey       = $resource->id . '_' . $date;
+                            $sunBook      = $sundayBookings->get($sunKey)?->first();
                             $takenSlotIds = $takenSlotsMap[$sunKey] ?? [];
+
+                            // Cari jadwal penting yang mencakup slot ini
+                            $impEvents = ($isSun) ? collect() : ($importantSchedules->get($resource->id . '_' . $date) ?? collect());
+                            $impEvent  = null;
+                            foreach ($impEvents as $_ev) {
+                                if ($_ev->is_full_day) {
+                                    $impEvent = $_ev; break;
+                                }
+                                $_startOrder = $_ev->startSlot?->slot_order ?? 0;
+                                $_endOrder   = $_ev->endSlot?->slot_order   ?? 0;
+                                if ($slot->slot_order >= $_startOrder && $slot->slot_order <= $_endOrder) {
+                                    $impEvent = $_ev; break;
+                                }
+                            }
+                            // Apakah hari ini ada event (untuk border kolom)
+                            $dayHasEvent = $impEvents->isNotEmpty();
+                            $dayFirstEvent = $impEvents->first();
+                            $eventColor = $dayFirstEvent?->color ?? '#f97316';
                         @endphp
 
                         @if($isSun)
@@ -130,9 +239,41 @@
 
                         @else
                         {{-- ─── HARI BIASA ─── --}}
-                        <td class="slot-td {{ $dm['isToday'] ? 'td-today' : '' }}">
+                        <td class="slot-td {{ $dm['isToday'] ? 'td-today' : '' }}"
+                            style="{{ $dayHasEvent ? 'background:rgba(249,115,22,.04);border-left:1.5px solid ' . $eventColor . ';border-right:1.5px solid ' . $eventColor . ';' : '' }}">
 
-                            @if($sched)
+                            @if($impEvent)
+                                {{-- Jadwal Penting — slot terblokir --}}
+                                @php
+                                    $impRangeLabel = $impEvent->is_full_day
+                                        ? 'Seharian'
+                                        : (($impEvent->startSlot->name ?? '') . ($impEvent->endSlot && $impEvent->endSlot->id !== $impEvent->startSlot->id ? ' – ' . $impEvent->endSlot->name : ''));
+                                    $detailImp = json_encode([
+                                        'type'         => 'important',
+                                        'teacher'      => '',
+                                        'class_name'   => '',
+                                        'subject'      => '',
+                                        'slot'         => $impRangeLabel,
+                                        'time'         => $slotMeta[$slot->id]['time'],
+                                        'day'          => $day,
+                                        'date'         => $dm['formatted'],
+                                        'lab'          => $resource->name,
+                                        'phone'        => '',
+                                        'title'        => $impEvent->title ?? 'Jadwal Penting',
+                                        'desc'         => $impEvent->description ?? '',
+                                        'participants' => '',
+                                    ], JSON_HEX_TAG|JSON_HEX_QUOT|JSON_HEX_AMP|JSON_HEX_APOS);
+                                @endphp
+                                <button style="width:100%;border-radius:9px;padding:10px 3px;background:rgba(249,115,22,.08);border:1.5px dashed #fb923c;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer"
+                                        data-detail='{{ $detailImp }}'
+                                        onclick="showDetail(JSON.parse(this.dataset.detail))">
+                                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#fb923c" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    <span style="font-size:9px;color:#c2410c;font-weight:700">Terblokir</span>
+                                </button>
+
+                            @elseif($sched)
                                 @php $detailTetap = json_encode(['type'=>'tetap','teacher'=>$sched->teacher_name,'class_name'=>$sched->labClass?->name??'-','subject'=>$sched->subject_name??'','slot'=>$slot->name,'time'=>$slotMeta[$slot->id]['time'],'day'=>$day,'date'=>$dm['formatted'],'lab'=>$resource->name,'phone'=>'','title'=>'','desc'=>'','participants'=>''], JSON_HEX_TAG|JSON_HEX_QUOT|JSON_HEX_AMP|JSON_HEX_APOS); @endphp
                                 <div class="sc sc-tetap" style="cursor:pointer" role="button" tabindex="0" data-detail='{{ $detailTetap }}' onclick="showDetail(JSON.parse(this.dataset.detail))" onkeydown="if(event.key==='Enter'||event.key===' ')showDetail(JSON.parse(this.dataset.detail))">
                                     <div class="sc-name">{{ $sched->teacher_name }}</div>
@@ -160,7 +301,6 @@
                                 <div class="slot-past">Lewat</div>
 
                             @else
-                                {{-- FIX #1: $takenSlotIds sudah di-compute di controller, O(1) lookup --}}
                                 <button class="bk-btn"
                                     onclick="openBooking({{ $resource->id }},'{{ e($resource->name) }}',{{ $slot->id }},'{{ e($slot->name) }}','{{ $slotMeta[$slot->id]['time'] }}','{{ $dayEn }}','{{ $day }}','{{ $date }}',{{ json_encode($takenSlotIds) }})">
                                     <svg class="bk-icon" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>

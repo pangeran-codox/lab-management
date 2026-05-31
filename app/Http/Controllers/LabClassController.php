@@ -57,6 +57,17 @@ class LabClassController extends Controller
         return back()->with('success', 'Kelas berhasil diperbarui.');
     }
 
+    public function resetPin(LabClass $class)
+    {
+        $class->update(['pin' => LabClass::generateUniquePin()]);
+
+        // Hapus cache PIN lama kalau ada
+        Cache::forget('class_pin_' . $class->pin);
+        Cache::forget('active_classes');
+
+        return back()->with('success', "PIN kelas {$class->name} berhasil di-reset.");
+    }
+
     public function destroy(LabClass $class)
     {
         $class->delete();

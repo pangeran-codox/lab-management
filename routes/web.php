@@ -13,6 +13,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\LabControlController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\LabClassController;
+use App\Http\Controllers\ImportantScheduleController;
 
 // ═══ PUBLIK ═══
 Route::get('/', [ScheduleController::class, 'index'])->name('home');
@@ -107,8 +108,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/kelas-admin', [LabClassController::class, 'index'])->name('class.index');
     Route::post('/kelas-admin', [LabClassController::class, 'store'])->name('class.store');
     Route::patch('/kelas-admin/{class}', [LabClassController::class, 'update'])->name('class.update');
+    Route::patch('/kelas-admin/{class}/reset-pin', [LabClassController::class, 'resetPin'])->name('class.reset-pin');
     Route::delete('/kelas-admin/{class}', [LabClassController::class, 'destroy'])->name('class.destroy');
 
+    // Jadwal Penting
+Route::get('/jadwal-penting', [ImportantScheduleController::class, 'index'])->name('important-schedule.index');
+Route::get('/jadwal-penting/create', [ImportantScheduleController::class, 'create'])->name('important-schedule.create');
+Route::post('/jadwal-penting', [ImportantScheduleController::class, 'store'])->name('important-schedule.store');
+Route::get('/jadwal-penting/{importantSchedule}/edit', [ImportantScheduleController::class, 'edit'])->name('important-schedule.edit');
+Route::patch('/jadwal-penting/{importantSchedule}', [ImportantScheduleController::class, 'update'])->name('important-schedule.update');
+Route::delete('/jadwal-penting/{importantSchedule}', [ImportantScheduleController::class, 'destroy'])->name('important-schedule.destroy');
+
+// API: cek slot terblokir (dipanggil dari halaman jadwal publik via AJAX)
+Route::get('/api/jadwal-penting/blocked-slots', [ImportantScheduleController::class, 'blockedSlots'])->name('important-schedule.blocked-slots');
     // Lab control admin
     Route::post('/lab-control-admin/generate', [LabControlController::class, 'generateToken'])->name('lab.generate');
 });
