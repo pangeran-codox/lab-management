@@ -8,8 +8,10 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/inventory.css',
                 'resources/css/schedule.css',
+                'resources/css/schedule-cards.css',
+                'resources/css/login.css',
                 'resources/css/rekap.css',
-                'resources/css/assignment.css',  // tugas publik
+                'resources/css/assignment.css',
                 'resources/js/app.js',
                 'resources/js/inventory.js',
                 'resources/js/schedule.js',
@@ -17,4 +19,8 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+    },
 });

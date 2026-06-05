@@ -4,87 +4,25 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\LabInventory;
-use App\Models\Resource;
+use App\Services\InventoryService;
+use App\Services\Booking\BookingAccessService;
 
 class InventoryAdminController extends Controller
 {
-    private function getAllowedResources(): ?array
-    {
-        $user = auth()->user();
-        if (in_array($user->role, ['admin', 'operator'])) return null;
-        $meta = is_array($user->metadata)
-            ? $user->metadata
-            : json_decode($user->metadata, true);
-        return $meta['allowed_resources'] ?? [];
-    }
-
-    private function getAllowedResourceIds(): array
-    {
-        $allowed = $this->getAllowedResources();
-        if ($allowed !== null) return $allowed;
-        return Resource::where('status', 'active')->pluck('id')->toArray();
-    }
+    public function __construct(
+        private InventoryService     $inventoryService,
+        private BookingAccessService $accessService
+    ) {}
 
     public function index(Request $request)
     {
-        $allowed = $this->getAllowedResources();
+        $allowed = $this->accessService->getAllowedResources();
 
-        $query = LabInventory::with('resource')->whereNull('deleted_at');
-
-        if ($allowed !== null) {
-            $query->whereIn('resource_id', $allowed);
-        }
-
-        if ($request->filled('resource_id')) {
-            $query->where('resource_id', $request->resource_id);
-        }
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-        if ($request->filled('condition')) {
-            $query->where('condition', $request->condition);
-        }
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('item_name', 'like', '%'.$request->search.'%')
-                  ->orWhere('brand', 'like', '%'.$request->search.'%')
-                  ->orWhere('model', 'like', '%'.$request->search.'%')
-                  ->orWhere('specifications', 'like', '%'.$request->search.'%');
-            });
-        }
-
-        $items = $query->orderBy('resource_id')->orderBy('category')->orderBy('item_name')->get();
-
-        $resQuery = Resource::where('status', 'active')->orderBy('name');
-        if ($allowed !== null) $resQuery->whereIn('id', $allowed);
-        $resources = $resQuery->get();
-
-        // Stats per lab
-        $statsQuery = LabInventory::whereNull('deleted_at');
-        if ($allowed !== null) $statsQuery->whereIn('resource_id', $allowed);
-        $stats = [
-            'total_items'  => (clone $statsQuery)->count(),
-            'total_units'  => (clone $statsQuery)->sum('quantity'),
-            'total_good'   => (clone $statsQuery)->sum('quantity_good'),
-            'total_broken' => (clone $statsQuery)->sum('quantity_broken'),
-        ];
-
-        $categories = [
-            'computer'   => '🖥 Komputer',
-            'peripheral' => '⌨ Peripheral',
-            'furniture'  => '🪑 Furnitur',
-            'network'    => '🌐 Jaringan',
-            'software'   => '💿 Software',
-            'other'      => '📦 Lainnya',
-        ];
-
-        $conditions = [
-            'excellent' => 'Sangat Baik',
-            'good'      => 'Baik',
-            'fair'      => 'Cukup',
-            'poor'      => 'Buruk',
-            'broken'    => 'Rusak',
-        ];
+        $items      = $this->inventoryService->getFilteredItems($request, $allowed);
+        $stats      = $this->inventoryService->calculateStats($allowed);
+        $resources  = $this->accessService->getAccessibleResources();
+        $categories = $this->inventoryService->getCategories();
+        $conditions = $this->inventoryService->getConditions();
 
         return view('inventory.admin', compact(
             'items', 'resources', 'stats', 'categories', 'conditions'
@@ -93,12 +31,11 @@ class InventoryAdminController extends Controller
 
     public function store(Request $request)
     {
-        $allowed = $this->getAllowedResources();
-        if ($allowed !== null && !in_array($request->resource_id, $allowed)) {
+        if (!$this->accessService->checkResourceAccess((int) $request->resource_id)) {
             return back()->withErrors(['error' => 'Anda tidak memiliki akses ke lab ini.'])->withInput();
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'resource_id'      => 'required|exists:resources,id',
             'item_name'        => 'required|string|max:255',
             'category'         => 'required|in:computer,peripheral,furniture,network,software,other',
@@ -114,35 +51,21 @@ class InventoryAdminController extends Controller
             'notes'            => 'nullable|string',
         ]);
 
-        LabInventory::create([
-            'resource_id'     => $request->resource_id,
-            'item_name'       => $request->item_name,
-            'category'        => $request->category,
-            'brand'           => $request->brand,
-            'model'           => $request->model,
-            'serial_number'   => $request->serial_number,
-            'specifications'  => $request->specifications,
-            'condition'       => $request->condition,
-            'status'          => 'active',
-            'quantity'        => $request->quantity,
-            'quantity_good'   => $request->quantity_good,
-            'quantity_broken' => $request->quantity_broken,
-            'quantity_backup' => $request->quantity_backup,
-            'notes'           => $request->notes,
-            'created_by'      => auth()->id(),
-        ]);
+        $validated['status']     = 'active';
+        $validated['created_by'] = auth()->id();
+
+        LabInventory::create($validated);
 
         return back()->with('success', 'Barang "'.$request->item_name.'" berhasil ditambahkan.');
     }
 
     public function update(Request $request, LabInventory $inventory)
     {
-        $allowed = $this->getAllowedResources();
-        if ($allowed !== null && !in_array($inventory->resource_id, $allowed)) {
+        if (!$this->accessService->checkResourceAccess($inventory->resource_id)) {
             return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'item_name'       => 'required|string|max:255',
             'category'        => 'required|in:computer,peripheral,furniture,network,software,other',
             'brand'           => 'nullable|string|max:100',
@@ -157,29 +80,16 @@ class InventoryAdminController extends Controller
             'notes'           => 'nullable|string',
         ]);
 
-        $inventory->update([
-            'item_name'       => $request->item_name,
-            'category'        => $request->category,
-            'brand'           => $request->brand,
-            'model'           => $request->model,
-            'serial_number'   => $request->serial_number,
-            'specifications'  => $request->specifications,
-            'condition'       => $request->condition,
-            'quantity'        => $request->quantity,
-            'quantity_good'   => $request->quantity_good,
-            'quantity_broken' => $request->quantity_broken,
-            'quantity_backup' => $request->quantity_backup,
-            'notes'           => $request->notes,
-            'updated_by'      => auth()->id(),
-        ]);
+        $validated['updated_by'] = auth()->id();
+
+        $inventory->update($validated);
 
         return back()->with('success', 'Barang "'.$inventory->item_name.'" berhasil diperbarui.');
     }
 
     public function destroy(LabInventory $inventory)
     {
-        $allowed = $this->getAllowedResources();
-        if ($allowed !== null && !in_array($inventory->resource_id, $allowed)) {
+        if (!$this->accessService->checkResourceAccess($inventory->resource_id)) {
             return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
         }
 

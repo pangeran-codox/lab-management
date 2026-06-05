@@ -11,22 +11,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            // Tambah session_id setelah kolom id
             $table->char('session_id', 36)->nullable()->after('id')->index();
         });
 
         // Isi session_id untuk data lama:
         // Grup berdasarkan teacher_name + resource_id + booking_date + created_at (menit yang sama)
-        // Sehingga booking lama yang satu sesi tetap tergrup dengan benar
         $groups = DB::table('bookings')
-            ->selectRaw('
+            ->selectRaw("
                 MIN(id) as first_id,
                 teacher_name,
                 resource_id,
                 booking_date,
-                DATE_FORMAT(created_at, "%Y-%m-%d %H:%i") as created_minute
-            ')
-            ->groupBy('teacher_name', 'resource_id', 'booking_date', DB::raw('DATE_FORMAT(created_at, "%Y-%m-%d %H:%i")'))
+                TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI') as created_minute
+            ")
+            ->groupBy('teacher_name', 'resource_id', 'booking_date', DB::raw("TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI')"))
             ->get();
 
         foreach ($groups as $group) {
@@ -35,7 +33,7 @@ return new class extends Migration
                 ->where('teacher_name', $group->teacher_name)
                 ->where('resource_id', $group->resource_id)
                 ->where('booking_date', $group->booking_date)
-                ->whereRaw('DATE_FORMAT(created_at, "%Y-%m-%d %H:%i") = ?', [$group->created_minute])
+                ->whereRaw("TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI') = ?", [$group->created_minute])
                 ->whereNull('session_id')
                 ->update(['session_id' => $sessionId]);
         }

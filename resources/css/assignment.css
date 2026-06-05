@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    assignment.css — Halaman Pengumpulan Tugas dengan PIN
+   Tema: Dartmouth Green (#00693E) + Columbia Blue (#B9D9EB / #f0f7fb)
    ══════════════════════════════════════════════════════════════ */
 
 @keyframes fadeUp  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
@@ -11,19 +12,19 @@ a { text-decoration: none; }
 
 /* ─── HERO ──────────────────────────── */
 .hero {
-    background: linear-gradient(135deg, #1A2517 0%, #2a3826 60%, #3d5438 100%);
+    background: linear-gradient(135deg, #003d24 0%, #00693E 60%, #00874f 100%);
     padding: 28px 24px 26px; text-align: center;
     position: relative; overflow: hidden; width: 100%;
 }
 .hero-eyebrow {
     font-size: 10px; font-weight: 600; letter-spacing: .12em;
-    text-transform: uppercase; color: rgba(172,200,162,.5); margin-bottom: 5px;
+    text-transform: uppercase; color: rgba(185,217,235,.5); margin-bottom: 5px;
 }
 .hero h1 {
     font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
     font-size: clamp(1.3rem, 3.5vw, 1.8rem); color: #fff; margin-bottom: 5px;
 }
-.hero p { font-size: 12px; color: rgba(172,200,162,.45); }
+.hero p { font-size: 12px; color: rgba(185,217,235,.45); }
 
 /* ─── WRAP ───────────────────────────── */
 .wrap { max-width: 760px; margin: 0 auto; padding: 28px 18px 48px; animation: fadeUp .4s ease both; }
@@ -36,34 +37,34 @@ a { text-decoration: none; }
 /* ─── PIN SCREEN ─────────────────────── */
 .pin-screen {
     background: var(--white, #fff); border-radius: 20px;
-    border: 1px solid #e8f0e6;
-    box-shadow: 0 4px 24px rgba(26,37,23,.07);
+    border: 1px solid #cce4f0;
+    box-shadow: 0 4px 24px rgba(0,105,62,.07);
     padding: 40px 32px; text-align: center;
     max-width: 420px; margin: 0 auto;
     animation: popIn .35s cubic-bezier(.16,1,.3,1) both;
 }
 .pin-icon {
     width: 56px; height: 56px; border-radius: 16px;
-    background: #f0f7f0; border: 1.5px solid #c8e0c8;
+    background: #eaf5fc; border: 1.5px solid #B9D9EB;
     display: flex; align-items: center; justify-content: center;
     margin: 0 auto 18px;
 }
-.pin-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 20px; color: #1A2517; margin-bottom: 6px; }
-.pin-sub   { font-size: 13px; color: #6b7280; line-height: 1.6; margin-bottom: 28px; }
+.pin-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 20px; color: #0d2416; margin-bottom: 6px; }
+.pin-sub   { font-size: 13px; color: #6b8fa3; line-height: 1.6; margin-bottom: 28px; }
 
 .pin-boxes {
     display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
 }
 .pin-box {
     width: 48px; height: 56px; border-radius: 12px;
-    border: 1.5px solid #e5e7eb; background: #f9fafb;
+    border: 1.5px solid #cce4f0; background: #f0f7fb;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 700; color: #1A2517;
+    font-size: 20px; font-weight: 700; color: #0d2416;
     transition: border-color .15s, background .15s;
     font-family: 'Plus Jakarta Sans', monospace;
 }
-.pin-box.filled { border-color: #1A2517; background: #1A2517; color: #ACC8A2; }
-.pin-box.active { border-color: #ACC8A2; background: #fff; box-shadow: 0 0 0 3px rgba(172,200,162,.2); }
+.pin-box.filled { border-color: #003d24; background: #003d24; color: #B9D9EB; }
+.pin-box.active { border-color: #B9D9EB; background: #fff; box-shadow: 0 0 0 3px rgba(185,217,235,.25); }
 .pin-box.error  { border-color: #ef4444; background: #fef2f2; color: #dc2626; animation: shake .4s ease; }
 
 .pin-input-hidden {
@@ -74,12 +75,12 @@ a { text-decoration: none; }
 .pin-keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
 .pin-key {
     padding: 14px; border-radius: 12px; font-size: 18px; font-weight: 600;
-    background: #f8faf7; border: 1.5px solid #e8f0e6; cursor: pointer;
-    color: #1A2517; font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #f0f7fb; border: 1.5px solid #cce4f0; cursor: pointer;
+    color: #0d2416; font-family: 'Plus Jakarta Sans', sans-serif;
     transition: background .12s, transform .12s;
     user-select: none;
 }
-.pin-key:hover  { background: #edf3ec; transform: scale(1.03); }
+.pin-key:hover  { background: #ddeef7; transform: scale(1.03); }
 .pin-key:active { transform: scale(.97); }
 .pin-key-del    { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
 .pin-key-del:hover { background: #fee2e2; }
@@ -87,16 +88,16 @@ a { text-decoration: none; }
 
 .btn-pin-submit {
     width: 100%; padding: 13px; border-radius: 12px;
-    background: linear-gradient(135deg, #1A2517, #2d3d29);
-    color: #ACC8A2; border: none; font-size: 14px; font-weight: 700;
+    background: linear-gradient(135deg, #003d24, #00693E);
+    color: #B9D9EB; border: none; font-size: 14px; font-weight: 700;
     font-family: 'Plus Jakarta Sans', sans-serif;
     cursor: pointer; transition: transform .15s, box-shadow .15s, opacity .15s;
     margin-bottom: 12px;
 }
-.btn-pin-submit:hover   { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(26,37,23,.28); }
+.btn-pin-submit:hover   { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,61,36,.28); }
 .btn-pin-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.pin-hint { font-size: 12px; color: #9ca3af; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.pin-hint { font-size: 12px; color: #6b8fa3; display: flex; align-items: center; justify-content: center; gap: 5px; }
 
 .pin-error-msg {
     background: #fef2f2; border: 1px solid #fecaca;
@@ -107,7 +108,7 @@ a { text-decoration: none; }
 
 /* ─── CLASS HEADER ───────────────────── */
 .class-header {
-    background: linear-gradient(135deg, #1A2517, #2a3826);
+    background: linear-gradient(135deg, #003d24, #00693E);
     border-radius: 14px; padding: 16px 20px;
     display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
@@ -115,39 +116,39 @@ a { text-decoration: none; }
 .class-header-left { display: flex; align-items: center; gap: 12px; }
 .class-icon {
     width: 42px; height: 42px; border-radius: 11px;
-    background: rgba(172,200,162,.12); border: 1.5px solid rgba(172,200,162,.25);
+    background: rgba(185,217,235,.12); border: 1.5px solid rgba(185,217,235,.25);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .class-name    { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: #fff; }
-.class-sub     { font-size: 11px; color: rgba(172,200,162,.45); margin-top: 2px; }
+.class-sub     { font-size: 11px; color: rgba(185,217,235,.45); margin-top: 2px; }
 .btn-ganti {
-    font-size: 12px; color: rgba(172,200,162,.7);
-    background: rgba(172,200,162,.08); border: 1px solid rgba(172,200,162,.2);
+    font-size: 12px; color: rgba(185,217,235,.7);
+    background: rgba(185,217,235,.08); border: 1px solid rgba(185,217,235,.2);
     padding: 6px 14px; border-radius: 8px; cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
     transition: background .15s, color .15s;
     display: flex; align-items: center; gap: 5px;
 }
-.btn-ganti:hover { background: rgba(172,200,162,.15); color: #ACC8A2; }
+.btn-ganti:hover { background: rgba(185,217,235,.15); color: #B9D9EB; }
 
 /* ─── ASSIGNMENT CARDS ───────────────── */
 .assignment-grid { display: grid; gap: 12px; }
 .acard {
     background: #fff; border-radius: 14px;
-    border: 1px solid #e8f0e6; box-shadow: 0 1px 6px rgba(26,37,23,.05);
+    border: 1px solid #cce4f0; box-shadow: 0 1px 6px rgba(0,105,62,.05);
     overflow: hidden; transition: transform .18s, box-shadow .18s;
     animation: fadeIn .28s ease both;
 }
-.acard:hover:not(.acard-closed) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,37,23,.1); }
+.acard:hover:not(.acard-closed) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,105,62,.1); }
 .acard-closed { opacity: .55; }
 
 .acard-head {
     padding: 14px 18px;
-    background: linear-gradient(135deg, #1A2517, #2a3826);
+    background: linear-gradient(135deg, #003d24, #00693E);
     display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
 }
 .acard-title   { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: #fff; }
-.acard-subject { font-size: 11px; color: rgba(172,200,162,.5); margin-top: 2px; }
+.acard-subject { font-size: 11px; color: rgba(185,217,235,.5); margin-top: 2px; }
 
 .badge-status  { padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
 .badge-open    { background: rgba(34,197,94,.12); color: #86efac; border: 1px solid rgba(34,197,94,.25); }
@@ -164,7 +165,7 @@ a { text-decoration: none; }
 .pill-urgent  { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
 .pill-soon    { color: #d97706; background: #fffbeb; border: 1px solid #fde68a; }
 .pill-ok      { color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
-.pill-neutral { color: #6b7280; background: #f8faf7; border: 1px solid #e8f0e6; }
+.pill-neutral { color: #6b8fa3; background: #f0f7fb; border: 1px solid #cce4f0; }
 .pill-blue    { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; }
 
 .acard-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -172,12 +173,12 @@ a { text-decoration: none; }
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 16px; border-radius: 9px;
     font-size: 12px; font-weight: 700;
-    background: linear-gradient(135deg, #1A2517, #2d3d29);
-    color: #ACC8A2; text-decoration: none; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #003d24, #00693E);
+    color: #B9D9EB; text-decoration: none; border: none; cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
     transition: transform .15s, box-shadow .15s;
 }
-.btn-kumpul:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,37,23,.25); }
+.btn-kumpul:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,61,36,.25); }
 .btn-unduh {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 14px; border-radius: 9px; font-size: 12px; font-weight: 700;
@@ -190,7 +191,7 @@ a { text-decoration: none; }
 .btn-disabled {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 14px; border-radius: 9px; font-size: 12px; font-weight: 600;
-    background: #f3f4f6; color: #9ca3af; cursor: not-allowed; border: none;
+    background: #f0f7fb; color: #6b8fa3; cursor: not-allowed; border: none;
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 

@@ -85,7 +85,8 @@ class Kernel extends ConsoleKernel
                 }
 
                 // Buat session dengan session_end = slot terakhir yang berurutan
-                $session = \App\Http\Controllers\LabControlController::generateFromSchedule($sch);
+                $labControl = app(\App\Services\LabControlService::class);
+                $session = $labControl->generateFromSchedule($sch);
 
                 if ($session && $lastEndTime !== $sch->timeSlot->end_time) {
                     $finalEnd = \Carbon\Carbon::parse($todate . ' ' . $lastEndTime);
@@ -96,7 +97,7 @@ class Kernel extends ConsoleKernel
 
                 // Kirim WA sekali dengan jam akhir yang sudah benar
                 if ($session) {
-                    (new \App\Http\Controllers\LabControlController)->sendWebhookPublic($session->fresh());
+                    $labControl->sendWebhook($session->fresh());
                 }
             }
         })->everyMinute()->name('lab-session-generator')->withoutOverlapping();

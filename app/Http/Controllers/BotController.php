@@ -10,11 +10,16 @@ use App\Models\TimeSlot;
 use App\Models\Teacher;
 use App\Models\LabSession;
 use App\Models\User;
+use App\Services\LabControlService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class BotController extends Controller
 {
+    public function __construct(
+        private LabControlService $labControl
+    ) {}
+
     // ================================================================
     // JADWAL
     // ================================================================
@@ -146,7 +151,7 @@ class BotController extends Controller
 
         $phone   = $this->normalizePhone($request->phone);
         $teacher = Teacher::whereRaw(
-            "REPLACE(REPLACE(phone, '+', ''), ' ', '') = ?", [$phone]
+            "REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = ?", [$phone]
         )->where('is_active', 1)->first();
 
         if (!$teacher) {
@@ -231,7 +236,7 @@ class BotController extends Controller
 
         $approverPhone = $this->normalizePhone($request->approver_phone ?? '');
         $approver      = User::whereRaw(
-            "REPLACE(REPLACE(phone, '+', ''), ' ', '') = ?", [$approverPhone]
+            "REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = ?", [$approverPhone]
         )->first();
 
         $booking->update([
@@ -240,9 +245,9 @@ class BotController extends Controller
             'approved_at' => now(),
         ]);
 
-        $session = \App\Http\Controllers\LabControlController::generateFromBooking($booking);
+        $session = $this->labControl->generateFromBooking($booking);
         if ($session) {
-            (new LabControlController)->sendWebhookPublic($session->fresh());
+            $this->labControl->sendWebhook($session->fresh());
         }
 
         return response()->json([
@@ -268,7 +273,7 @@ class BotController extends Controller
         $alasan        = $request->alasan ?? 'Ditolak oleh admin';
         $approverPhone = $this->normalizePhone($request->approver_phone ?? '');
         $approver      = User::whereRaw(
-            "REPLACE(REPLACE(phone, '+', ''), ' ', '') = ?", [$approverPhone]
+            "REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = ?", [$approverPhone]
         )->first();
 
         $booking->update([
@@ -389,7 +394,7 @@ class BotController extends Controller
         // ── 1. Cek teachers DULU (guru) ──────────────────────────
         // Priority: guru lebih spesifik dari users
         $teacher = Teacher::whereRaw(
-            "REPLACE(REPLACE(phone, '+', ''), ' ', '') = ?", [$phone]
+            "REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = ?", [$phone]
         )->where('is_active', 1)->first();
 
         if ($teacher) {
@@ -407,7 +412,7 @@ class BotController extends Controller
 
         // ── 2. Cek users (admin/operator/teknisi) ─────────────────
         $user = User::whereRaw(
-            "REPLACE(REPLACE(phone, '+', ''), ' ', '') = ?", [$phone]
+            "REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = ?", [$phone]
         )->where('is_active', 1)->whereNull('deleted_at')->first();
 
         if ($user) {

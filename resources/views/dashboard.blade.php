@@ -64,12 +64,13 @@ $labStats = (clone $bq)->whereBetween('booking_date',[now()->startOfWeek(),now()
 
 // Dapatkan Status Lab Saat Ini (Real-time)
 $allLabs = \App\Models\Resource::where('status','active')->orderBy('name')->get();
-$currentDay = now()->translatedFormat('l'); // Senin, Selasa, dll
+$currentDay = now()->format('l'); // Monday, Tuesday, dll (sesuai database schedules)
 $currentTime = now()->format('H:i:s');
 
 // Cari slot waktu sekarang
-$currentSlot = \App\Models\TimeSlot::where('day_of_week', $currentDay)
-    ->where('start_time', '<=', $currentTime)
+// Filter day_of_week dihapus karena time_slots biasanya sama setiap hari 
+// dan kolom tersebut di database bertipe smallint (menyebabkan error jika diisi string)
+$currentSlot = \App\Models\TimeSlot::where('start_time', '<=', $currentTime)
     ->where('end_time', '>=', $currentTime)
     ->where('is_active', true)
     ->first();
@@ -91,8 +92,9 @@ foreach ($allLabs as $lab) {
         $activity = $booking->title . ' (' . $booking->teacher_name . ')';
         $type = 'booking';
     } else if ($currentSlot) {
-        // 2. Cek Jadwal Tetap
+        // 2. Cek Jadwal Tetap (Gunakan currentDay format English)
         $schedule = \App\Models\Schedule::where('resource_id', $lab->id)
+            ->where('day_of_week', $currentDay)
             ->where('time_slot_id', $currentSlot->id)
             ->where('status', 'active')
             ->first();

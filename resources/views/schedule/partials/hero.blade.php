@@ -14,19 +14,19 @@
 
         <div class="legend">
             <div class="legend-item">
-                <div class="legend-dot" style="background:linear-gradient(135deg,#d6ead2,#ACC8A2)"></div>
+                <div class="legend-dot" style="background:#E1F5EE;border:1px solid #5DCAA5"></div>
                 <span class="legend-text">Jadwal Tetap</span>
             </div>
             <div class="legend-item">
-                <div class="legend-dot" style="background:#dcfce7;border:1.5px solid #86efac"></div>
+                <div class="legend-dot" style="background:#9FE1CB;border:1px solid #1D9E75"></div>
                 <span class="legend-text">Disetujui</span>
             </div>
             <div class="legend-item">
-                <div class="legend-dot" style="background:#fef3c7;border:1.5px solid #fcd34d"></div>
+                <div class="legend-dot" style="background:#FAEEDA;border:1px solid #EF9F27"></div>
                 <span class="legend-text">Pending</span>
             </div>
             <div class="legend-item">
-                <div class="legend-dot" style="background:transparent;border:2px dashed rgba(172,200,162,.5)"></div>
+                <div class="legend-dot" style="background:transparent;border:2px dashed #5DCAA5"></div>
                 <span class="legend-text">Tersedia — klik booking</span>
             </div>
         </div>

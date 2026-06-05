@@ -10,7 +10,6 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Unique constraint phone di teachers
-        // Pastikan sudah tidak ada duplikat sebelum ini
         Schema::table('teachers', function (Blueprint $table) {
             $table->unique('phone', 'uk_teachers_phone');
         });
@@ -23,11 +22,10 @@ return new class extends Migration
             );
         });
 
-        // 3. Fix user_sessions.expires_at — hapus ON UPDATE
+        // 3. Fix user_sessions.expires_at — PostgreSQL syntax
         DB::statement("
-            ALTER TABLE user_sessions 
-            MODIFY expires_at TIMESTAMP NOT NULL 
-            DEFAULT CURRENT_TIMESTAMP
+            ALTER TABLE user_sessions
+            ALTER COLUMN expires_at SET DEFAULT CURRENT_TIMESTAMP
         ");
     }
 
@@ -42,9 +40,8 @@ return new class extends Migration
         });
 
         DB::statement("
-            ALTER TABLE user_sessions 
-            MODIFY expires_at TIMESTAMP NOT NULL 
-            DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ALTER TABLE user_sessions
+            ALTER COLUMN expires_at SET DEFAULT CURRENT_TIMESTAMP
         ");
     }
 };
