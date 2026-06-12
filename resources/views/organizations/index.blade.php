@@ -1,308 +1,571 @@
 <x-app-layout>
 <x-slot name="title">Manajemen Sekolah & Kelas</x-slot>
 
+@vite(['resources/js/sekolah.js'])
+
 <style>
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-.wrap{animation:fadeUp .4s ease both}
-.add-card{background:#fff;border-radius:14px;border:1px solid #e8f0e6;box-shadow:0 1px 6px rgba(26,37,23,.06);overflow:hidden;margin-bottom:20px}
-.add-head{padding:14px 20px;background:linear-gradient(135deg,#1A2517,#2a3826);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
-.add-head-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:#fff}
-.add-toggle{color:#ACC8A2;transition:transform .2s}
-.add-toggle.open{transform:rotate(180deg)}
-.add-body{padding:20px;display:none}
-.add-body.open{display:block}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:500px){.field-row{grid-template-columns:1fr}}
-.field{margin-bottom:14px}
-.field-label{display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.inp{width:100%;border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;background:#fafcf9;outline:none;transition:border-color .15s}
-.inp:focus{border-color:#ACC8A2;box-shadow:0 0 0 3px rgba(172,200,162,.1)}
-.btn-add{padding:10px 22px;border-radius:10px;border:none;background:linear-gradient(135deg,#1A2517,#2d3d29);color:#ACC8A2;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s}
-.btn-add:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,37,23,.25)}
+    /* ── Variables & Utility ────────────────────────────────── */
+    :root {
+        --primary: var(--g8, #00693E);
+        --primary-dark: var(--g9, #003d24);
+        --primary-light: var(--sk-surface-3, #eaf4f0);
+        --secondary: #0369A1;
+        --secondary-light: #E0F2FE;
+        --accent: #92400E;
+        --accent-light: #FEF3C7;
+        --danger: #c0392b;
+        --text-main: var(--text, #0d2416);
+        --text-muted: var(--muted, #6b8fa3);
+        --bg-card: #ffffff;
+        --border-color: var(--border, #cce4f0);
+        --radius-lg: var(--r, 14px);
+        --radius-md: 10px;
+        --shadow-sm: var(--shadow, 0 1px 4px rgba(0,105,62,.07));
+        --shadow-md: 0 6px 28px rgba(0,105,62,.14);
+    }
 
-/* Org Card */
-.org-card{background:#fff;border-radius:16px;border:1px solid #e8f0e6;box-shadow:0 1px 6px rgba(26,37,23,.05);margin-bottom:24px;overflow:hidden}
-.org-head{padding:16px 20px;background:#fcfdfb;border-bottom:1px solid #e8f0e6;display:flex;align-items:center;justify-content:space-between}
-.org-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:#1A2517;display:flex;align-items:center;gap:10px}
-.org-type{font-size:11px;padding:3px 9px;border-radius:999px;background:#1A2517;color:#ACC8A2;font-weight:700}
-.org-meta{font-size:12px;color:#9ca3af;margin-top:4px;display:flex;gap:15px}
+    /* ── Layout ────────────────────────────────────────────── */
+    .sk-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        animation: skFadeUp 0.4s ease-out;
+    }
 
-/* Nested Classes Table */
-.cls-wrap{padding:10px 20px 20px}
-.cls-table{width:100%;border-collapse:collapse;font-size:12px}
-.cls-table thead th{padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid #f3f4f6}
-.cls-table tbody tr{border-bottom:1px solid #f9fafb}
-.cls-table tbody tr:hover{background:#fafcf9}
-.cls-table td{padding:12px;vertical-align:middle}
-.cls-name{font-weight:700;color:#1A2517;font-size:13px}
-.cls-major{color:#6b7280;font-size:12px}
+    @keyframes skFadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-/* Action Buttons */
-.btn-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid #e8f0e6;background:#fff;color:#6b7280;cursor:pointer;transition:all .15s}
-.btn-icon:hover{border-color:#ACC8A2;color:#1A2517;background:#f8faf7}
-.btn-icon-red:hover{border-color:#fecaca;color:#ef4444;background:#fef2f2}
+    /* ── Header & Toolbar ───────────────────────────────────── */
+    .sk-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
 
-/* Inline Edit Forms */
-.edit-form{display:none;background:#fcfdfb;padding:12px;border-radius:10px;border:1px solid #e8f0e6;margin:10px 0}
-.edit-form.show{display:block}
-.inp-sm{border:1.5px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;background:#fff}
+    .sk-title-section h1 {
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: -0.025em;
+    }
+
+    .sk-title-section p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-top: 0.25rem;
+    }
+
+    .sk-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-grow: 1;
+        justify-content: flex-end;
+    }
+
+    .sk-search-wrapper {
+        position: relative;
+        flex-grow: 1;
+        max-width: 450px;
+    }
+
+    .sk-search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    .sk-search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.75rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background: white;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+
+    .sk-search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-light);
+    }
+
+    /* ── Filters ────────────────────────────────────────────── */
+    .sk-filters {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        scrollbar-width: none;
+    }
+
+    .sk-filter-pill {
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        background: white;
+        border: 1px solid var(--border-color);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .sk-filter-pill:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .sk-filter-pill.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* ── Add Card ───────────────────────────────────────────── */
+    .sk-add-trigger {
+        background: var(--primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-md);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .sk-add-trigger:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 105, 62, 0.2);
+    }
+
+    .sk-add-form-container {
+        display: none;
+        margin-bottom: 2rem;
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        animation: skSlideDown 0.3s ease-out;
+    }
+
+    @keyframes skSlideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Grid & Cards ───────────────────────────────────────── */
+    .sk-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .sk-org-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        padding: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .sk-org-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px -8px rgba(0,0,0,0.1);
+        border-color: var(--primary);
+    }
+
+    .sk-org-type-badge {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .badge-smk { background: var(--primary-light); color: var(--primary); }
+    .badge-sma { background: var(--secondary-light); color: var(--secondary); }
+    .badge-ma  { background: var(--accent-light); color: var(--accent); }
+    .badge-smp { background: #F3E8FF; color: #6B21A8; }
+    .badge-mts { background: #DCFCE7; color: #166534; }
+    .badge-other { background: #F3F4F6; color: #374151; }
+
+    .sk-org-info {
+        margin-bottom: 1.5rem;
+    }
+
+    .sk-org-name {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+        padding-right: 3rem; /* Space for badge */
+        line-height: 1.2;
+    }
+
+    .sk-org-contact {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .sk-contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .sk-contact-item svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+        opacity: 0.6;
+    }
+
+    .sk-card-divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 1.25rem 0;
+    }
+
+    .sk-classes-preview {
+        flex-grow: 1;
+    }
+
+    .sk-classes-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .sk-classes-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+    }
+
+    .sk-classes-count {
+        background: var(--primary-light);
+        color: var(--primary);
+        padding: 0.125rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .sk-classes-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        max-height: 120px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .sk-classes-list::-webkit-scrollbar { width: 4px; }
+    .sk-classes-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+
+    .sk-class-tag {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.25rem 0.625rem;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #475569;
+        transition: all 0.2s;
+    }
+
+    .sk-class-tag:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .sk-card-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .sk-action-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.625rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 700;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        background: white;
+        color: var(--text-main);
+    }
+
+    .sk-action-btn:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .sk-action-btn--primary {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .sk-action-btn--primary:hover {
+        background: var(--primary-dark);
+    }
+
+    .sk-icon-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        background: white;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .sk-icon-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .sk-icon-btn--danger:hover {
+        border-color: #fecaca;
+        color: var(--danger);
+        background: #fef2f2;
+    }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+        .sk-header { flex-direction: column; align-items: stretch; }
+        .sk-controls { flex-direction: column; align-items: stretch; }
+        .sk-search-wrapper { max-width: none; }
+        .sk-grid { grid-template-columns: 1fr; }
+    }
+    .sk-edit-panel {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: white;
+        z-index: 20;
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        animation: skFadeIn 0.2s ease-out;
+        flex-direction: column;
+    }
+
+    @keyframes skFadeIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+    }
 </style>
 
-<div class="wrap">
-    {{-- FLASH MESSAGES --}}
-    @if(session('success'))
-        <div style="padding:12px 16px;border-radius:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:13px;font-weight:600;margin-bottom:20px">✓ {{ session('success') }}</div>
+<div class="sk-container">
+    {{-- ── FLASH MESSAGE ────────────────────────────────────── --}}
+    @if (session('success'))
+    <div class="sk-flash sk-flash--success" id="sk-flash" style="margin-bottom: 2rem; background: #ecfdf5; border: 1px solid #10b981; color: #065f46; padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem;">
+        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        <span style="font-weight: 600;">{{ session('success') }}</span>
+    </div>
     @endif
 
-    {{-- SEARCH & FILTER --}}
-    <div style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:260px;position:relative">
-            <input type="text" id="org-search" onkeyup="filterOrgs()" placeholder="Cari nama sekolah atau alamat..." 
-                   style="width:100%;padding:10px 16px 10px 40px;border-radius:12px;border:1.5px solid #e8f0e6;background:#fff;font-size:13px;outline:none;transition:border-color .15s">
-            <svg style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#9ca3af" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
+    {{-- ── HEADER ───────────────────────────────────────────── --}}
+    <header class="sk-header">
+        <div class="sk-title-section">
+            <h1>Sekolah & Lembaga</h1>
+            <p>Kelola data instansi dan pembagian kelas laboratorium.</p>
         </div>
+        
+        <div class="sk-controls">
+            <div class="sk-search-wrapper">
+                <svg class="sk-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input id="sk-search" type="text" class="sk-search-input" placeholder="Cari nama sekolah atau alamat...">
+            </div>
+            <button class="sk-add-trigger" id="btn-toggle-add">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Tambah Sekolah
+            </button>
+        </div>
+    </header>
+
+    {{-- ── FILTERS ──────────────────────────────────────────── --}}
+    <div class="sk-filters">
+        <button class="sk-filter-pill active" data-filter="all">Semua</button>
+        @foreach (['SMK','SMA','MA','SMP','MTs','Lainnya'] as $t)
+            <button class="sk-filter-pill" data-filter="{{ $t }}">{{ $t }}</button>
+        @endforeach
     </div>
 
-    {{-- FORM TAMBAH SEKOLAH --}}
-    <div class="add-card">
-        <div class="add-head" onclick="toggleAdd('school-form')">
-            <div>
-                <div class="add-head-title">➕ Tambah Sekolah / Lembaga Baru</div>
-            </div>
-            <svg class="add-toggle" id="toggle-school-form" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ACC8A2" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-            </svg>
+    {{-- ── ADD FORM (Hidden by default) ──────────────────────── --}}
+    <div class="sk-add-form-container" id="add-school-form">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); background: #f9fafb; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="font-weight: 800; font-size: 1.1rem; color: var(--text-main);">Tambah Sekolah Baru</h2>
+            <button type="button" id="btn-close-add" style="background: none; border: none; cursor: pointer; color: var(--text-muted);"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
-        <div class="add-body" id="school-form">
-            <form method="POST" action="{{ route('organization.store') }}">
-                @csrf
-                <div class="field-row">
-                    <div class="field">
-                        <label class="field-label">Nama Sekolah *</label>
-                        <input name="name" type="text" class="inp" placeholder="Contoh: SMK Nuris Jember" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Tipe *</label>
-                        <select name="type" class="inp" required>
-                            <option value="SMK">SMK</option>
-                            <option value="SMA">SMA</option>
-                            <option value="MA">MA</option>
-                            <option value="SMP">SMP</option>
-                            <option value="MTs">MTs</option>
-                            <option value="Lainnya">Lainnya</option>
-                        </select>
-                    </div>
+        <form method="POST" action="{{ route('organization.store') }}" style="padding: 1.5rem;">
+            @csrf
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div class="sk-field">
+                    <label class="sk-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Nama Sekolah <span style="color: var(--danger)">*</span></label>
+                    <input name="name" type="text" class="sk-search-input" style="padding-left: 1rem;" placeholder="Contoh: SMK Nuris Jember" required>
                 </div>
-                <button type="submit" class="btn-add">✓ Simpan Sekolah</button>
-            </form>
-        </div>
+                <div class="sk-field">
+                    <label class="sk-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Tipe Instansi <span style="color: var(--danger)">*</span></label>
+                    <select name="type" class="sk-search-input" style="padding-left: 1rem;" required>
+                        @foreach (['SMK','SMA','MA','SMP','MTs','Lainnya'] as $t)
+                            <option value="{{ $t }}">{{ $t }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="sk-field"><label class="sk-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Email</label><input name="email" type="email" class="sk-search-input" style="padding-left: 1rem;" placeholder="info@sekolah.sch.id"></div>
+                <div class="sk-field"><label class="sk-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Telepon</label><input name="phone" type="text" class="sk-search-input" style="padding-left: 1rem;" placeholder="0331-xxxxxx"></div>
+                <div class="sk-field" style="grid-column: 1 / -1;"><label class="sk-label" style="display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Alamat Lengkap</label><input name="address" type="text" class="sk-search-input" style="padding-left: 1rem;" placeholder="Jl. Kalimantan No. 123..."></div>
+            </div>
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="sk-action-btn" id="btn-cancel-add">Batal</button>
+                <button type="submit" class="sk-add-trigger" style="padding: 0.75rem 2rem;">Simpan Data</button>
+            </div>
+        </form>
     </div>
 
-    {{-- LIST SEKOLAH --}}
-    <div id="org-list">
-    @foreach($organizations as $org)
-    <div class="org-card" data-name="{{ strtolower($org->name) }}" data-address="{{ strtolower($org->address) }}">
-        {{-- Org Header --}}
-        <div class="org-head">
-            <div>
-                <div class="org-name">
-                    <span>🏢 {{ $org->name }}</span>
-                    @php
-                        $badgeColor = match($org->type) {
-                            'SMK' => ['bg'=>'#eff6ff', 'text'=>'#1e40af'],
-                            'SMA' => ['bg'=>'#f0fdf4', 'text'=>'#166534'],
-                            'MA' => ['bg'=>'#fff7ed', 'text'=>'#9a3412'],
-                            'SMP' => ['bg'=>'#f5f3ff', 'text'=>'#5b21b6'],
-                            'MTs' => ['bg'=>'#fdf2f8', 'text'=>'#9d174d'],
-                            default => ['bg'=>'#f3f4f6', 'text'=>'#374151']
-                        };
-                    @endphp
-                    <span class="org-type" style="background:{{ $badgeColor['bg'] }};color:{{ $badgeColor['text'] }};border:1px solid {{ $badgeColor['text'] }}20">{{ $org->type }}</span>
-                </div>
-                <div class="org-meta">
-                    <span>✉ {{ $org->email ?? '-' }}</span>
-                    <span>📞 {{ $org->phone ?? '-' }}</span>
-                    <span>📍 {{ $org->address ?? '-' }}</span>
+    {{-- ── GRID DAFTAR SEKOLAH ──────────────────────────────── --}}
+    <div id="sk-org-list" class="sk-grid">
+        @forelse ($organizations as $org)
+        @php
+            $type = strtoupper($org->type ?? 'LAINNYA');
+            $badgeClass = match($type) {
+                'SMK'  => 'badge-smk', 'SMA'  => 'badge-sma',
+                'MA'   => 'badge-ma', 'SMP'  => 'badge-smp',
+                'MTS'  => 'badge-mts', default => 'badge-other',
+            };
+        @endphp
+
+        <div class="sk-org-card" data-type="{{ $type }}" data-search="{{ strtolower($org->name . ' ' . $org->address) }}">
+            <span class="sk-org-type-badge {{ $badgeClass }}">{{ $org->type }}</span>
+            
+            <div class="sk-org-info">
+                <h3 class="sk-org-name">{{ $org->name }}</h3>
+                <div class="sk-org-contact">
+                    <div class="sk-contact-item" title="Alamat">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        {{ $org->address ?: 'Alamat belum diatur' }}
+                    </div>
+                    @if($org->phone)
+                    <div class="sk-contact-item" title="Telepon">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                        {{ $org->phone }}
+                    </div>
+                    @endif
                 </div>
             </div>
-            <div style="display:flex;gap:8px">
-                <button class="btn-icon" onclick="toggleEdit('org', {{ $org->id }})" title="Edit Sekolah">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+
+            <div class="sk-card-divider"></div>
+
+            <div class="sk-classes-preview">
+                <div class="sk-classes-header">
+                    <span class="sk-classes-title">Daftar Kelas</span>
+                    <span class="sk-classes-count">{{ $org->classes->count() }} Kelas</span>
+                </div>
+                <div class="sk-classes-list">
+                    @forelse ($org->classes as $class)
+                        <span class="sk-class-tag">{{ $class->grade_level }} {{ $class->name }}</span>
+                    @empty
+                        <span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Belum ada kelas terdaftar.</span>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="sk-card-actions">
+                <a href="{{ route('class.index') }}?org_id={{ $org->id }}" class="sk-action-btn sk-action-btn--primary">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                    Kelola Kelas
+                </a>
+                <button type="button" class="sk-icon-btn" data-edit-org="{{ $org->id }}" title="Edit Sekolah">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 </button>
-                <form action="{{ route('organization.destroy', $org) }}" method="POST" onsubmit="return confirm('Hapus sekolah ini dan semua kelas di dalamnya?')">
+                <form method="POST" action="{{ route('organization.destroy', $org) }}" onsubmit="return confirm('Hapus {{ $org->name }} dan semua data kelasnya?')">
                     @csrf @method('DELETE')
-                    <button type="submit" class="btn-icon btn-icon-red" title="Hapus Sekolah">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <button type="submit" class="sk-icon-btn sk-icon-btn--danger" title="Hapus Sekolah">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
                 </form>
             </div>
-        </div>
 
-        {{-- Org Edit Form (Hidden) --}}
-        <div id="edit-org-{{ $org->id }}" class="edit-form mx-5 mt-4">
-            <form action="{{ route('organization.update', $org) }}" method="POST">
-                @csrf @method('PATCH')
-                <div class="field-row">
-                    <div class="field">
-                        <label class="field-label">Nama Sekolah</label>
-                        <input name="name" type="text" class="inp" value="{{ $org->name }}" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Tipe</label>
-                        <select name="type" class="inp" required>
-                            @foreach(['SMK','SMA','MA','SMP','MTs','Lainnya'] as $t)
+            {{-- Edit Panel (Hidden) --}}
+            <div id="sk-edit-org-{{ $org->id }}" class="sk-edit-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="font-weight: 800; color: var(--text-main);">Edit Instansi</h4>
+                    <button type="button" data-cancel-edit="{{ $org->id }}" style="background: none; border: none; cursor: pointer;"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                </div>
+                <form method="POST" action="{{ route('organization.update', $org) }}">
+                    @csrf @method('PATCH')
+                    <div style="display: grid; gap: 0.75rem;">
+                        <input type="text" name="name" value="{{ $org->name }}" class="sk-search-input" style="padding-left: 1rem;" required placeholder="Nama Sekolah">
+                        <select name="type" class="sk-search-input" style="padding-left: 1rem;">
+                            @foreach (['SMK','SMA','MA','SMP','MTs','Lainnya'] as $t)
                                 <option value="{{ $t }}" {{ $org->type == $t ? 'selected' : '' }}>{{ $t }}</option>
                             @endforeach
                         </select>
+                        <input type="text" name="address" value="{{ $org->address }}" class="sk-search-input" style="padding-left: 1rem;" placeholder="Alamat">
+                        <input type="email" name="email" value="{{ $org->email }}" class="sk-search-input" style="padding-left: 1rem;" placeholder="Email">
+                        <input type="text" name="phone" value="{{ $org->phone }}" class="sk-search-input" style="padding-left: 1rem;" placeholder="Telepon">
                     </div>
-                </div>
-                <div style="display:flex;gap:8px">
-                    <button type="submit" class="btn-add" style="padding:7px 15px;font-size:12px">Update Sekolah</button>
-                    <button type="button" onclick="toggleEdit('org', {{ $org->id }})" class="btn-icon" style="height:auto;padding:7px 15px;font-size:12px">Batal</button>
-                </div>
-            </form>
-        </div>
-
-        {{-- Classes Table --}}
-        <div class="cls-wrap">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <span style="font-size:11px;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em">🏫 Daftar Kelas ({{ $org->classes->count() }})</span>
-                <button class="btn-add" style="padding:6px 12px;font-size:11px" onclick="toggleAdd('class-form-{{ $org->id }}')">
-                    + Tambah Kelas
-                </button>
-            </div>
-
-            {{-- Form Tambah Kelas (Hidden) --}}
-            <div id="class-form-{{ $org->id }}" class="edit-form" style="margin-bottom:15px;border:1.5px dashed #ACC8A2">
-                <form action="{{ route('class.store') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="organization_id" value="{{ $org->id }}">
-                    <div class="field-row">
-                        <div class="field">
-                            <label class="field-label">Tingkat</label>
-                            <input name="grade_level" type="text" class="inp-sm w-full" placeholder="X, XI, XII" required>
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Nama Kelas</label>
-                            <input name="name" type="text" class="inp-sm w-full" placeholder="TKJ 1" required>
-                        </div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field">
-                            <label class="field-label">Jurusan</label>
-                            <input name="major" type="text" class="inp-sm w-full" placeholder="Teknik Komputer">
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Tahun Akademik</label>
-                            <input name="academic_year" type="text" class="inp-sm w-full" value="{{ date('Y').'/'.(date('Y')+1) }}" required>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px">
-                        <button type="submit" class="btn-add" style="padding:7px 15px;font-size:12px">Simpan Kelas</button>
-                        <button type="button" onclick="toggleAdd('class-form-{{ $org->id }}')" class="btn-icon" style="height:auto;padding:7px 15px;font-size:12px">Batal</button>
+                    <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem;">
+                        <button type="submit" class="sk-add-trigger" style="flex: 1; justify-content: center;">Update</button>
+                        <button type="button" class="sk-action-btn" data-cancel-edit="{{ $org->id }}" style="flex: 1;">Batal</button>
                     </div>
                 </form>
             </div>
-
-            <div class="tbl-wrap" style="border:1px solid #f3f4f6;border-radius:12px;overflow:hidden">
-                <table class="cls-table">
-                    <thead>
-                        <tr>
-                            <th style="width:50px">No</th>
-                            <th>Tingkat</th>
-                            <th>Nama Kelas</th>
-                            <th>Jurusan</th>
-                            <th>Tahun</th>
-                            <th style="text-align:right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($org->classes as $idx => $cls)
-                        <tr>
-                            <td>{{ $idx + 1 }}</td>
-                            <td style="font-weight:700">{{ $cls->grade_level }}</td>
-                            <td class="cls-name">{{ $cls->name }}</td>
-                            <td class="cls-major">{{ $cls->major ?? '-' }}</td>
-                            <td style="color:#9ca3af">{{ $cls->academic_year }}</td>
-                            <td style="display:flex;justify-content:flex-end;gap:5px">
-                                <button class="btn-icon" onclick="toggleEdit('class', {{ $cls->id }})">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                </button>
-                                <form action="{{ route('class.destroy', $cls) }}" method="POST" onsubmit="return confirm('Hapus kelas ini?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn-icon btn-icon-red">
-                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {{-- Edit Form Kelas (Hidden) --}}
-                        <tr id="edit-class-{{ $cls->id }}" class="edit-form" style="display:none">
-                            <td colspan="6">
-                                <form action="{{ route('class.update', $cls) }}" method="POST">
-                                    @csrf @method('PATCH')
-                                    <input type="hidden" name="organization_id" value="{{ $org->id }}">
-                                    <div class="field-row" style="margin-bottom:10px">
-                                        <input name="grade_level" type="text" class="inp-sm" value="{{ $cls->grade_level }}" placeholder="Tingkat" required>
-                                        <input name="name" type="text" class="inp-sm" value="{{ $cls->name }}" placeholder="Nama Kelas" required>
-                                        <input name="major" type="text" class="inp-sm" value="{{ $cls->major }}" placeholder="Jurusan">
-                                        <input name="academic_year" type="text" class="inp-sm" value="{{ $cls->academic_year }}" placeholder="Tahun" required>
-                                    </div>
-                                    <div style="display:flex;gap:8px">
-                                        <button type="submit" class="btn-add" style="padding:5px 12px;font-size:11px">Simpan</button>
-                                        <button type="button" onclick="toggleEdit('class', {{ $cls->id }})" class="btn-icon" style="height:auto;padding:5px 12px;font-size:11px">Batal</button>
-                                    </div>
-                                </form>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr><td colspan="6" style="text-align:center;padding:30px;color:#9ca3af">📦 Belum ada data kelas untuk sekolah ini</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
         </div>
-    </div>
-    @endforeach
+        @empty
+        <div id="sk-empty" style="grid-column: 1/-1; text-align: center; padding: 5rem 2rem; background: white; border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+            <div style="background: var(--primary-light); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                <svg style="width: 32px; height: 32px; color: var(--primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <h3 style="font-weight: 800; font-size: 1.25rem; color: var(--text-main);">Belum ada sekolah</h3>
+            <p style="color: var(--text-muted); margin-top: 0.5rem;">Mulai dengan menambahkan sekolah atau lembaga baru.</p>
+        </div>
+        @endforelse
     </div>
 </div>
-
-<script>
-function filterOrgs() {
-    const query = document.getElementById('org-search').value.toLowerCase();
-    document.querySelectorAll('.org-card').forEach(card => {
-        const name = card.getAttribute('data-name') || '';
-        const addr = card.getAttribute('data-address') || '';
-        card.style.display = (name.includes(query) || addr.includes(query)) ? 'block' : 'none';
-    });
-}
-
-function toggleAdd(id) {
-    const el = document.getElementById(id);
-    const toggle = document.getElementById('toggle-' + id);
-
-    // Cek apakah ini pakai class 'open' (form sekolah) atau inline style (form kelas)
-    if (el.classList.contains('add-body')) {
-        el.classList.toggle('open');
-        if (toggle) toggle.classList.toggle('open');
-    } else {
-        // Form kelas pakai edit-form style
-        const isHidden = el.style.display === 'none' || el.style.display === '';
-        el.style.display = isHidden ? 'block' : 'none';
-    }
-}
-
-function toggleEdit(type, id) {
-    const el = document.getElementById('edit-' + type + '-' + id);
-    const isHidden = el.style.display === 'none' || el.style.display === '';
-    if (isHidden) {
-        el.style.display = (type === 'class') ? 'table-row' : 'block';
-    } else {
-        el.style.display = 'none';
-    }
-}
-</script>
 
 </x-app-layout>

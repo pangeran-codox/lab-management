@@ -42,17 +42,24 @@ class InventoryService
 
     public function calculateStats(?array $allowedResources): array
     {
-        $statsQuery = LabInventory::whereNull('deleted_at');
+        $query = LabInventory::whereNull('deleted_at');
 
         if ($allowedResources !== null) {
-            $statsQuery->whereIn('resource_id', $allowedResources);
+            $query->whereIn('resource_id', $allowedResources);
         }
 
+        $results = $query->selectRaw('
+            COUNT(*) as total_items,
+            SUM(quantity) as total_units,
+            SUM(quantity_good) as total_good,
+            SUM(quantity_broken) as total_broken
+        ')->first();
+
         return [
-            'total_items'  => (clone $statsQuery)->count(),
-            'total_units'  => (clone $statsQuery)->sum('quantity'),
-            'total_good'   => (clone $statsQuery)->sum('quantity_good'),
-            'total_broken' => (clone $statsQuery)->sum('quantity_broken'),
+            'total_items'  => (int) ($results->total_items ?? 0),
+            'total_units'  => (int) ($results->total_units ?? 0),
+            'total_good'   => (int) ($results->total_good ?? 0),
+            'total_broken' => (int) ($results->total_broken ?? 0),
         ];
     }
 

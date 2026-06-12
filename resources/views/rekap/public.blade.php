@@ -68,6 +68,46 @@
         </div>
     </div>
 
+    {{-- GRAFIK PEMAKAIAN LAB --}}
+    <div class="overview-card" style="margin-top: 20px;">
+        <div class="overview-title">📈 Grafik Pemakaian Bulan Ini</div>
+        <div class="chart-wrap" style="height: 300px; padding: 16px;">
+            <canvas id="usageChart"></canvas>
+        </div>
+    </div>
+
+    {{-- RINGKASAN PENGGUNAAN LEMBAGA --}}
+    @if(count($lembagaUsage) > 0)
+    <div class="overview-card" style="margin-top: 20px;">
+        <div class="overview-title">🏫 Ringkasan Penggunaan Lembaga</div>
+        <table class="tbl" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Lembaga</th>
+                    <th class="tc">Total Kapasitas</th>
+                    <th class="tc">Digunakan</th>
+                    <th class="tc">Persentase</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $idx = 1; @endphp
+                @foreach($lembagaUsage as $lembagaName => $data)
+                <tr>
+                    <td class="tc">{{ $idx++ }}</td>
+                    <td>{{ $lembagaName }}</td>
+                    <td class="tc">{{ number_format($data['totalCapacity']) }} slot</td>
+                    <td class="tc">{{ number_format($data['totalUsed']) }} slot</td>
+                    <td class="tc">
+                        {{ $data['totalCapacity'] > 0 ? number_format(($data['totalUsed'] / $data['totalCapacity']) * 100, 2) : 0 }}%
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
     {{-- EXPORT BAR --}}
     <div class="export-bar">
         <span class="export-bar-label">Export:</span>
@@ -79,10 +119,10 @@
             <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/></svg>
             CSV
         </button>
-        <button class="btn-exp btn-exp-pdf" onclick="exportPDF()">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/></svg>
-            PDF
-        </button>
+        <a id="btn-export-pdf" href="{{ route('rekap.public.pdf', ['month' => request('month'), 'year' => request('year')]) }}" class="btn-exp btn-exp-pdf">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Editor & Cetak PDF
+        </a>
         <button class="btn-exp btn-exp-print" onclick="window.print()">
             <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/></svg>
             Print
@@ -133,11 +173,13 @@
     {{-- TABS --}}
     <div class="tabs">
         @foreach($labData as $i => $lab)
-        <button class="tab {{ $i === 0 ? 'on' : '' }}" onclick="switchTab({{ $i }})">
+        <button class="tab {{ $i === 0 ? 'on' : '' }}" 
+                onclick="switchTab({{ $i }}, {{ $lab['resource']->id }})"
+                data-resource-id="{{ $lab['resource']->id }}">
             <svg style="width:13px;height:13px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
-            {{ $lab['resource']->name }}
+            {{ $lab['resource']->name }} @if($lab['resource']->organization) ({{ $lab['resource']->organization->name }}) @endif
             <span class="tab-pct">{{ $lab['percentage'] }}%</span>
         </button>
         @endforeach
@@ -174,14 +216,16 @@
             ];
         }
     @endphp
-    <div class="panel {{ $i === 0 ? 'on' : '' }}" id="panel-{{ $i }}">
+    <div class="panel {{ $i === 0 ? 'on' : '' }}" id="panel-{{ $i }}" 
+         data-teacher-usage="{{ json_encode($lab['teacherUsage']) }}"
+         data-total-used="{{ $lab['totalUsed'] }}">
         <div class="lab-card">
 
             {{-- Header --}}
             <div class="lab-hdr">
                 <div>
                     <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:#fff;margin:0">
-                        🏫 {{ $lab['resource']->name }}
+                        🏫 {{ $lab['resource']->name }} @if($lab['resource']->organization) ({{ $lab['resource']->organization->name }}) @endif
                     </h2>
                     <p style="font-size:11px;color:rgba(172,200,162,.4);margin-top:4px">
                         {{ $lab['totalCapacity'] }} slot kapasitas · {{ $totalSlotPerDay }} slot/hari
@@ -284,14 +328,26 @@
                 {{-- Top Pengajar --}}
                 <div class="insight-card">
                     <div class="sec-lbl">Top Pengajar Bulan Ini</div>
+                    @php
+                        // Ambil top 5 dari teacherUsage
+                        $topTeachers = array_slice($lab['teacherUsage'], 0, 5, true);
+                        $totalUsed = $lab['totalUsed'];
+                    @endphp
                     @forelse($topTeachers as $name => $count)
                         <div class="teacher-row">
                             <div class="teacher-rank">{{ $loop->iteration }}</div>
                             <div class="teacher-name">{{ $name }}</div>
-                            <div class="teacher-count">{{ $count }} sesi</div>
+                            <div class="teacher-count">
+                                {{ $count }} sesi
+                                <span style="color:#9ca3af;font-size:10px;margin-left:4px">
+                                    ({{ $totalUsed > 0 ? round(($count / $totalUsed) * 100, 2) : 0 }}%)
+                                </span>
+                            </div>
                         </div>
                     @empty
-                        <div class="insight-empty">Belum ada booking bulan ini</div>
+                        <div class="insight-empty">
+                            Belum ada penggunaan bulan ini
+                        </div>
                     @endforelse
                 </div>
 
@@ -447,12 +503,44 @@
 
 @section('scripts')
 <script>
-function switchTab(idx) {
+// Track the currently active resource ID
+var activeResourceId = {{ $labData[0]['resource']->id ?? 'null' }};
+var month = {{ request('month', $month) }};
+var year = {{ request('year', $year) }};
+
+// Data untuk Chart.js (untuk file rekap.js)
+window.rekapChartData = {
+    labData: @json($labData),
+    months: @json($months),
+    currentMonth: {{ $month }},
+    currentYear: {{ $year }}
+};
+
+function switchTab(idx, resourceId) {
     document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('on'); });
     document.querySelectorAll('.tab').forEach(function(t)   { t.classList.remove('on'); });
     document.getElementById('panel-' + idx).classList.add('on');
     document.querySelectorAll('.tab')[idx].classList.add('on');
+    
+    // Update the active resource ID
+    activeResourceId = resourceId;
+    
+    // Update the PDF button href
+    updatePdfButton();
+    
     window.scrollTo({ top: 120, behavior: 'smooth' });
+}
+
+function updatePdfButton() {
+    var btn = document.getElementById('btn-export-pdf');
+    var url = "{{ route('rekap.public.pdf') }}";
+    var params = new URLSearchParams();
+    params.append('month', month);
+    params.append('year', year);
+    if (activeResourceId) {
+        params.append('resource_id', activeResourceId);
+    }
+    btn.href = url + '?' + params.toString();
 }
 
 function getActiveLabName() {
@@ -491,55 +579,180 @@ function getSummaryRows() {
     });
 }
 
-function exportExcel() {
-    if (typeof XLSX === 'undefined') {
-        var s = document.createElement('script');
-        s.src = '/js/xlsx.full.min.js';
-        s.onload = function() { doExportExcel(); };
-        document.head.appendChild(s);
-    } else { doExportExcel(); }
+// ══════════════════════════════════════════════════════════════════
+// SheetJS Lazy Loader untuk Rekap
+// ══════════════════════════════════════════════════════════════════
+let xlsxLoaded    = false;
+let xlsxLoading   = false;
+let xlsxCallbacks = [];
+
+function loadXLSX(callback) {
+    if (xlsxLoaded) { callback(); return; }
+
+    xlsxCallbacks.push(callback);
+    if (xlsxLoading) return;
+    xlsxLoading = true;
+
+    // Cari tombol Excel untuk tampilkan loading
+    const btn = Array.from(document.querySelectorAll('.btn-exp')).find(b => b.textContent.includes('Excel'));
+    const originalHTML = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = `<span class="xlsx-loading">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:5px;animation:spin 1s linear infinite;">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            Memuat...
+        </span>`;
+        btn.disabled = true;
+    }
+
+    const script  = document.createElement('script');
+    script.src    = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+    script.onload = function () {
+        xlsxLoaded  = true;
+        xlsxLoading = false;
+        if (btn) {
+            btn.innerHTML = originalHTML;
+            btn.disabled  = false;
+        }
+        xlsxCallbacks.forEach(cb => cb());
+        xlsxCallbacks = [];
+    };
+    script.onerror = function () {
+        xlsxLoading   = false;
+        xlsxCallbacks = [];
+        if (btn) {
+            btn.innerHTML = originalHTML;
+            btn.disabled  = false;
+        }
+        alert('❌ Gagal memuat library Excel. Cek koneksi internet.');
+    };
+    document.head.appendChild(script);
 }
+
+function exportExcel() {
+    loadXLSX(function() { doExportExcel(); });
+}
+
 function doExportExcel() {
     var lab = getActiveLabName(), period = getPeriod(), wb = XLSX.utils.book_new();
-    var ws1 = XLSX.utils.aoa_to_sheet([
-        ['REKAP PENGGUNAAN LABORATORIUM'],
-        ['Lab: ' + lab, 'Periode: ' + period],
+
+    // Dapatkan nama lembaga
+    var resourceIndex = -1;
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) {
+        if (tabs[i].classList.contains('on')) {
+            resourceIndex = i;
+            break;
+        }
+    }
+    var labDataFromView = @json($labData);
+    var organizationName = 'Semua Lembaga';
+    if (resourceIndex >= 0 && labDataFromView[resourceIndex]) {
+        organizationName = labDataFromView[resourceIndex].resource.organization?.name || 'Semua Lembaga';
+    }
+
+    console.log('=== EXPORT EXCEL ===');
+    console.log('Lab:', lab);
+    console.log('Period:', period);
+    console.log('Organization:', organizationName);
+
+    // Ambil data teacherUsage
+    var panel = document.querySelector('.panel.on');
+    var teacherUsage = JSON.parse(panel.dataset.teacherUsage || '{}');
+    var totalUsed = parseInt(panel.dataset.totalUsed || '0');
+
+    // Urutkan teacherUsage dari terbesar ke terkecil
+    var sortedTeachers = Object.entries(teacherUsage).sort(function(a, b) {
+        return b[1] - a[1];
+    });
+
+    // Buat sheet Top Pengajar
+    var teacherRows = [
+        ['REKAP PENGGUNAAN GURU LAB', '', ''],
+        ['Lembaga: ' + organizationName, '', ''],
+        ['Lab: ' + lab, 'Periode: ' + period, ''],
         [],
-        ['Indikator', 'Nilai', 'Keterangan'],
-        ...getSummaryRows()
-    ]);
-    ws1['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 28 }];
-    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
-    var data = getActiveTableData();
-    if (data.jadwal.length > 1) {
-        var ws2 = XLSX.utils.aoa_to_sheet(data.jadwal);
-        ws2['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 14 }, { wch: 18 }, { wch: 12 }];
-        XLSX.utils.book_append_sheet(wb, ws2, 'Jadwal Tetap');
+        ['No', 'Nama Guru', 'Total Sesi', 'Persentase Penggunaan']
+    ];
+
+    var idx = 1;
+    for (var i = 0; i < sortedTeachers.length; i++) {
+        var name = sortedTeachers[i][0];
+        var count = sortedTeachers[i][1];
+        var percentage = totalUsed > 0 ? ((count / totalUsed) * 100).toFixed(2) + '%' : '0%';
+        teacherRows.push([idx, name, count, percentage]);
+        idx++;
     }
-    if (data.booking.length > 1) {
-        var ws3 = XLSX.utils.aoa_to_sheet(data.booking);
-        ws3['!cols'] = [{ wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 14 }, { wch: 20 }, { wch: 10 }];
-        XLSX.utils.book_append_sheet(wb, ws3, 'Booking');
-    }
-    XLSX.writeFile(wb, 'Rekap_' + lab.replace(/\s+/g, '_') + '_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx');
+
+    var ws = XLSX.utils.aoa_to_sheet(teacherRows);
+    ws['!cols'] = [
+        { wch: 6 },
+        { wch: 30 },
+        { wch: 12 },
+        { wch: 20 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Rekap Guru');
+
+    XLSX.writeFile(wb, 'Rekap_Guru_' + lab.replace(/\s+/g, '_') + '_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx');
 }
 
 function exportCSV() {
     var lab = getActiveLabName(), period = getPeriod();
-    var data = getActiveTableData();
+    var panel = document.querySelector('.panel.on');
+    var teacherUsage = JSON.parse(panel.dataset.teacherUsage || '{}');
+    var totalUsed = parseInt(panel.dataset.totalUsed || '0');
+    
+    // Dapatkan nama lembaga
+    var resourceIndex = -1;
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) {
+        if (tabs[i].classList.contains('on')) {
+            resourceIndex = i;
+            break;
+        }
+    }
+    var labDataFromView = @json($labData);
+    var organizationName = 'Semua Lembaga';
+    if (resourceIndex >= 0 && labDataFromView[resourceIndex]) {
+        organizationName = labDataFromView[resourceIndex].resource.organization?.name || 'Semua Lembaga';
+    }
+    
     var toCSV = function(rows) {
         return rows.map(function(r) {
             return r.map(function(c) { return '"' + c.replace(/"/g, '""') + '"'; }).join(',');
         }).join('\n');
     };
-    var csv = 'REKAP PENGGUNAAN LABORATORIUM\nLab: ' + lab + '\nPeriode: ' + period + '\n\n';
-    if (data.jadwal.length  > 1) csv += 'JADWAL TETAP\n'      + toCSV(data.jadwal)   + '\n\n';
-    if (data.booking.length > 1) csv += 'BOOKING DISETUJUI\n' + toCSV(data.booking)  + '\n';
+    
+    // Urutkan teacherUsage dari terbesar ke terkecil
+    var sortedTeachers = Object.entries(teacherUsage).sort(function(a, b) {
+        return b[1] - a[1];
+    });
+    
+    // Buat CSV hanya untuk rekap guru
+    var csv = 'REKAP PENGGUNAAN GURU LAB\n';
+    csv += 'Lembaga: ' + organizationName + '\n';
+    csv += 'Lab: ' + lab + '\n';
+    csv += 'Periode: ' + period + '\n\n';
+    
+    var teacherRows = [
+        ['No', 'Nama Guru', 'Total Sesi', 'Persentase Penggunaan']
+    ];
+    var idx = 1;
+    for (var i = 0; i < sortedTeachers.length; i++) {
+        var name = sortedTeachers[i][0];
+        var count = sortedTeachers[i][1];
+        var percentage = totalUsed > 0 ? ((count / totalUsed) * 100).toFixed(2) + '%' : '0%';
+        teacherRows.push([idx, name, count, percentage]);
+        idx++;
+    }
+    csv += toCSV(teacherRows);
+    
     var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement('a');
     a.href   = url;
-    a.download = 'Rekap_' + lab.replace(/\s+/g, '_') + '_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.csv';
+    a.download = 'Rekap_Guru_' + lab.replace(/\s+/g, '_') + '_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.csv';
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -552,6 +765,19 @@ function exportPDF() {
         return { val: c.querySelector('.stat-val')?.textContent.trim() || '', key: c.querySelector('.stat-key')?.textContent.trim() || '' };
     });
     var data = getActiveTableData();
+    
+    // Ambil data top teachers dari panel dataset
+    var teacherUsage = JSON.parse(panel.dataset.teacherUsage || '{}');
+    var totalUsed = parseInt(panel.dataset.totalUsed || '0');
+    var teachers = [];
+    var idx = 1;
+    for (var name in teacherUsage) {
+        var count = teacherUsage[name];
+        var percentage = totalUsed > 0 ? ((count / totalUsed) * 100).toFixed(2) + '%' : '0%';
+        teachers.push([idx, name, count, percentage]);
+        idx++;
+    }
+    
     var tblHTML = function(rows, title, color) {
         if (rows.length <= 1) return '';
         var headers = rows[0], body = rows.slice(1);
@@ -559,12 +785,21 @@ function exportPDF() {
             + '<table><thead><tr>' + headers.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead>'
             + '<tbody>' + body.map(function(r) { return '<tr>' + r.map(function(c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
     };
+    
+    var teachersHTML = '';
+    if (teachers.length > 0) {
+        teachersHTML = '<h3 style="color:#1A2517;font-size:13px;margin:18px 0 8px">🏆 Top Pengajar Bulan Ini</h3>'
+            + '<table><thead><tr><th>No</th><th>Nama Guru</th><th>Total Sesi</th><th>Persentase Penggunaan</th></tr></thead>'
+            + '<tbody>' + teachers.map(function(t) { return '<tr><td>' + t[0] + '</td><td>' + t[1] + '</td><td>' + t[2] + '</td><td>' + t[3] + '</td></tr>'; }).join('') + '</tbody></table>';
+    }
+    
     var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap ' + lab + '</title>'
         + '<style>body{font-family:Arial,sans-serif;font-size:11px;color:#1A2517;padding:20px}h1{font-size:17px;margin-bottom:3px}h2{font-size:13px;color:#6b7280;font-weight:400;margin-bottom:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 18px}.stat{background:#f8faf7;border:1px solid #e8f0e6;border-radius:8px;padding:10px;text-align:center}.stat-v{font-size:20px;font-weight:800}.stat-k{font-size:10px;color:#9ca3af;margin-top:3px}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#1A2517;color:#ACC8A2;padding:7px 9px;text-align:left;font-size:10px}td{padding:6px 9px;border-bottom:1px solid #e8f0e6;font-size:11px}tr:nth-child(even) td{background:#f8faf7}.footer{margin-top:16px;font-size:10px;color:#9ca3af;text-align:center}</style>'
         + '</head><body>'
         + '<h1>📊 Rekap Penggunaan Laboratorium</h1>'
         + '<h2>' + lab + ' &nbsp;·&nbsp; ' + period + '</h2>'
         + '<div class="stats">' + stats.map(function(s) { return '<div class="stat"><div class="stat-v">' + s.val + '</div><div class="stat-k">' + s.key + '</div></div>'; }).join('') + '</div>'
+        + teachersHTML
         + tblHTML(data.jadwal,  '📅 Jadwal Tetap',      '#3d5438')
         + tblHTML(data.booking, '📝 Booking Disetujui', '#1d4ed8')
         + '<div class="footer">Lab Management – Nuris Jember &nbsp;|&nbsp; Dicetak: ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) + '</div>'
@@ -576,4 +811,5 @@ function exportPDF() {
     setTimeout(function() { win.print(); }, 500);
 }
 </script>
+@vite('resources/js/rekap.js')
 @endsection

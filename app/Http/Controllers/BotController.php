@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\LabControlService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class BotController extends Controller
 {
@@ -164,63 +165,56 @@ class BotController extends Controller
         $tanggal = Carbon::createFromFormat('d/m/Y', $request->tanggal)->toDateString();
         $dayEn   = Carbon::parse($tanggal)->format('l');
 
-        // Cek konflik booking
-        $conflictBooking = Booking::where('resource_id', $request->lab_id)
-            ->where('time_slot_id', $request->slot_id)
-            ->whereDate('booking_date', $tanggal)
-            ->whereIn('status', ['pending', 'approved'])
-            ->exists();
+        return DB::transaction(function () use ($request, $tanggal, $dayEn, $teacher, $lab, $slot) {
+            // Cek konflik booking dengan lock
+            $conflictBooking = Booking::where('resource_id', $request->lab_id)
+                ->where('time_slot_id', $request->slot_id)
+                ->whereDate('booking_date', $tanggal)
+                ->whereIn('status', ['pending', 'approved'])
+                ->lockForUpdate()
+                ->exists();
 
-        // Cek konflik jadwal rutin
-        $conflictSchedule = Schedule::where('resource_id', $request->lab_id)
-            ->where('time_slot_id', $request->slot_id)
-            ->where('day_of_week', $dayEn)
-            ->where('status', 'active')
-            ->exists();
+            // Cek konflik jadwal rutin
+            $conflictSchedule = Schedule::where('resource_id', $request->lab_id)
+                ->where('time_slot_id', $request->slot_id)
+                ->where('day_of_week', $dayEn)
+                ->where('status', 'active')
+                ->exists();
 
-        if ($conflictBooking || $conflictSchedule) {
+            if ($conflictBooking || $conflictSchedule) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Slot sudah terpakai untuk lab dan tanggal tersebut.',
+                ], 409);
+            }
+
+            $booking = Booking::create([
+                'resource_id'       => $request->lab_id,
+                'time_slot_id'      => $request->slot_id,
+                'organization_id'   => $teacher->organization_id ?? 1,
+                'booking_date'      => $tanggal,
+                'teacher_name'      => $teacher->name,
+                'teacher_phone'     => $teacher->phone,
+                'class_name'        => $request->class_name,
+                'subject_name'      => $request->subject,
+                'title'             => $request->subject . ' - ' . $request->class_name,
+                'participant_count' => 0,
+                'status'            => 'pending',
+            ]);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Slot sudah terpakai untuk lab dan tanggal tersebut.',
-            ], 409);
-        }
-
-        $lab  = Resource::find($request->lab_id);
-        $slot = TimeSlot::find($request->slot_id);
-
-        if (!$lab || !$slot) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lab atau slot tidak ditemukan.',
-            ], 404);
-        }
-
-        $booking = Booking::create([
-            'resource_id'       => $request->lab_id,
-            'time_slot_id'      => $request->slot_id,
-            'organization_id'   => $teacher->organization_id ?? 1,
-            'booking_date'      => $tanggal,
-            'teacher_name'      => $teacher->name,
-            'teacher_phone'     => $teacher->phone,
-            'class_name'        => $request->class_name,
-            'subject_name'      => $request->subject,
-            'title'             => $request->subject . ' - ' . $request->class_name,
-            'participant_count' => 0,
-            'status'            => 'pending',
-        ]);
-
-        return response()->json([
-            'success'      => true,
-            'booking_id'   => $booking->id,
-            'lab_name'     => $lab->name,
-            'slot_name'    => $slot->name,
-            'start_time'   => substr($slot->start_time, 0, 5),
-            'end_time'     => substr($slot->end_time, 0, 5),
-            'teacher_name' => $teacher->name,
-            'tanggal'      => $request->tanggal,
-            'class_name'   => $booking->class_name,
-            'subject'      => $booking->subject_name,
-        ]);
+                'success'      => true,
+                'booking_id'   => $booking->id,
+                'lab_name'     => $lab->name,
+                'slot_name'    => $slot->name,
+                'start_time'   => substr($slot->start_time, 0, 5),
+                'end_time'     => substr($slot->end_time, 0, 5),
+                'teacher_name' => $teacher->name,
+                'tanggal'      => $request->tanggal,
+                'class_name'   => $booking->class_name,
+                'subject'      => $booking->subject_name,
+            ]);
+        });
     }
 
     public function bookingApprove(Request $request, int $id)

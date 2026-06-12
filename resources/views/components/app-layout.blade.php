@@ -10,6 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    {{-- Tambahkan ini untuk page-specific CSS --}}
+    @stack('styles')
+
     <style>
         body { font-family:'DM Sans',sans-serif; }
         .font-display { font-family:'Outfit',sans-serif; }
@@ -17,9 +21,68 @@
         .nav-active { background:linear-gradient(135deg,rgba(185,217,235,.18),rgba(185,217,235,.08)) !important; color:#B9D9EB !important; border-left:3px solid #B9D9EB; }
         .nav-item { border-left:3px solid transparent; }
         .nav-item:hover { background:rgba(185,217,235,.08) !important; color:rgba(185,217,235,.8) !important; }
+
+        /* Global Toast */
+        #global-toast-wrap { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+        .g-toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:11px; font-size:13px; font-weight:500; box-shadow:0 8px 32px rgba(0,61,36,.2); pointer-events:all; animation:g-toastIn .3s cubic-bezier(.16,1,.3,1); min-width:260px; max-width:340px; }
+        @keyframes g-toastIn { from{opacity:0;transform:translateY(14px) scale(.95)} to{opacity:1;transform:none} }
+        .g-toast.out { animation:g-toastOut .3s ease forwards; }
+        @keyframes g-toastOut { to{opacity:0;transform:translateY(8px) scale(.96)} }
+        .g-toast.t-ok { background:#003d24; color:#B9D9EB; border:1px solid rgba(185,217,235,.2); }
+        .g-toast.t-err { background:#7f1d1d; color:#fecaca; border:1px solid #991b1b; }
+        .g-toast-ic { font-size:15px; flex-shrink:0; }
+        .g-toast-close { margin-left:auto; background:none; border:none; color:inherit; opacity:.6; cursor:pointer; font-size:16px; line-height:1; padding:0 2px; }
+        .g-toast-close:hover { opacity:1; }
+
+        @media (max-width: 640px) {
+            #global-toast-wrap { bottom: 16px; right: 16px; left: 16px; align-items: center; }
+            .g-toast { min-width: 100%; width: 100%; max-width: none; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 antialiased">
+
+<div id="global-toast-wrap"></div>
+
+<script>
+    window.showGlobalNotification = function(msg, type = 'ok') {
+        const wrap = document.getElementById('global-toast-wrap');
+        if (!wrap) return;
+        const t = document.createElement('div');
+        t.className = `g-toast t-${type}`;
+        t.innerHTML = `<span class="g-toast-ic">${type === 'ok' ? '✓' : '⚠'}</span>
+                       <span>${msg}</span>
+                       <button class="g-toast-close" aria-label="Tutup">×</button>`;
+        t.querySelector('.g-toast-close').addEventListener('click', () => {
+            t.classList.add('out');
+            setTimeout(() => t.remove(), 300);
+        });
+        wrap.appendChild(t);
+        
+        // Play notification sound if you want, but simple toast for now
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('Lab Management', { body: msg });
+        }
+
+        setTimeout(() => {
+            if (t.parentElement) {
+                t.classList.add('out');
+                setTimeout(() => t.remove(), 300);
+            }
+        }, 5000);
+    };
+
+    // Request notification permission
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    // Pass allowed resources to JS for Reverb filtering
+    window.userConfig = {
+        role: "{{ auth()->user()->role }}",
+        allowedResources: @json(auth()->user()->metadata['allowed_resources'] ?? [])
+    };
+</script>
 
 <div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
 
@@ -58,16 +121,18 @@
             $navItems = [
                 ['route'=>'dashboard',              'label'=>'Dashboard',      'icon'=>'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
                 ['route'=>'schedule.admin',         'label'=>'Jadwal Lab',     'icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
-                ['route'=>'booking.index',          'label'=>'Booking Lab',    'icon'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2','badge'=>true],
+                ['route'=>'booking.index',          'label'=>'Booking Lab',    'icon'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2','badge'=>true],
                 ['route'=>'inventory.admin',        'label'=>'Inventaris',     'icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
-                ['route'=>'teacher.index',          'label'=>'Data Guru',      'icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
-                ['route'=>'organization.index',     'label'=>'Sekolah & Kelas','icon'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'],
+                ['route'=>'reports.usage.index',    'label'=>'Laporan Penggunaan','icon'=>'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+                ['route'=>'teacher.index',          'label'=>'Data Guru',      'icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'roles' => ['admin', 'staff']],
+                ['route'=>'organization.index',     'label'=>'Sekolah & Kelas','icon'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 'roles' => ['admin', 'staff']],
                 ['route'=>'assignment.admin',       'label'=>'Tugas',          'icon'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
-                ['route'=>'important-schedule.index','label'=>'Jadwal Penting','icon'=>'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'],
+                ['route'=>'important-schedule.index','label'=>'Jadwal Penting','icon'=>'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z', 'roles' => ['admin', 'staff']],
             ];
             @endphp
 
             @foreach($navItems as $item)
+            @if(!isset($item['roles']) || in_array(auth()->user()->role, $item['roles']))
             @php $active = request()->routeIs($item['route']); @endphp
             <a href="{{ route($item['route']) }}"
                class="nav-item {{ $active ? 'nav-active' : '' }} group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
@@ -77,12 +142,22 @@
                 </svg>
                 {{ $item['label'] }}
                 @if(!empty($item['badge']))
-                    @php $pc = \App\Models\Booking::where('status','pending')->count(); @endphp
+                    @php
+                        $user = auth()->user();
+                        $allowed = null;
+                        if (!in_array($user->role, ['admin', 'operator'])) {
+                            $allowed = $user->metadata['allowed_resources'] ?? [];
+                        }
+                        $pc = \App\Models\Booking::where('status','pending')
+                            ->when($allowed, fn($q) => $q->whereIn('resource_id', $allowed))
+                            ->count();
+                    @endphp
                     @if($pc > 0)
                     <span class="ml-auto text-white text-xs font-bold px-1.5 py-0.5 rounded-full" style="background:#ef4444;font-size:10px">{{ $pc }}</span>
                     @endif
                 @endif
             </a>
+            @endif
             @endforeach
 
         </nav>
@@ -133,9 +208,19 @@
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
-                    @if(\App\Models\Booking::where('status','pending')->count() > 0)
-                    <span style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#ef4444;border-radius:50%;display:block"></span>
-                    @endif
+                    @php
+                        $user = auth()->user();
+                        $allowed = null;
+                        if (!in_array($user->role, ['admin', 'operator'])) {
+                            $allowed = $user->metadata['allowed_resources'] ?? [];
+                        }
+                        $pendingCount = \App\Models\Booking::where('status','pending')
+                            ->when($allowed, fn($q) => $q->whereIn('resource_id', $allowed))
+                            ->count();
+                    @endphp
+                    <span class="notification-badge" style="position:absolute;top:-2px;right:-2px;width:15px;height:15px;background:#ef4444;border-radius:50%;display:{{ $pendingCount > 0 ? 'flex' : 'none' }};align-items:center;justify-content:center;color:white;font-size:9px;font-weight:bold;border:2px solid white">
+                        {{ $pendingCount }}
+                    </span>
                 </button>
                 <div class="w-8 h-8 rounded-full flex items-center justify-center"
                      style="background:linear-gradient(135deg,#003d24,#00693E)">
@@ -178,5 +263,6 @@
 </div>
 
 @livewireScripts
+@stack('scripts')     {{-- ← tambah ini --}}
 </body>
 </html>

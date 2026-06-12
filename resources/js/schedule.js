@@ -98,7 +98,7 @@ function switchTab(id) {
         panel.style.animation = 'none';
         void panel.offsetWidth;
         panel.style.animation = '';
-    }, 380);
+    }, 180);
 }
 
 /* ─── BOOKING MODAL ──────────────────────────────────────────────────────── */
@@ -520,99 +520,78 @@ document.querySelectorAll('form').forEach(function(form) {
     });
 });
 
-/* ─── REALTIME POLLING ───────────────────────────────────────────────────── */
-/* FIX #2: Poll endpoint khusus /jadwal-poll (JSON ringan) — bukan full render */
+/* ─── REALTIME REVERB ────────────────────────────────────────────────────── */
 
-var POLL_INTERVAL  = 30000;
-var pollTimer      = null;
-var lastPollHash   = '';
-var isPollPaused   = false;
-
-function pausePoll()  { isPollPaused = true; }
-function resumePoll() { isPollPaused = false; }
-
-/**
- * Satu siklus polling:
- * 1. Fetch /jadwal-poll?week=... — hanya return JSON booking terbaru
- * 2. Bandingkan hash
- * 3. Kalau berubah, fetch full HTML untuk update panels-wrap
- */
-function doPoll() {
-    if (isPollPaused || fetchController) return;
-
-    var url = new URL(window.location.href);
-    var pollUrl = new URL('/jadwal-poll', window.location.href);
-    if (url.searchParams.get('week')) {
-        pollUrl.searchParams.set('week', url.searchParams.get('week'));
+function initRealtime() {
+    if (typeof window.Echo === 'undefined') {
+        console.warn('Echo not found. Realtime updates disabled.');
+        return;
     }
 
-    fetch(pollUrl.toString(), {
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+    window.Echo.channel('schedules')
+        .listen('.schedule.updated', (e) => {
+            console.log('Schedule update received:', e);
+            
+            // Langsung update tabel tanpa reload halaman
+            refreshScheduleUI();
+        });
+}
+
+function refreshScheduleUI() {
+    if (fetchController) return;
+    
+    const url = new URL(window.location.href);
+    fetchController = new AbortController();
+
+    fetch(url.toString(), {
+        signal: fetchController.signal,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (!data.hash || data.hash === lastPollHash) return;
+    .then(r => r.text())
+    .then(html => {
+        fetchController = null;
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        const newWrap = newDoc.getElementById('panels-wrap');
+        const oldWrap = document.getElementById('panels-wrap');
+        
+        if (!newWrap || !oldWrap) return;
 
-        // Ada perubahan — baru fetch HTML untuk update DOM
-        lastPollHash = data.hash;
+        const activeTab = document.querySelector('.tab-btn.tab-active');
+        const activeId = activeTab ? activeTab.id.replace('tab-', '') : null;
 
-        fetch(url.toString(), {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(function(r) { return r.text(); })
-        .then(function(html) {
-            var parser  = new DOMParser();
-            var newDoc  = parser.parseFromString(html, 'text/html');
-            var newWrap = newDoc.getElementById('panels-wrap');
-            var oldWrap = document.getElementById('panels-wrap');
-            if (!newWrap || !oldWrap) return;
+        oldWrap.innerHTML = newWrap.innerHTML;
 
-            var activeTab = document.querySelector('.tab-btn.tab-active');
-            var activeId  = activeTab ? activeTab.id.replace('tab-', '') : null;
+        // Update ALL_SLOTS
+        newDoc.querySelectorAll('script').forEach(s => {
+            const m = s.textContent.match(/window\.ALL_SLOTS\s*=\s*(\[[\s\S]*?\]);/);
+            if (m) { try { window.ALL_SLOTS = JSON.parse(m[1]); } catch(e) {} }
+        });
 
-            oldWrap.innerHTML = newWrap.innerHTML;
+        // Restore active tab
+        document.querySelectorAll('.lab-panel').forEach(p => p.style.display = 'none');
+        const target = activeId 
+            ? document.getElementById('panel-' + activeId) 
+            : document.querySelector('.lab-panel');
+        
+        if (target) {
+            target.style.display = '';
+            target.style.animation = 'none';
+            void target.offsetWidth;
+            target.style.animation = 'panelIn .3s cubic-bezier(.16,1,.3,1)';
+        }
 
-            newDoc.querySelectorAll('script').forEach(function(s) {
-                var m = s.textContent.match(/window\.ALL_SLOTS\s*=\s*(\[[\s\S]*?\]);/);
-                if (m) { try { window.ALL_SLOTS = JSON.parse(m[1]); } catch(e) {} }
-            });
-
-            document.querySelectorAll('.lab-panel').forEach(function(p) { p.style.display = 'none'; });
-            var target = activeId
-                ? document.getElementById('panel-' + activeId)
-                : document.querySelector('.lab-panel');
-            if (target) {
-                target.style.display = '';
-                target.style.animation = 'none';
-                void target.offsetWidth;
-                target.style.animation = 'panelIn .3s cubic-bezier(.16,1,.3,1)';
-            }
-
-            showToast('🔄 Jadwal diperbarui');
-        })
-        .catch(function() {});
+        showToast('🔄 Jadwal diperbarui secara otomatis');
     })
-    .catch(function() {});
+    .catch(err => {
+        if (err.name === 'AbortError') return;
+        fetchController = null;
+    });
 }
 
-function startPolling() {
-    pollTimer = setInterval(doPoll, POLL_INTERVAL);
-}
-
-function stopPolling() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-}
-
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        stopPolling();
-    } else {
-        doPoll();
-        startPolling();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    initRealtime();
 });
-
-startPolling();
 
 /* ─── EXPOSE KE WINDOW (diperlukan karena Vite load JS sebagai module) ────── */
 /* Fungsi-fungsi ini dipanggil dari onclick di HTML, harus ada di global scope  */
@@ -630,39 +609,21 @@ window.loadKelasSunday     = loadKelasSunday;
 window.openSundayBooking   = openSundayBooking;
 window.closeSundayModal    = closeSundayModal;
 
-/* ─── WRAP FUNGSI MODAL UNTUK PAUSE/RESUME POLLING ──────────────────────── */
+/* ─── WRAP FUNGSI MODAL ─────────────────────────────────────────────────── */
 /* Harus setelah EXPOSE agar window.xxx sudah terisi fungsi yang benar        */
 
 (function() {
     var _origOpenBooking  = window.openBooking;
-    var _origCloseModal   = window.closeModal;
     var _origOpenSunday   = window.openSundayBooking;
-    var _origCloseSunday  = window.closeSundayModal;
     var _origShowDetail   = window.showDetail;
-    var _origCloseDetail  = window.closeDetail;
 
     window.openBooking = function() {
-        pausePoll();
         _origOpenBooking.apply(this, arguments);
     };
-    window.closeModal = function() {
-        _origCloseModal.apply(this, arguments);
-        setTimeout(resumePoll, 500);
-    };
     window.openSundayBooking = function() {
-        pausePoll();
         _origOpenSunday.apply(this, arguments);
     };
-    window.closeSundayModal = function() {
-        _origCloseSunday.apply(this, arguments);
-        setTimeout(resumePoll, 500);
-    };
     window.showDetail = function() {
-        pausePoll();
         _origShowDetail.apply(this, arguments);
-    };
-    window.closeDetail = function() {
-        _origCloseDetail.apply(this, arguments);
-        setTimeout(resumePoll, 500);
     };
 })();

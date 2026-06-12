@@ -2,6 +2,8 @@
 
 namespace App\Services\Schedule;
 
+use App\Events\BookingCreated;
+use App\Events\ScheduleUpdated;
 use App\Models\Booking;
 use App\Models\LabClass;
 use App\Models\Resource;
@@ -27,7 +29,7 @@ class BookingSubmissionService
         $allSlotIds   = $this->resolveSlotIds($request);
         $sessionId    = (string) Str::uuid();
 
-        return DB::transaction(function () use ($request, $dayEn, $teacherName, $teacherPhone, $allSlotIds, $sessionId) {
+        $result = DB::transaction(function () use ($request, $dayEn, $teacherName, $teacherPhone, $allSlotIds, $sessionId) {
 
             $takenBookingSlots = Booking::where('resource_id', $request->resource_id)
                 ->where('booking_date', $request->booking_date)
@@ -82,26 +84,45 @@ class BookingSubmissionService
 
             Cache::forget('active_teachers');
 
-            if (count($bookedSlots) > 0) {
-                $this->sendBookingNotification(
-                    $request->resource_id,
-                    $request->booking_date,
-                    $teacherName,
-                    $teacherPhone,
-                    $labClass,
-                    $bookedSlots,
-                    $sessionId,
-                    $request->subject_name,
-                    $request->title,
-                    $request->participant_count
-                );
-            }
-
             return [
                 'bookedCount'  => count($bookedSlots),
                 'skippedCount' => $skippedCount,
+                'bookedSlots'  => $bookedSlots,
             ];
         });
+
+        // Broadcast perubahan via Reverb DI LUAR transaction
+        if (count($result['bookedSlots']) > 0) {
+            $first = $result['bookedSlots'][0];
+            $labClass = LabClass::where('name', $first->class_name)->first();
+
+            broadcast(new ScheduleUpdated('regular', 'created', [
+                'resource_id'  => $first->resource_id,
+                'booking_date' => $first->booking_date->toDateString(),
+                'status'       => 'pending'
+            ]));
+
+            // Notifikasi Admin Real-time
+            broadcast(new BookingCreated($first));
+
+            $this->sendBookingNotification(
+                $request->resource_id,
+                $request->booking_date,
+                $teacherName,
+                $teacherPhone,
+                $labClass ?? new LabClass(['name' => $first->class_name]),
+                $result['bookedSlots'],
+                $sessionId,
+                $request->subject_name,
+                $request->title,
+                $request->participant_count
+            );
+        }
+
+        return [
+            'bookedCount'  => $result['bookedCount'],
+            'skippedCount' => $result['skippedCount'],
+        ];
     }
 
     public function submitSundayBooking(Request $request): void
@@ -109,7 +130,7 @@ class BookingSubmissionService
         $teacherName  = trim(ucwords(strtolower($request->teacher_name)));
         $teacherPhone = $this->normalizePhone($request->teacher_phone);
 
-        DB::transaction(function () use ($request, $teacherName, $teacherPhone) {
+        $booking = DB::transaction(function () use ($request, $teacherName, $teacherPhone) {
 
             $exists = SundayBooking::where('resource_id', $request->resource_id)
                 ->where('booking_date', $request->booking_date)
@@ -126,7 +147,7 @@ class BookingSubmissionService
 
             Cache::forget('active_teachers');
 
-            $booking = SundayBooking::create([
+            return SundayBooking::create([
                 'teacher_id'        => $teacher->id,
                 'resource_id'       => $request->resource_id,
                 'organization_id'   => $request->organization_id,
@@ -140,19 +161,30 @@ class BookingSubmissionService
                 'participant_count' => $request->participant_count,
                 'status'            => 'pending',
             ]);
-
-            $this->sendSundayBookingNotification(
-                $request->resource_id,
-                $request->booking_date,
-                $teacherName,
-                $teacherPhone,
-                $booking,
-                $labClass,
-                $request->subject_name,
-                $request->title,
-                $request->participant_count
-            );
         });
+
+        // Broadcast DI LUAR transaction
+        broadcast(new ScheduleUpdated('sunday', 'created', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => Carbon::parse($booking->booking_date)->toDateString(),
+            'status'       => $booking->status
+        ]));
+
+        // Notifikasi Admin Real-time
+        broadcast(new BookingCreated($booking));
+
+        $labClass = LabClass::where('name', $booking->class_name)->first(); // Re-fetch for notification
+        $this->sendSundayBookingNotification(
+            $request->resource_id,
+            $request->booking_date,
+            $teacherName,
+            $teacherPhone,
+            $booking,
+            $labClass ?? new LabClass(['name' => $booking->class_name]),
+            $request->subject_name,
+            $request->title,
+            $request->participant_count
+        );
     }
 
     private function normalizePhone(string $phone): string

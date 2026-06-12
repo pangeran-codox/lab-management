@@ -39,8 +39,8 @@ return [
         // ← Tambahan koneksi finance
         'finance' => [
             'driver'    => 'mysql',
-            'host'      => env('DB_HOST', '127.0.0.1'),
-            'port'      => env('DB_PORT', '3306'),
+            'host'      => env('DB_FINANCE_HOST', env('DB_HOST', '127.0.0.1')),
+            'port'      => env('DB_FINANCE_PORT', env('DB_PORT', '3306')),
             'database'  => env('DB_FINANCE_DATABASE', 'finance'),
             'username'  => env('DB_FINANCE_USERNAME', env('DB_USERNAME', 'forge')),
             'password'  => env('DB_FINANCE_PASSWORD', env('DB_PASSWORD', '')),

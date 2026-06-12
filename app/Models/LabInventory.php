@@ -19,4 +19,9 @@ class LabInventory extends Model
     {
         return $this->belongsTo(Resource::class);
     }
+
+    public function maintenanceLogs()
+    {
+        return $this->hasMany(InventoryMaintenanceLog::class, 'lab_inventory_id');
+    }
 }

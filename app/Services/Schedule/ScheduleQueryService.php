@@ -28,10 +28,12 @@ class ScheduleQueryService
     // MASTER DATA — cached, jarang berubah
     // ══════════════════════════════════════════════════════════════
 
-    public function getActiveResources(): Collection
+    public function getActiveResources(?array $allowedResources = null): Collection
     {
-        return Cache::remember('active_resources', self::TTL_RESOURCES, fn () =>
+        $cacheKey = $allowedResources ? 'active_resources_' . md5(serialize($allowedResources)) : 'active_resources';
+        return Cache::remember($cacheKey, self::TTL_RESOURCES, fn () =>
             Resource::where('status', 'active')
+                ->when($allowedResources, fn($q) => $q->whereIn('id', $allowedResources))
                 ->orderBy('name')
                 ->get(['id', 'name', 'building', 'capacity', 'status'])
         );
@@ -101,6 +103,7 @@ class ScheduleQueryService
 
     /**
      * Booking aktif dalam rentang tanggal, di-group by "resourceId_date_slotId".
+     * Dioptimalkan: Menggunakan select spesifik dan raw grouping key.
      */
     public function getBookingsForWeek(
         Carbon $weekStart,
@@ -109,11 +112,9 @@ class ScheduleQueryService
     ): Collection {
         return Booking::whereBetween('booking_date', [$weekStart, $weekEnd])
             ->whereIn('resource_id', $resourceIds)
-            ->whereIn('status', ['pending', 'approved'])
-            ->get()
-            ->groupBy(fn ($b) =>
-                $b->resource_id . '_' . Carbon::parse($b->booking_date)->toDateString() . '_' . $b->time_slot_id
-            );
+            ->active()
+            ->get(['id', 'resource_id', 'booking_date', 'time_slot_id', 'status', 'teacher_name', 'title', 'class_name'])
+            ->groupBy(fn ($b) => $b->resource_id . '_' . $b->booking_date->toDateString() . '_' . $b->time_slot_id);
     }
 
     /**
@@ -126,11 +127,9 @@ class ScheduleQueryService
     ): Collection {
         return SundayBooking::whereBetween('booking_date', [$weekStart, $weekEnd])
             ->whereIn('resource_id', $resourceIds)
-            ->whereIn('status', ['pending', 'approved'])
-            ->get()
-            ->groupBy(fn ($b) =>
-                $b->resource_id . '_' . Carbon::parse($b->booking_date)->toDateString()
-            );
+            ->active()
+            ->get(['id', 'resource_id', 'booking_date', 'status', 'teacher_name', 'title', 'class_name'])
+            ->groupBy(fn ($b) => $b->resource_id . '_' . $b->booking_date->toDateString());
     }
 
     /**

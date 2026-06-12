@@ -63,6 +63,7 @@ class ScheduleAvailabilityService
 
     /**
      * Menghitung pemetaan slot yang sudah terisi per resource + tanggal.
+     * Dioptimalkan untuk load tinggi (O(N) lookup).
      */
     public function getTakenSlotsMap(
         Collection $resources,
@@ -73,46 +74,64 @@ class ScheduleAvailabilityService
         Collection $timeSlots
     ): array {
         $takenSlotsMap = [];
+        $availCounts   = [];
+
+        $nonBreakSlots = $timeSlots->where('is_break', false);
+        $allNonBreakIds = $nonBreakSlots->pluck('id')->map(fn($id) => (int)$id)->toArray();
 
         foreach ($resources as $resource) {
             foreach ($weekDates as $day => $date) {
                 $dayEn = $this->dayMapReverse[$day];
                 $key   = $resource->id . '_' . $date;
+                $resId = $resource->id;
 
-                // 1. Slot dari booking aktif
-                $bookedIds = $bookings->filter(function ($group, $groupKey) use ($resource, $date) {
-                    return str_starts_with($groupKey, $resource->id . '_' . $date . '_');
-                })->keys()->map(fn($k) => (int) explode('_', $k)[2])->toArray();
+                $takenIds = [];
 
-                // 2. Slot dari jadwal rutin (tetap)
-                $scheduledIds = $timeSlots->filter(function ($ts) use ($schedules, $resource, $dayEn) {
-                    return !($ts->is_break ?? false)
-                        && $schedules->has($resource->id . '_' . $dayEn . '_' . $ts->id);
-                })->pluck('id')->map(fn($id) => (int) $id)->toArray();
+                // 1. Slot dari booking aktif (O(Slots) lookup)
+                foreach ($nonBreakSlots as $ts) {
+                    $lookupKey = "{$resId}_{$date}_{$ts->id}";
+                    if ($bookings->has($lookupKey)) {
+                        $takenIds[] = (int) $ts->id;
+                    }
+                }
 
-                // 3. Slot dari jadwal penting (acara khusus)
-                $importantIds = [];
+                // 2. Slot dari jadwal rutin (tetap) (O(Slots) lookup)
+                foreach ($nonBreakSlots as $ts) {
+                    $lookupKey = "{$resId}_{$dayEn}_{$ts->id}";
+                    if ($schedules->has($lookupKey)) {
+                        $takenIds[] = (int) $ts->id;
+                    }
+                }
+
+                // 3. Slot dari jadwal penting (acara khusus) (O(Events) lookup)
                 if (isset($importantSchedules[$key])) {
-                    $allNonBreakIds = $timeSlots->where('is_break', false)->pluck('id')->map(fn($id) => (int)$id)->toArray();
                     foreach ($importantSchedules[$key] as $event) {
                         if ($event->is_full_day) {
-                            $importantIds = array_merge($importantIds, $allNonBreakIds);
+                            $takenIds = array_merge($takenIds, $allNonBreakIds);
                         } else {
                             $startOrder = $event->startSlot?->slot_order ?? 0;
                             $endOrder   = $event->endSlot?->slot_order   ?? 0;
-                            foreach ($timeSlots->where('is_break', false) as $ts) {
+                            foreach ($nonBreakSlots as $ts) {
                                 if ($ts->slot_order >= $startOrder && $ts->slot_order <= $endOrder) {
-                                    $importantIds[] = (int) $ts->id;
+                                    $takenIds[] = (int) $ts->id;
                                 }
                             }
                         }
                     }
                 }
 
-                $takenSlotsMap[$key] = array_values(array_unique(array_merge($bookedIds, $scheduledIds, $importantIds)));
+                $uniqueTaken = array_values(array_unique($takenIds));
+                $takenSlotsMap[$key] = $uniqueTaken;
+                
+                // Hitung ketersediaan (untuk footer kartu hari)
+                // Note: ini menyederhanakan perhitungan di blade
+                $availCounts[$key] = count($allNonBreakIds) - count($uniqueTaken);
             }
         }
 
-        return $takenSlotsMap;
+        return [
+            'map'    => $takenSlotsMap,
+            'avails' => $availCounts
+        ];
     }
 }

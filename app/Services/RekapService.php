@@ -25,16 +25,18 @@ class RekapService
 
     public function getMonthlyRekap(int $month, int $year): array
     {
-        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
-        $endDate   = $startDate->copy()->endOfMonth();
-        $totalDays = $startDate->daysInMonth;
+        // Gunakan cache untuk rekap per bulan
+        return Cache::remember("rekap_monthly_{$month}_{$year}", 3600, function () use ($month, $year) {
+            $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+            $endDate   = $startDate->copy()->endOfMonth();
+            $totalDays = $startDate->daysInMonth;
 
-        $resources = $this->getActiveResources();
-        $timeSlots = $this->getNonBreakTimeSlots();
-        $resourceIds = $resources->pluck('id')->toArray();
+            $resources = $this->getActiveResources();
+            $timeSlots = $this->getNonBreakTimeSlots();
+            $resourceIds = $resources->pluck('id')->toArray();
 
-        $allSchedules = $this->getSchedulesByResources($resourceIds);
-        $allBookings  = $this->getBookingsByRange($startDate, $endDate, $resourceIds);
+            $allSchedules = $this->getSchedulesByResources($resourceIds);
+            $allBookings  = $this->getBookingsByRange($startDate, $endDate, $resourceIds);
 
         $dayOccurrences = $this->calculateDayOccurrences($year, $month, $totalDays);
         $totalSlotPerDay = $timeSlots->count();
@@ -51,6 +53,34 @@ class RekapService
             $totalCapacity = $totalDays * $totalSlotPerDay;
             $totalUsed     = $scheduledSlots + $bookingSlots;
             
+            // Hitung total penggunaan guru dari schedule + booking
+            $teacherUsage = [];
+            
+            // Tambah dari jadwal tetap
+            foreach ($mappedSchedules as $sch) {
+                if (!empty($sch->teacher_name)) {
+                    $name = trim($sch->teacher_name);
+                    if (!isset($teacherUsage[$name])) {
+                        $teacherUsage[$name] = 0;
+                    }
+                    $teacherUsage[$name] += $sch->occurrences;
+                }
+            }
+            
+            // Tambah dari booking
+            foreach ($bookings as $book) {
+                if (!empty($book->teacher_name)) {
+                    $name = trim($book->teacher_name);
+                    if (!isset($teacherUsage[$name])) {
+                        $teacherUsage[$name] = 0;
+                    }
+                    $teacherUsage[$name] += 1;
+                }
+            }
+            
+            // Urutkan dari yang terbanyak
+            arsort($teacherUsage);
+            
             $labData[] = [
                 'resource'        => $resource,
                 'totalCapacity'   => $totalCapacity,
@@ -62,22 +92,58 @@ class RekapService
                 'dailyData'       => $this->generateDailyData($year, $month, $totalDays, $schedules, $bookings, $totalSlotPerDay),
                 'scheduleDetails' => $mappedSchedules,
                 'bookingDetails'  => $bookings,
+                'teacherUsage'    => $teacherUsage,
             ];
         }
 
-        return [
-            'labData'   => $labData,
-            'summary'   => $this->calculateSummary($labData),
-            'startDate' => $startDate,
-            'endDate'   => $endDate,
-            'totalSlotPerDay' => $totalSlotPerDay
-        ];
+        // Hitung penggunaan lembaga secara keseluruhan
+        $lembagaUsage = [];
+        foreach ($labData as $lab) {
+            $lembagaName = $lab['resource']->organization->name ?? 'Tidak Ada Lembaga';
+            if (!isset($lembagaUsage[$lembagaName])) {
+                $lembagaUsage[$lembagaName] = [
+                    'totalCapacity' => 0,
+                    'totalUsed' => 0,
+                    'teacherUsage' => []
+                ];
+            }
+            $lembagaUsage[$lembagaName]['totalCapacity'] += $lab['totalCapacity'];
+            $lembagaUsage[$lembagaName]['totalUsed'] += $lab['totalUsed'];
+            
+            // Gabungkan teacherUsage per lembaga
+            foreach ($lab['teacherUsage'] as $name => $count) {
+                if (!isset($lembagaUsage[$lembagaName]['teacherUsage'][$name])) {
+                    $lembagaUsage[$lembagaName]['teacherUsage'][$name] = 0;
+                }
+                $lembagaUsage[$lembagaName]['teacherUsage'][$name] += $count;
+            }
+        }
+        
+        // Urutkan lembagaUsage berdasarkan totalUsed terbanyak
+        uasort($lembagaUsage, function($a, $b) {
+            return $b['totalUsed'] <=> $a['totalUsed'];
+        });
+        
+        // Urutkan teacherUsage di setiap lembaga
+        foreach ($lembagaUsage as &$lembaga) {
+            arsort($lembaga['teacherUsage']);
+        }
+        
+            return [
+                'labData'   => $labData,
+                'summary'   => $this->calculateSummary($labData),
+                'startDate' => $startDate,
+                'endDate'   => $endDate,
+                'totalSlotPerDay' => $totalSlotPerDay,
+                'lembagaUsage' => $lembagaUsage
+            ];
+        });
     }
 
     private function getActiveResources(): Collection
     {
         return Cache::remember('active_resources', 300, fn() =>
-            Resource::where('status', 'active')->orderBy('name')->get(['id', 'name', 'building', 'capacity', 'status'])
+            Resource::with('organization')->where('status', 'active')->orderBy('name')->get(['id', 'name', 'building', 'capacity', 'status', 'organization_id'])
         );
     }
 
@@ -90,14 +156,12 @@ class RekapService
 
     private function getSchedulesByResources(array $resourceIds): Collection
     {
-        return Cache::remember('active_schedules', 300, fn() =>
-            Schedule::whereIn('resource_id', $resourceIds)
-                ->where('status', 'active')
-                ->whereNull('deleted_at')
-                ->with(['timeSlot', 'labClass'])
-                ->get()
-                ->groupBy('resource_id')
-        );
+        return Schedule::whereIn('resource_id', $resourceIds)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->with(['timeSlot', 'labClass'])
+            ->get()
+            ->groupBy('resource_id');
     }
 
     private function getBookingsByRange(Carbon $start, Carbon $end, array $resourceIds): Collection

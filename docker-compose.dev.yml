@@ -137,6 +137,34 @@ services:
     networks:
       - lab_network
 
+  # ─────────────────────────────
+  # Laravel Reverb - WebSocket
+  # ─────────────────────────────
+  reverb:
+    build:
+      context: .
+      target: development
+    container_name: lab_reverb
+    restart: unless-stopped
+    command: >
+      php artisan reverb:start
+      --host=0.0.0.0
+      --port=8082
+      --no-interaction
+    volumes:
+      - .:/var/www/html:ro
+      - /var/www/html/vendor:ro
+    ports:
+      - "8082:8082"
+    depends_on:
+      - app
+      - redis
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+    networks:
+      - lab_network
+
 volumes:
   postgres_data:
 

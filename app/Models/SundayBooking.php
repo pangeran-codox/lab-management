@@ -50,4 +50,12 @@ class SundayBooking extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    // ─── SCOPES ───────────────────────────────────────────────────────
+
+    /** Booking aktif (pending atau approved) */
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', ['pending', 'approved']);
+    }
 }

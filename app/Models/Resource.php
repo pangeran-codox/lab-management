@@ -34,4 +34,9 @@ class Resource extends Model
     {
         return $this->hasMany(LabInventory::class);
     }
+    
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
 }

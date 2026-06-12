@@ -31,19 +31,38 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Bar Chart: 6 bulan terakhir ───────────────────
+        // ── Bar Chart: 6 bulan terakhir (Optimized into 2 queries) ───────────────────
+        $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+        
+        $incomeData = Transaction::income()
+            ->where('transaction_date', '>=', $sixMonthsAgo)
+            ->whereNull('deleted_at')
+            ->selectRaw("TO_CHAR(transaction_date, 'Mon YY') as month_year, SUM(amount) as total, TO_CHAR(transaction_date, 'YYYY-MM') as sort_key")
+            ->groupBy('month_year', 'sort_key')
+            ->orderBy('sort_key')
+            ->get()
+            ->pluck('total', 'month_year');
+
+        $expenseData = Transaction::expense()
+            ->where('transaction_date', '>=', $sixMonthsAgo)
+            ->whereNull('deleted_at')
+            ->selectRaw("TO_CHAR(transaction_date, 'Mon YY') as month_year, SUM(amount) as total, TO_CHAR(transaction_date, 'YYYY-MM') as sort_key")
+            ->groupBy('month_year', 'sort_key')
+            ->orderBy('sort_key')
+            ->get()
+            ->pluck('total', 'month_year');
+
         $chartMonths  = [];
         $chartIncome  = [];
         $chartExpense = [];
 
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $m    = $date->month;
-            $y    = $date->year;
-
-            $chartMonths[]  = $date->isoFormat('MMM YY');
-            $chartIncome[]  = (float) Transaction::income()->byPeriod($m, $y)->whereNull('deleted_at')->sum('amount');
-            $chartExpense[] = (float) Transaction::expense()->byPeriod($m, $y)->whereNull('deleted_at')->sum('amount');
+            $label = $date->isoFormat('MMM YY');
+            
+            $chartMonths[]  = $label;
+            $chartIncome[]  = (float) ($incomeData[$label] ?? 0);
+            $chartExpense[] = (float) ($expenseData[$label] ?? 0);
         }
 
         // ── Pie Chart: pengeluaran per kategori bulan ini ─

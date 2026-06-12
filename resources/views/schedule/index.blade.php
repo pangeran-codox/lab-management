@@ -9,7 +9,7 @@
     window.ALL_SLOTS = @json($timeSlots->where('is_break', false)->values());
     window.TEACHERS  = @json($teachers);
 </script>
-@vite(['resources/css/schedule.css', 'resources/css/schedule-cards.css', 'resources/js/schedule.js'])
+@vite(['resources/js/app.js', 'resources/css/schedule.css', 'resources/css/schedule-cards.css', 'resources/js/schedule.js'])
 @endsection
 
 @section('content')

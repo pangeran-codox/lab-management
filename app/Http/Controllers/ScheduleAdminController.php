@@ -9,88 +9,68 @@ use App\Models\TimeSlot;
 use App\Models\Organization;
 use App\Models\LabClass;
 use App\Models\Teacher;
+use App\Services\Booking\BookingAccessService;
 
 class ScheduleAdminController extends Controller
 {
+    public function __construct(
+        private BookingAccessService $accessService
+    ) {}
+
     private $days = [
         'Monday'=>'Senin','Tuesday'=>'Selasa','Wednesday'=>'Rabu',
         'Thursday'=>'Kamis','Friday'=>'Jumat','Saturday'=>'Sabtu','Sunday'=>'Minggu',
     ];
 
-    private function getAllowedResources(): ?array
-    {
-        $user = auth()->user();
-        if (in_array($user->role, ['admin', 'operator'])) return null;
-        $meta = is_array($user->metadata)
-            ? $user->metadata
-            : json_decode($user->metadata, true);
-        return $meta['allowed_resources'] ?? [];
-    }
-
-    private function checkResourceAccess(int $resourceId): bool
-    {
-        $allowed = $this->getAllowedResources();
-        if ($allowed === null) return true;
-        return in_array($resourceId, $allowed);
-    }
-
     public function index(Request $request)
     {
-        $allowed = $this->getAllowedResources();
+        $allowed = $this->accessService->getAllowedResources();
 
-        $query = Schedule::with(['resource','timeSlot','labClass'])
-            ->whereNull('deleted_at');
+        // ─── OPTIMASI: Ambil SEMUA jadwal sekaligus (Active & Inactive) ───────
+        $allSchedules = Schedule::with(['resource', 'timeSlot', 'labClass'])
+            ->when($allowed, fn($q) => $q->whereIn('resource_id', $allowed))
+            ->get();
 
-        if ($allowed !== null) {
-            $query->whereIn('resource_id', $allowed);
-        }
-
-        $dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-        $schedules = $query->get()->sortBy([
-            fn($a,$b) => array_search($a->day_of_week, $dayOrder) <=> array_search($b->day_of_week, $dayOrder),
-            fn($a,$b) => ($a->timeSlot->slot_order ?? 0) <=> ($b->timeSlot->slot_order ?? 0),
-        ])->values();
-
-        // ─── SCHEDULE GRID untuk tampilan grid ───────────────
-        // Key: "{resource_id}_{day_of_week}_{time_slot_id}"
-        // Selalu load SEMUA jadwal aktif (tanpa filter) agar grid lengkap
-        $allSchedules = Schedule::with(['resource','timeSlot','labClass'])
-            ->whereNull('deleted_at')
-            ->where('status', 'active');
-        if ($allowed !== null) $allSchedules->whereIn('resource_id', $allowed);
-        $scheduleGrid = $allSchedules->get()->groupBy(function($s) {
-            return $s->resource_id . '_' . $s->day_of_week . '_' . $s->time_slot_id;
-        });
-        // ─────────────────────────────────────────────────────
-
-        $resQuery = Resource::where('status','active')->orderBy('name');
-        if ($allowed !== null) $resQuery->whereIn('id', $allowed);
-        $resources = $resQuery->get();
-
-        // TimeSlots dengan is_break juga (untuk baris istirahat di grid)
-        $timeSlots     = TimeSlot::where('is_active',1)->orderBy('slot_order')->get();
-        $timeSlotsForm = $timeSlots->where('is_break', false); // untuk dropdown form
-
-        $organizations = Organization::where('is_active',1)->orderBy('name')->get();
-        $teachers      = Teacher::where('is_active',1)->orderBy('name')->get(['id','name','phone']);
-
-        $baseStats = Schedule::whereNull('deleted_at');
-        if ($allowed !== null) $baseStats->whereIn('resource_id', $allowed);
+        // Hitung Stats dari koleksi di memori (0 Query tambahan)
         $stats = [
-            'total'    => (clone $baseStats)->count(),
-            'active'   => (clone $baseStats)->where('status','active')->count(),
-            'inactive' => (clone $baseStats)->where('status','inactive')->count(),
+            'total'    => $allSchedules->count(),
+            'active'   => $allSchedules->where('status', 'active')->count(),
+            'inactive' => $allSchedules->where('status', 'inactive')->count(),
         ];
 
+        // Buat Grid dari koleksi di memori (0 Query tambahan)
+        $scheduleGrid = $allSchedules->where('status', 'active')
+            ->groupBy(fn($s) => $s->resource_id . '_' . $s->day_of_week . '_' . $s->time_slot_id);
+
+        // ─── DATA PENDUKUNG ──────────────────────────────────
+        $resources = Resource::where('status', 'active')
+            ->when($allowed, fn($q) => $q->whereIn('id', $allowed))
+            ->orderBy('name')
+            ->get();
+
+        $timeSlots = TimeSlot::where('is_active', 1)
+            ->orderBy('slot_order')
+            ->get();
+        
+        $timeSlotsForm = $timeSlots->where('is_break', false);
+
+        $organizations = Organization::where('is_active', 1)
+            ->orderBy('name')
+            ->get();
+
+        $teachers = Teacher::where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'phone']);
+
         return view('schedule.admin', compact(
-            'scheduleGrid','resources','timeSlots','timeSlotsForm',
-            'organizations','teachers','stats'
+            'scheduleGrid', 'resources', 'timeSlots', 'timeSlotsForm',
+            'organizations', 'teachers', 'stats'
         ))->with('days', $this->days);
     }
 
     public function store(Request $request)
     {
-        if (!$this->checkResourceAccess((int)$request->resource_id)) {
+        if (!$this->accessService->checkResourceAccess((int)$request->resource_id)) {
             return back()->withErrors(['error' => 'Anda tidak memiliki akses ke lab ini.'])->withInput();
         }
 
@@ -131,7 +111,7 @@ class ScheduleAdminController extends Controller
 
     public function update(Request $request, Schedule $schedule)
     {
-        if (!$this->checkResourceAccess($schedule->resource_id)) {
+        if (!$this->accessService->checkResourceAccess($schedule->resource_id)) {
             return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
         }
 
@@ -154,7 +134,7 @@ class ScheduleAdminController extends Controller
 
     public function destroy(Schedule $schedule)
     {
-        if (!$this->checkResourceAccess($schedule->resource_id)) {
+        if (!$this->accessService->checkResourceAccess($schedule->resource_id)) {
             return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
         }
         $schedule->delete(); // ← ganti ini

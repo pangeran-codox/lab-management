@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Resource;
 use App\Models\LabInventory;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class InventoryPublicController extends Controller
 {
@@ -41,5 +43,27 @@ class InventoryPublicController extends Controller
             'resources', 'inventories',
             'totalItems', 'totalUnits', 'totalBroken'
         ));
+    }
+
+    public function exportPdf(Request $request)
+    { 
+        $resourceId = $request->resource_id;
+        
+        $items = LabInventory::with('resource')
+            ->when($resourceId, fn($q) => $q->where('resource_id', $resourceId))
+            ->orderBy('item_name')
+            ->get();
+
+        $labName = 'Semua Laboratorium';
+        if ($resourceId) {
+            $lab = Resource::find($resourceId);
+            $labName = $lab ? $lab->name : $labName;
+        }
+
+        return view('inventory.reports.editor', [
+            'items' => $items,
+            'labName' => $labName,
+            'date' => now()->translatedFormat('d F Y'),
+        ]);
     }
 }

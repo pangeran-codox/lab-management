@@ -15,15 +15,15 @@ class BookingAccessService
     {
         $user = Auth::user();
 
+        if (!$user) {
+            return []; // Jika tidak login, tidak punya akses ke lab manapun
+        }
+
         if ($user->role === 'admin' || $user->role === 'operator') {
             return null;
         }
 
-        $meta = is_array($user->metadata)
-            ? $user->metadata
-            : json_decode($user->metadata, true);
-
-        return $meta['allowed_resources'] ?? [];
+        return $user->metadata['allowed_resources'] ?? [];
     }
 
     public function checkResourceAccess(int $resourceId): bool

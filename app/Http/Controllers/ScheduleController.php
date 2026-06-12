@@ -25,7 +25,8 @@ class ScheduleController extends Controller
     public function __construct(
         private ScheduleQueryService        $query,
         private ScheduleAvailabilityService $availability,
-        private BookingSubmissionService    $submission
+        private BookingSubmissionService    $submission,
+        private \App\Services\Booking\BookingAccessService $access
     ) {}
 
     // ══════════════════════════════════════════════════════════════════
@@ -41,8 +42,10 @@ class ScheduleController extends Controller
 
         $weekEnd = $weekStart->copy()->addDays(6);
 
+        $allowed = $this->access->getAllowedResources();
+
         // ── Data Master ──
-        $resources     = $this->query->getActiveResources();
+        $resources     = $this->query->getActiveResources($allowed);
         $timeSlots     = $this->query->getActiveTimeSlots();
         $organizations = $this->query->getActiveOrganizations();
         $teachers      = $this->query->getActiveTeachers();
@@ -63,9 +66,11 @@ class ScheduleController extends Controller
         $slotMeta      = $this->availability->getSlotMeta($timeSlots);
         $dateMeta      = $this->availability->getDateMeta($weekDates);
         $slotPastMap   = $this->availability->getSlotPastMap($timeSlots);
-        $takenSlotsMap = $this->availability->getTakenSlotsMap(
+        $availabilityData = $this->availability->getTakenSlotsMap(
             $resources, $weekDates, $bookings, $schedules, $importantSchedules, $timeSlots
         );
+        $takenSlotsMap = $availabilityData['map'];
+        $availCounts   = $availabilityData['avails'];
 
         $nonBreakSlots   = $timeSlots->where('is_break', false)->values();
         $firstNonBreakId = $nonBreakSlots->first()?->id;
@@ -78,7 +83,7 @@ class ScheduleController extends Controller
             'resources', 'timeSlots', 'schedules', 'bookings', 'sundayBookings',
             'weekDates', 'weekStart', 'weekEnd', 'organizations',
             'prevWeek', 'nextWeek', 'teachers',
-            'slotMeta', 'dateMeta', 'takenSlotsMap', 'slotPastMap',
+            'slotMeta', 'dateMeta', 'takenSlotsMap', 'availCounts', 'slotPastMap',
             'firstNonBreakId', 'sunRowspan', 'importantSchedules'
         ))->with([
             'days' => $this->days,
@@ -86,30 +91,10 @@ class ScheduleController extends Controller
         ]);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // POLL ENDPOINT
-    // ══════════════════════════════════════════════════════════════════
-
+    // POLL ENDPOINT (Deprecated - Using Reverb Realtime)
     public function poll(Request $request)
     {
-        $weekStart = $request->get('week')
-            ? Carbon::parse($request->get('week'))->startOfWeek(Carbon::MONDAY)
-            : Carbon::now()->startOfWeek(Carbon::MONDAY);
-
-        $weekEnd = $weekStart->copy()->addDays(6);
-
-        $resourceIds = $this->query->getActiveResources()->pluck('id');
-
-        $bookings       = $this->query->getBookingsForPoll($weekStart, $weekEnd, $resourceIds);
-        $sundayBookings = $this->query->getSundayBookingsForPoll($weekStart, $weekEnd, $resourceIds);
-
-        $hash = md5($bookings->count() . '_' . $bookings->max('updated_at') . '_' . $sundayBookings->count());
-
-        return response()->json([
-            'hash'           => $hash,
-            'bookings'       => $bookings,
-            'sundayBookings' => $sundayBookings,
-        ]);
+        return response()->json(['message' => 'Use Reverb instead'], 410);
     }
 
     // ══════════════════════════════════════════════════════════════════

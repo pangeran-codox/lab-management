@@ -50,17 +50,12 @@
                 <a href="javascript:void(0)" onclick="exportAllExcel()" style="color:#16a34a;font-weight:700">📊 Semua Lab (Multi-Sheet)</a>
             </div>
         </div>
-        <button class="btn-export btn-pdf" onclick="exportPDF()">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/>
+
+        <button class="btn-export btn-pdf" onclick="window.location.href='{{ route('inventory.public.pdf') }}?resource_id=' + currentLab" title="Editor & Cetak PDF Inventaris">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
-            PDF
-        </button>
-        <button class="btn-export btn-print" onclick="window.print()">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
-            </svg>
-            Print
+            Editor & Cetak PDF
         </button>
     </div>
 </div>

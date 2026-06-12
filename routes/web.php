@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InventoryPublicController;
@@ -14,6 +15,9 @@ use App\Http\Controllers\LabControlController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\LabClassController;
 use App\Http\Controllers\ImportantScheduleController;
+use App\Http\Controllers\InventoryMaintenanceController;
+use App\Http\Controllers\InventoryReportController;
+use App\Http\Controllers\UsageReportController;
 
 // ═══ PUBLIK ═══
 Route::get('/', [ScheduleController::class, 'index'])->name('home');
@@ -21,8 +25,16 @@ Route::get('/jadwal-poll', [ScheduleController::class, 'poll'])->name('schedule.
 Route::post('/booking', [ScheduleController::class, 'storeBooking'])->name('booking.store')->middleware('throttle:10,1');
 Route::post('/booking-minggu', [ScheduleController::class, 'storeSundayBooking'])->name('sunday.booking.store')->middleware('throttle:10,1');
 Route::get('/kelas', [ScheduleController::class, 'getClasses'])->name('classes.list')->middleware('throttle:30,1');
+
+// ─── Laporan ───────────────────────────────────
+Route::get('/laporan', function() {
+    return view('reports.public');
+})->name('reports.public');
+
 Route::get('/inventaris', [InventoryPublicController::class, 'index'])->name('inventory.public');
+Route::get('/inventaris/export/pdf', [InventoryPublicController::class, 'exportPdf'])->name('inventory.public.pdf');
 Route::get('/rekap', [RekapPublicController::class, 'index'])->name('rekap.public');
+Route::get('/rekap/export/pdf', [RekapPublicController::class, 'exportPdf'])->name('rekap.public.pdf');
 
 // ─── Tugas publik (dengan PIN) ────────────────────────────────────
 Route::get('/tugas', [AssignmentPublicController::class, 'index'])->name('assignment.public');
@@ -66,8 +78,8 @@ Route::middleware('guest')->group(function () {
 // ═══ AUTH ═══
 Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
-    Route::get('/schedule', fn() => view('dashboard'))->name('schedule.index');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/schedule', [DashboardController::class, 'index'])->name('schedule.index');
     Route::get('/inventory', fn() => view('dashboard'))->name('inventory.index');
     Route::get('/procurement', fn() => view('dashboard'))->name('procurement.index');
 
@@ -84,15 +96,30 @@ Route::middleware(['auth'])->group(function () {
     // Jadwal admin
     Route::get('/jadwal-admin', [ScheduleAdminController::class, 'index'])->name('schedule.admin');
     Route::post('/jadwal-admin', [ScheduleAdminController::class, 'store'])->name('schedule.admin.store');
+    Route::get('/jadwal-admin/export/{resource}', [ScheduleAdminController::class, 'export'])->name('schedule.admin.export');
     Route::patch('/jadwal-admin/{schedule}', [ScheduleAdminController::class, 'update'])->name('schedule.admin.update');
     Route::delete('/jadwal-admin/{schedule}', [ScheduleAdminController::class, 'destroy'])->name('schedule.admin.destroy');
 
-    // Inventaris admin
+   // Inventaris admin
     Route::get('/inventaris-admin', [InventoryAdminController::class, 'index'])->name('inventory.admin');
     Route::post('/inventaris-admin', [InventoryAdminController::class, 'store'])->name('inventory.admin.store');
     Route::patch('/inventaris-admin/{inventory}', [InventoryAdminController::class, 'update'])->name('inventory.admin.update');
     Route::delete('/inventaris-admin/{inventory}', [InventoryAdminController::class, 'destroy'])->name('inventory.admin.destroy');
+    Route::patch('/inventaris-admin/{inventory}/quick-update', [InventoryAdminController::class, 'quickUpdate'])->name('inventory.admin.quick-update');
+    
+    // Log Perbaikan Inventaris
+    Route::get('/inventaris-maintenance', [InventoryMaintenanceController::class, 'index'])->name('inventory.maintenance.index');
+    Route::post('/inventaris-maintenance', [InventoryMaintenanceController::class, 'store'])->name('inventory.maintenance.store');
+    Route::delete('/inventaris-maintenance/{log}', [InventoryMaintenanceController::class, 'destroy'])->name('inventory.maintenance.destroy');
 
+    // Laporan Inventaris
+    Route::get('/inventaris-report/pdf', [InventoryReportController::class, 'exportPdf'])->name('inventory.report.pdf');
+    // Route::get('/inventaris-report/excel', [InventoryReportController::class, 'exportExcel'])->name('inventory.report.excel');
+    
+    // Laporan Penggunaan Lab
+    Route::get('/laporan-penggunaan', [UsageReportController::class, 'index'])->name('reports.usage.index');
+    Route::get('/laporan-penggunaan/generate', [UsageReportController::class, 'generate'])->name('reports.usage.generate');
+    
     // Guru
     Route::get('/guru', [TeacherController::class, 'index'])->name('teacher.index');
     Route::post('/guru', [TeacherController::class, 'store'])->name('teacher.store');

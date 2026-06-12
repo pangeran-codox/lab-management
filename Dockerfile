@@ -28,6 +28,7 @@ RUN apk add --no-cache \
     libzip-dev \
     oniguruma-dev \
     postgresql-dev \
+    mysql-dev \
     icu-dev \
     shadow
 
@@ -37,6 +38,8 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp \
         pdo \
         pdo_pgsql \
         pgsql \
+        pdo_mysql \
+        mysqli \
         gd \
         zip \
         mbstring \

@@ -61,6 +61,9 @@
         <span id="toast-msg">Berhasil diunduh</span>
     </div>
 
-    <script>window.firstLabId = {{ $resources->first()->id ?? 0 }};</script>
+    <script>
+        window.firstLabId = {{ $resources->first()->id ?? 0 }};
+        window.currentLab = window.firstLabId;
+    </script>
 
 @endsection

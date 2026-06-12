@@ -8,415 +8,606 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#f0f4ef;color:#1A2517;min-height:100vh}
-a{text-decoration:none}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    /* ── Reset & Variables ── */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
-/* NAVBAR */
-.navbar{background:linear-gradient(135deg,#1A2517,#2a3826);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(26,37,23,.3)}
-.brand{display:flex;align-items:center;gap:10px}
-.brand-icon{width:34px;height:34px;border-radius:10px;background:rgba(172,200,162,.12);border:1.5px solid rgba(172,200,162,.25);display:flex;align-items:center;justify-content:center}
-.brand-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:#fff}
-.brand-sub{font-size:10px;color:rgba(172,200,162,.4)}
-.nav-right{display:flex;align-items:center;gap:8px}
-.teacher-badge{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:9px;background:rgba(172,200,162,.1);border:1px solid rgba(172,200,162,.2);font-size:12px;font-weight:600;color:#ACC8A2}
-.nav-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;color:#ACC8A2;border:1.5px solid rgba(172,200,162,.3);background:none;cursor:pointer;font-family:inherit;transition:background .15s}
-.nav-btn:hover{background:rgba(172,200,162,.08)}
+    :root {
+        --primary: #00693E;
+        --primary-dark: #003d24;
+        --primary-light: #eaf4f0;
+        --accent: #B9D9EB;
+        --danger: #c0392b;
+        --warning: #d97706;
+        --success: #16a34a;
+        --text-main: #0d2416;
+        --text-muted: #6b8fa3;
+        --bg-body: #f8fafc;
+        --bg-card: #ffffff;
+        --border-color: #e2e8f0;
+        --radius-xl: 20px;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --font-head: 'Outfit', sans-serif;
+        --font-main: 'DM Sans', sans-serif;
+    }
 
-/* HERO */
-.hero{background:linear-gradient(135deg,#1A2517 0%,#2a3826 60%,#3d5438 100%);padding:28px 24px 24px;text-align:center}
-.hero h1{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:4px}
-.hero p{font-size:13px;color:rgba(172,200,162,.5)}
+    body {
+        font-family: var(--font-main);
+        background: var(--bg-body);
+        color: var(--text-main);
+        min-height: 100vh;
+    }
 
-/* WRAP */
-.wrap{max-width:1060px;margin:0 auto;padding:22px 18px 48px;animation:fadeUp .4s ease both}
+    /* ── Layout ── */
+    .app-shell {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+    }
 
-/* FLASH */
-.flash{padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px}
-.flash-ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
-.flash-err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+    .sidebar {
+        width: 280px;
+        background: #fff;
+        border-right: 1px solid var(--border-color);
+        padding: 24px;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+    }
 
-/* CREATE CARD */
-.create-card{background:#fff;border-radius:14px;border:1px solid #e8f0e6;box-shadow:0 1px 6px rgba(26,37,23,.06);overflow:hidden;margin-bottom:22px}
-.create-head{padding:14px 20px;background:linear-gradient(135deg,#1A2517,#2a3826);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
-.create-head-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:#fff}
-.create-head-sub{font-size:11px;color:rgba(172,200,162,.4);margin-top:2px}
-.create-toggle{color:#ACC8A2;transition:transform .2s}
-.create-toggle.open{transform:rotate(180deg)}
-.create-body{padding:20px;display:none}
-.create-body.open{display:block}
-.field{margin-bottom:14px}
-.field-label{display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.inp{width:100%;border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;background:#fafcf9;outline:none;transition:border-color .15s}
-.inp:focus{border-color:#ACC8A2;box-shadow:0 0 0 3px rgba(172,200,162,.1)}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-@media(max-width:600px){.field-row,.field-row-3{grid-template-columns:1fr}}
-.btn-create{padding:11px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,#1A2517,#2d3d29);color:#ACC8A2;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s}
-.btn-create:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,37,23,.25)}
+    .main-content {
+        flex: 1;
+        padding: 40px;
+        margin-left: 280px; /* Lebar sidebar */
+        width: calc(100% - 280px);
+        min-height: 100vh;
+    }
 
-/* PROGRESS UI */
-.prog-wrap{width:100%;height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden;margin:10px 0 5px}
-.prog-bar{height:100%;background:linear-gradient(90deg,#ACC8A2,#3d5438);border-radius:99px;transition:width .6s ease}
-.prog-text{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em}
+    @media (max-width: 1024px) {
+        .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+        .sidebar.show { transform: translateX(0); }
+        .main-content { margin-left: 0; width: 100%; padding: 20px; }
+    }
 
-/* TAB STATUS */
-.status-tabs{display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid #e8f0e6;padding-bottom:10px}
-.s-tab{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#9ca3af;transition:all .15s}
-.s-tab:hover{background:#fff;color:#1A2517}
-.s-tab.active{background:#1A2517;color:#ACC8A2}
+    /* ── Sidebar Elements ── */
+    .sb-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 40px;
+    }
+    .sb-logo {
+        width: 40px;
+        height: 40px;
+        background: var(--primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+    }
+    .sb-menu { list-style: none; }
+    .sb-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: var(--text-muted);
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .sb-item:hover { background: var(--primary-light); color: var(--primary); }
+    .sb-item.active { background: var(--primary); color: #fff; }
 
-/* ASSIGNMENT CARDS */
-.section-title{font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
-.acard{background:#fff;border-radius:16px;border:1px solid #e8f0e6;box-shadow:0 1px 6px rgba(26,37,23,.05);overflow:hidden;margin-bottom:20px;transition:transform .2s}
-.acard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,37,23,.08)}
-.acard-head{padding:16px 20px;background:#fcfdfb;border-bottom:1px solid #f0f4ee;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.acard-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:#1A2517}
-.acard-meta-head{font-size:12px;color:#9ca3af;margin-top:4px;display:flex;align-items:center;gap:8px}
-.meta-dot{width:4px;height:4px;border-radius:50%;background:#e5e7eb}
-.acard-actions{display:flex;gap:6px;flex-shrink:0}
-.btn-del{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid #fecaca;background:#fff;color:#ef4444;cursor:pointer;transition:all .15s}
-.btn-del:hover{background:#fef2f2;transform:scale(1.05)}
-.acard-stats{display:grid;grid-template-columns:repeat(4,1fr);background:#fff}
-.stat-cell{padding:14px 16px;text-align:center;border-right:1px solid #f9fafb}
-.stat-cell:last-child{border-right:none}
-.stat-val{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#1A2517}
-.stat-key{font-size:10px;color:#9ca3af;margin-top:3px;font-weight:700;text-transform:uppercase}
+    /* ── Dashboard Header ── */
+    .dash-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+    }
+    .dash-title h1 { font-family: var(--font-head); font-weight: 800; font-size: 24px; margin: 0; }
+    .dash-title p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
 
-/* SUBMISSIONS TABLE */
-.subs-wrap{overflow-x:auto}
-.subs-table{width:100%;border-collapse:collapse;font-size:12px;min-width:620px}
-.subs-table thead tr{background:#f8faf7;border-bottom:2px solid #e8f0e6}
-.subs-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
-.subs-table tbody tr{border-top:1px solid #f5f5f5;transition:background .1s}
-.subs-table tbody tr:hover{background:#fafcf9}
-.subs-table td{padding:10px 12px;vertical-align:middle}
-.sub-ext{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;font-size:9px;font-weight:700}
-.ext-pdf{background:#fef2f2;color:#ef4444}
-.ext-doc{background:#eff6ff;color:#2563eb}
-.ext-ppt{background:#fff7ed;color:#ea580c}
-.ext-xls{background:#f0fdf4;color:#16a34a}
-.ext-zip{background:#faf5ff;color:#7c3aed}
-.ext-other{background:#f9fafb;color:#6b7280}
-.badge-submitted{background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700}
-.badge-graded{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700}
-.btn-download{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;text-decoration:none;transition:background .15s}
-.btn-download:hover{background:#dcfce7}
-.grade-form{display:flex;align-items:center;gap:6px}
-.grade-inp{width:60px;border:1.5px solid #e5e7eb;border-radius:7px;padding:5px 8px;font-size:12px;font-family:inherit;text-align:center;outline:none}
-.grade-inp:focus{border-color:#ACC8A2}
-.btn-grade{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;border:none;background:linear-gradient(135deg,#1A2517,#2d3d29);color:#ACC8A2;cursor:pointer;font-family:inherit}
+    /* ── Stats Overview ── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+    .stat-card {
+        background: #fff;
+        padding: 24px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .stat-label { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--text-main); }
+    .stat-trend { font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; width: fit-content; }
+    .trend-up { background: #dcfce7; color: #166534; }
 
-/* EMPTY */
-.empty{text-align:center;padding:28px;color:#9ca3af;font-size:12px}
+    /* ── Task Grid ── */
+    .task-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 24px;
+    }
+    .task-card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+    .task-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.05);
+        border-color: var(--primary);
+    }
+    .task-badge {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-expired { background: #fee2e2; color: #991b1b; }
+
+    .task-subject { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; }
+    .task-title { font-family: var(--font-head); font-size: 18px; font-weight: 800; margin-bottom: 12px; line-height: 1.3; }
+    
+    .task-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .meta-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); font-weight: 600; }
+    .meta-row svg { width: 14px; opacity: 0.6; }
+
+    .task-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+    }
+    .task-progress { flex: 1; margin-right: 16px; }
+    .progress-bar { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; }
+
+    .btn-manage {
+        background: var(--primary);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-manage:hover { background: var(--primary-dark); transform: scale(1.02); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(13, 36, 22, 0.4);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+    .modal-content {
+        background: #fff;
+        width: 100%;
+        max-width: 1000px;
+        max-height: 90vh;
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        animation: modalFadeUp 0.3s ease-out;
+    }
+    @keyframes modalFadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+    .modal-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #fff; }
+    .modal-body { padding: 0; overflow-y: auto; flex: 1; }
+    
+    .table-container { width: 100%; overflow-x: auto; }
+    .modern-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .modern-table th { padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid var(--border-color); }
+    .modern-table td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .modern-table tr:hover { background: #f8fafc; }
+
+    /* ── Utils ── */
+    .btn-create-large {
+        background: var(--primary);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 105, 62, 0.2);
+    }
+
+    .btn-create-large:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+    /* ── Mobile Toggle ── */
+    .mobile-nav {
+        display: none;
+        background: #fff;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border-color);
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 60;
+    }
+
+    @media (max-width: 1024px) {
+        .mobile-nav { display: flex; }
+    }
 </style>
 </head>
 <body>
 
-<div class="navbar">
-    <div class="brand">
-        <div class="brand-icon">
-            <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="#ACC8A2" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
+<div class="mobile-nav">
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="sb-logo" style="width: 32px; height: 32px;">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
-        <div>
-            <div class="brand-name">Panel Guru – Tugas</div>
-            <div class="brand-sub">Lab Management Nuris Jember</div>
-        </div>
+        <span style="font-weight: 800; font-size: 14px;">EduZone Lab</span>
     </div>
-    <div class="nav-right">
-        @if($teacher)
-        <div class="teacher-badge">
-            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            {{ $teacher->name }} · {{ $teacher->token }}
-        </div>
-        @endif
-        <a href="{{ route('assignment.public') }}" class="nav-btn">← Halaman Publik</a>
-        @auth <a href="{{ route('dashboard') }}" class="nav-btn">Dashboard</a> @endauth
-    </div>
+    <button onclick="toggleSidebar()" style="background: var(--primary-light); color: var(--primary); border: none; padding: 8px; border-radius: 8px; cursor: pointer;">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+    </button>
 </div>
 
-<div class="hero">
-    <h1>📋 Panel Guru – Kelola Tugas</h1>
-    <p>Buat tugas baru · Lihat submission · Download & beri nilai</p>
-</div>
-
-<div class="wrap">
-
-    @if(session('success'))
-        <div class="flash flash-ok">✓ {{ session('success') }}</div>
-    @endif
-    @if($errors->any())
-        <div class="flash flash-err">⚠ {{ $errors->first() }}</div>
-    @endif
-
-    {{-- FORM BUAT TUGAS --}}
-    <div class="create-card">
-        <div class="create-head" onclick="toggleCreate()">
-            <div>
-                <div class="create-head-title">➕ Buat Tugas Baru</div>
-                <div class="create-head-sub">Klik untuk membuka form</div>
+<div class="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sb-brand">
+            <div class="sb-logo">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             </div>
-            <svg class="create-toggle" id="create-toggle" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ACC8A2" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-            </svg>
+            <div>
+                <div style="font-weight: 800; font-size: 16px;">EduZone Lab</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Panel Manajemen Guru</div>
+            </div>
         </div>
-        <div class="create-body" id="create-body">
+
+        <nav class="sb-menu">
+            <div class="sb-item active">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard Tugas
+            </div>
+            <div class="sb-item" onclick="location.href='{{ route('assignment.public') }}'">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Lihat Halaman Publik
+            </div>
+            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'staff', 'technician']))
+            <div class="sb-item" onclick="location.href='{{ route('dashboard') }}'">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                Kembali ke Dashboard
+            </div>
+            @endif
+        </nav>
+
+        <div style="margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; font-size: 12px;">{{ substr($teacher->name ?? 'G', 0, 1) }}</div>
+                <div>
+                    <div style="font-weight: 700; font-size: 13px;">{{ $teacher->name ?? 'Guru' }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ $teacher->token ?? '-' }}</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <header class="dash-header">
+            <div class="dash-title">
+                <h1>Halo, {{ explode(' ', $teacher->name ?? 'Guru')[0] }}! 👋</h1>
+                <p>Pantau dan kelola pengumpulan tugas siswa Anda di sini.</p>
+            </div>
+            <button class="btn-create-large" onclick="openCreateModal()">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Tugas Baru
+            </button>
+        </header>
+
+        <!-- STATS -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Total Tugas</span>
+                <span class="stat-value">{{ $assignments->count() }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Menunggu Dinilai</span>
+                <span class="stat-value" style="color: var(--warning)">{{ $assignments->sum(fn($a) => $a->submissions->where('status','submitted')->count()) }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Sudah Dinilai</span>
+                <span class="stat-value" style="color: var(--success)">{{ $assignments->sum(fn($a) => $a->submissions->where('status','graded')->count()) }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Aktif Saat Ini</span>
+                <span class="stat-value">{{ $assignments->filter(fn($a) => !$a->isExpired())->count() }}</span>
+            </div>
+        </section>
+
+        <!-- TASK GRID -->
+        <section class="task-grid">
+            @forelse($assignments as $a)
+            @php
+                $expired = $a->isExpired();
+                $subs = $a->submissions;
+                $total = $subs->count();
+                $graded = $subs->where('status','graded')->count();
+                $progress = $total > 0 ? min(($total / 36) * 100, 100) : 0;
+            @endphp
+            <article class="task-card">
+                <span class="task-badge {{ $expired ? 'badge-expired' : 'badge-active' }}">
+                    {{ $expired ? 'Arsip' : 'Aktif' }}
+                </span>
+                
+                <div class="task-subject">{{ $a->subject_name }}</div>
+                <h3 class="task-title">{{ $a->title }}</h3>
+
+                <div class="task-meta">
+                    <div class="meta-row">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        Kelas: {{ $a->class_name }}
+                    </div>
+                    <div class="meta-row">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Deadline: {{ $a->deadline->translatedFormat('d M, H:i') }}
+                    </div>
+                </div>
+
+                <div class="task-footer">
+                    <div class="task-progress">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--text-muted);">
+                            <span>PENGUMPULAN</span>
+                            <span>{{ $total }} SISWA</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ $progress }}%"></div>
+                        </div>
+                    </div>
+                    <button class="btn-manage" onclick="openSubmissionsModal('{{ $a->id }}')">Kelola</button>
+                </div>
+            </article>
+            @empty
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <div class="empty-icon">📋</div>
+                <h3>Belum ada tugas</h3>
+                <p>Mulai dengan membuat tugas baru untuk kelas Anda.</p>
+            </div>
+            @endforelse
+        </section>
+    </main>
+</div>
+
+<!-- MODAL: CREATE TASK -->
+<div id="modal-create" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+        <div class="modal-header">
+            <h2 style="font-family: var(--font-head); font-weight: 800; font-size: 20px;">Buat Tugas Baru</h2>
+            <button onclick="closeCreateModal()" style="background: none; border: none; cursor: pointer; color: var(--text-muted);"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body" style="padding: 32px;">
             <form method="POST" action="{{ route('assignment.store') }}" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="teacher_token" value="{{ $teacher->token ?? '' }}">
-
+                
                 <div class="field">
-                    <label class="field-label">Judul Tugas *</label>
-                    <input name="title" type="text" class="inp" placeholder="Contoh: Laporan Praktikum Excel" required value="{{ old('title') }}">
+                    <label class="field-label">Judul Tugas</label>
+                    <input name="title" type="text" class="inp" required placeholder="Contoh: Laporan Praktikum Jaringan">
                 </div>
 
                 <div class="field-row-3">
                     <div class="field">
-                        <label class="field-label">Lembaga *</label>
-                        <select name="organization_id" id="adm_org" class="inp" required onchange="loadAdmKelas(this.value)" style="appearance:auto">
-                            <option value="">— Pilih Lembaga —</option>
+                        <label class="field-label">Lembaga</label>
+                        <select name="organization_id" class="inp" required onchange="loadAdmKelas(this.value)">
+                            <option value="">Pilih Lembaga</option>
                             @foreach($organizations as $org)
-                            <option value="{{ $org->id }}" {{ old('organization_id') == $org->id ? 'selected' : '' }}>{{ $org->name }}</option>
+                            <option value="{{ $org->id }}">{{ $org->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="field" style="grid-column: span 2">
-                        <label class="field-label">Kelas * (Bisa pilih lebih dari satu)</label>
-                        <div id="kelas_checkbox_container" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:8px;background:#fafcf9;border:1.5px solid #e5e7eb;border-radius:9px;padding:12px;max-height:150px;overflow-y:auto">
-                            <div style="color:#9ca3af;font-size:12px;grid-column:1/-1">Pilih lembaga terlebih dahulu</div>
+                        <label class="field-label">Pilih Kelas</label>
+                        <div id="kelas_container" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(100px, 1fr));gap:8px;padding:12px;background:var(--bg-body);border-radius:12px;border:1.5px solid var(--border-color);max-height:120px;overflow-y:auto">
+                            <span style="font-size:12px;color:var(--text-muted);grid-column:1/-1">Pilih lembaga dulu...</span>
                         </div>
                     </div>
                 </div>
+
                 <div class="field-row-3">
                     <div class="field">
-                        <label class="field-label">Mata Pelajaran *</label>
-                        <input name="subject_name" type="text" class="inp" placeholder="Contoh: TIK" required value="{{ old('subject_name') }}">
+                        <label class="field-label">Mata Pelajaran</label>
+                        <input name="subject_name" type="text" class="inp" required placeholder="Produktif TKJ">
                     </div>
                     <div class="field" style="grid-column: span 2">
-                        <label class="field-label">Deadline *</label>
-                        <input name="deadline" type="datetime-local" class="inp" required value="{{ old('deadline') }}">
+                        <label class="field-label">Deadline</label>
+                        <input name="deadline" type="datetime-local" class="inp" required>
                     </div>
                 </div>
-                <script>
-                const ADM_CLASSES = @json($classes->groupBy('organization_id'));
-                function loadAdmKelas(orgId) {
-                    const container = document.getElementById('kelas_checkbox_container');
-                    container.innerHTML = '';
-                    
-                    if (orgId && ADM_CLASSES[orgId]) {
-                        ADM_CLASSES[orgId].forEach(k => {
-                            container.innerHTML += `
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#1A2517;padding:4px">
-                                    <input type="checkbox" name="class_names[]" value="${k.name}" style="width:16px;height:16px;accent-color:#1A2517">
-                                    ${k.name}
-                                </label>
-                            `;
-                        });
-                    } else {
-                        container.innerHTML = '<div style="color:#9ca3af;font-size:12px;grid-column:1/-1">Pilih lembaga terlebih dahulu</div>';
-                    }
-                }
-                </script>
 
                 <div class="field">
-                    <label class="field-label">Keterangan</label>
-                    <textarea name="description" class="inp" rows="2" placeholder="Instruksi atau catatan untuk siswa (opsional)">{{ old('description') }}</textarea>
+                    <label class="field-label">Keterangan / Lampiran</label>
+                    <textarea name="description" class="inp" rows="2" placeholder="Instruksi tambahan..."></textarea>
+                    <input name="attachment" type="file" class="inp" style="margin-top: 8px;">
                 </div>
 
-                <div class="field">
-                    <label class="field-label">📎 File Lampiran (opsional)</label>
-                    <input name="attachment" type="file" class="inp" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.jpg,.png">
-                    <div style="font-size:11px;color:#9ca3af;margin-top:4px">PDF, Word, PPT, Excel, ZIP, Gambar · maks 20MB · File ini bisa didownload siswa</div>
+                <div style="margin-top: 24px; display: flex; gap: 12px;">
+                    <button type="submit" class="btn-create-large" style="flex: 1; justify-content: center;">Terbitkan Tugas</button>
+                    <button type="button" onclick="closeCreateModal()" class="btn-manage" style="background: var(--bg-body); color: var(--text-main);">Batal</button>
                 </div>
-                <button type="submit" class="btn-create">✓ Buat Tugas</button>
             </form>
         </div>
     </div>
-
-    {{-- DAFTAR TUGAS --}}
-    <div class="status-tabs">
-        <div class="s-tab active" onclick="filterStatus('all')">Semua</div>
-        <div class="s-tab" onclick="filterStatus('active')">Aktif (Buka)</div>
-        <div class="s-tab" onclick="filterStatus('expired')">Arsip (Tutup)</div>
-    </div>
-
-    @forelse($assignments as $a)
-    @php
-        $total     = $a->submissions->count();
-        $graded    = $a->submissions->where('status','graded')->count();
-        $submitted = $a->submissions->where('status','submitted')->count();
-        $expired   = $a->isExpired();
-        
-        // Dapatkan estimasi jumlah siswa (bisa dari model LabClass jika relasi ada)
-        // Untuk sementara kita gunakan angka statis atau biarkan dinamis
-        $estimatedStudents = 36; 
-        $progress = ($total / $estimatedStudents) * 100;
-    @endphp
-    <div class="acard assignment-item" data-expired="{{ $expired ? '1' : '0' }}">
-        <div class="acard-head">
-            <div style="flex:1">
-                <div class="acard-title">{{ $a->title }}</div>
-                <div class="acard-meta-head">
-                    <span>{{ $a->subject_name }}</span>
-                    <div class="meta-dot"></div>
-                    <span>{{ $a->class_name }}</span>
-                    <div class="meta-dot"></div>
-                    <span style="color:{{ $expired ? '#ef4444' : '#16a34a' }};font-weight:700">
-                        {{ $expired ? 'Selesai' : 'Deadline: ' . $a->deadline->translatedFormat('d M Y, H:i') }}
-                    </span>
-                </div>
-                
-                {{-- PROGRESS BAR --}}
-                <div style="max-width:300px;margin-top:12px">
-                    <div class="prog-text">Progress Pengumpulan: {{ $total }} Siswa</div>
-                    <div class="prog-wrap">
-                        <div class="prog-bar" style="width: {{ min($progress, 100) }}%"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="acard-actions">
-                <form method="POST" action="{{ route('assignment.destroy', $a) }}" onsubmit="return confirm('Hapus tugas ini beserta semua file submission?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn-del" title="Hapus Tugas">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="acard-stats">
-            <div class="stat-cell">
-                <div class="stat-val" style="color:#1A2517">{{ $total }}</div>
-                <div class="stat-key">Total</div>
-            </div>
-            <div class="stat-cell" style="background:#fffbeb">
-                <div class="stat-val" style="color:#d97706">{{ $submitted }}</div>
-                <div class="stat-key">Belum Dinilai</div>
-            </div>
-            <div class="stat-cell" style="background:#f0fdf4">
-                <div class="stat-val" style="color:#16a34a">{{ $graded }}</div>
-                <div class="stat-key">Sudah Dinilai</div>
-            </div>
-            <div class="stat-cell" style="background:{{ $expired ? '#fef2f2' : 'rgba(172,200,162,.05)' }}">
-                <div class="stat-val" style="color:{{ $expired ? '#ef4444' : '#ACC8A2' }}">{{ $expired ? 'Tutup' : 'Buka' }}</div>
-                <div class="stat-key">Status</div>
-            </div>
-        </div>
-
-        @if($a->submissions->isNotEmpty())
-        <div class="subs-wrap">
-            <table class="subs-table">
-                <thead>
-                    <tr>
-                        <th>File</th>
-                        <th>Nama Siswa</th>
-                        <th>Kelas</th>
-                        <th>Waktu Kumpul</th>
-                        <th>Status</th>
-                        <th>Nilai</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($a->submissions->sortByDesc('submitted_at') as $sub)
-                    @php
-                        $ext = strtolower($sub->file_ext ?? 'other');
-                        $extClass = match($ext) {
-                            'pdf'        => 'ext-pdf',
-                            'doc','docx' => 'ext-doc',
-                            'ppt','pptx' => 'ext-ppt',
-                            'xls','xlsx' => 'ext-xls',
-                            'zip','rar'  => 'ext-zip',
-                            default      => 'ext-other'
-                        };
-                    @endphp
-                    <tr>
-                        <td>
-                            <div style="display:flex;align-items:center;gap:8px">
-                                <span class="sub-ext {{ $extClass }}">{{ strtoupper($ext) }}</span>
-                                <span style="font-size:11px;color:#6b7280;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $sub->file_name }}">{{ $sub->file_name }}</span>
-                            </div>
-                        </td>
-                        <td style="font-weight:700">{{ $sub->student_name }}</td>
-                        <td style="color:#6b7280">{{ $sub->student_class }}</td>
-                        <td style="color:#6b7280;white-space:nowrap">{{ $sub->submitted_at->translatedFormat('d M, H:i') }}</td>
-                        <td>
-                            @if($sub->status === 'graded')
-                                <span class="badge-graded">Dinilai</span>
-                            @else
-                                <span class="badge-submitted">Belum dinilai</span>
-                            @endif
-                        </td>
-                        <td style="font-weight:700;color:{{ $sub->grade !== null ? '#16a34a' : '#9ca3af' }}">
-                            {{ $sub->grade !== null ? $sub->grade : '-' }}
-                        </td>
-                        <td>
-                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                                <a href="{{ route('assignment.download', $sub) }}" class="btn-download">
-                                    ↓ Download
-                                </a>
-                                <form method="POST" action="{{ route('assignment.grade', $sub) }}" class="grade-form">
-                                    @csrf
-                                    <input type="number" name="grade" class="grade-inp" min="0" max="100" step="0.5" placeholder="0-100" value="{{ $sub->grade }}">
-                                    <button type="submit" class="btn-grade">Simpan</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @else
-            <div class="empty">📭 Belum ada yang mengumpulkan</div>
-        @endif
-    </div>
-    @empty
-        <div class="empty" style="background:#fff;border-radius:14px;border:1px solid #e8f0e6;padding:48px">
-            <div style="font-size:48px;margin-bottom:12px">📋</div>
-            <div style="font-weight:700;color:#374151;margin-bottom:4px">Belum ada tugas</div>
-            <div>Buat tugas baru dengan klik tombol di atas</div>
-        </div>
-    @endforelse
 </div>
 
+<!-- MODAL: SUBMISSIONS -->
+@foreach($assignments as $a)
+<div id="modal-subs-{{ $a->id }}" class="modal-overlay assignment-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h2 style="font-family: var(--font-head); font-weight: 800; font-size: 20px;">{{ $a->title }}</h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">{{ $a->subject_name }} • {{ $a->class_name }}</p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <form method="POST" action="{{ route('assignment.destroy', $a) }}" onsubmit="return confirm('Hapus tugas ini?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger);"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                </form>
+                <button onclick="closeSubmissionsModal('{{ $a->id }}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted);"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+        </div>
+        <div class="modal-body">
+            @if($a->submissions->isEmpty())
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p>Belum ada pengumpulan.</p>
+            </div>
+            @else
+            <div class="table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Siswa</th>
+                            <th>Waktu</th>
+                            <th>File</th>
+                            <th>Status</th>
+                            <th>Nilai</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($a->submissions->sortByDesc('submitted_at') as $sub)
+                        <tr>
+                            <td>
+                                <div style="font-weight: 700;">{{ $sub->student_name }}</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">{{ $sub->student_class }}</div>
+                            </td>
+                            <td>{{ $sub->submitted_at->translatedFormat('d M, H:i') }}</td>
+                            <td>
+                                <a href="{{ route('assignment.download', $sub) }}" style="display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 700;">
+                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    Unduh
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge-status {{ $sub->status === 'graded' ? 'badge-graded' : 'badge-submitted' }}" style="padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 800; {{ $sub->status === 'graded' ? 'background: #dcfce7; color: #166534;' : 'background: #fffbeb; color: #d97706;' }}">
+                                    {{ $sub->status === 'graded' ? 'Dinilai' : 'Menunggu' }}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ route('assignment.grade', $sub) }}" style="display: flex; gap: 8px;">
+                                    @csrf
+                                    <input type="number" name="grade" value="{{ $sub->grade }}" class="inp" style="width: 60px; padding: 6px;" min="0" max="100">
+                                    <button type="submit" class="btn-manage" style="padding: 6px 12px;">Simpan</button>
+                                </form>
+                            </td>
+                            <td>
+                                <!-- Additional actions if needed -->
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endforeach
+
 <script>
-function toggleCreate() {
-    const body    = document.getElementById('create-body');
-    const toggle  = document.getElementById('create-toggle');
-    const isOpen  = body.classList.toggle('open');
-    toggle.classList.toggle('open', isOpen);
-}
+    const CLASSES = @json($classes->groupBy('organization_id'));
 
-function filterStatus(status) {
-    // Update tabs UI
-    document.querySelectorAll('.s-tab').forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
+    function loadAdmKelas(orgId) {
+        const container = document.getElementById('kelas_container');
+        container.innerHTML = '';
+        if (orgId && CLASSES[orgId]) {
+            CLASSES[orgId].forEach(k => {
+                container.innerHTML += `
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:700;">
+                        <input type="checkbox" name="class_names[]" value="${k.name}" style="accent-color: var(--primary)">
+                        ${k.name}
+                    </label>
+                `;
+            });
+        } else {
+            container.innerHTML = '<span style="font-size:12px;color:var(--text-muted);grid-column:1/-1">Pilih lembaga dulu...</span>';
+        }
+    }
 
-    // Filter items
-    const items = document.querySelectorAll('.assignment-item');
-    items.forEach(item => {
-        const isExpired = item.dataset.expired === '1';
-        if (status === 'all') {
-            item.style.display = 'block';
-        } else if (status === 'active') {
-            item.style.display = isExpired ? 'none' : 'block';
-        } else if (status === 'expired') {
-            item.style.display = isExpired ? 'block' : 'none';
+    function toggleSidebar() {
+        document.querySelector('.sidebar').classList.toggle('show');
+    }
+
+    function openCreateModal() { document.getElementById('modal-create').style.display = 'flex'; }
+    function closeCreateModal() { document.getElementById('modal-create').style.display = 'none'; }
+
+    function openSubmissionsModal(id) { document.getElementById(`modal-subs-${id}`).style.display = 'flex'; }
+    function closeSubmissionsModal(id) { document.getElementById(`modal-subs-${id}`).style.display = 'none'; }
+
+    // Close modals on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeCreateModal();
+            document.querySelectorAll('.assignment-modal').forEach(m => m.style.display = 'none');
         }
     });
-}
 
-// Auto buka form jika ada error validasi
-@if($errors->any())
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('create-body').classList.add('open');
-    document.getElementById('create-toggle').classList.add('open');
-});
-@endif
+    // Close modal on outside click
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    }
 </script>
+
 </body>
 </html>

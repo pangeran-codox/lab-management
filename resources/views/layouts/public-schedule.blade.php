@@ -259,16 +259,16 @@
     </div>
 
     {{-- Mobile nav row 2 --}}
-    <div class="pub-nav-row2">
-        <a href="{{ route('home') }}"
-           class="pub-nav2-link {{ request()->routeIs('home') ? 'on' : '' }}">Jadwal</a>
-        <a href="{{ route('inventory.public') }}"
-           class="pub-nav2-link {{ request()->routeIs('inventory.public') ? 'on' : '' }}">Inventaris</a>
-        <a href="{{ route('rekap.public') }}"
-           class="pub-nav2-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
-        <a href="{{ route('assignment.public') }}"
-           class="pub-nav2-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
-    </div>
+        <div class="pub-nav-row2">
+            <a href="{{ route('home') }}"
+               class="pub-nav2-link {{ request()->routeIs('home') ? 'on' : '' }}">Jadwal</a>
+            <a href="{{ route('inventory.public') }}"
+               class="pub-nav2-link {{ request()->routeIs('inventory.public') ? 'on' : '' }}">Inventaris</a>
+            <a href="{{ route('rekap.public') }}"
+               class="pub-nav2-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
+            <a href="{{ route('assignment.public') }}"
+               class="pub-nav2-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
+        </div>
 </nav>
 
 {{-- ═══ KONTEN HALAMAN ═══ --}}

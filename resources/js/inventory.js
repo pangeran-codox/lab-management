@@ -56,6 +56,7 @@ function loadXLSX(callback) {
 function switchLab(id, btn) {
     if (currentLab === id) return;
     currentLab = id;
+    window.currentLab = id; // Update global scope
 
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -331,6 +332,7 @@ function exportPDF() {
 // ══════════════════════════════════════════════════════════════════
 // EXPOSE KE GLOBAL — wajib karena Vite bundle sebagai ES module
 // ══════════════════════════════════════════════════════════════════
+window.currentLab          = currentLab;
 window.switchLab           = switchLab;
 window.setView             = setView;
 window.toggleExcelDropdown = toggleExcelDropdown;

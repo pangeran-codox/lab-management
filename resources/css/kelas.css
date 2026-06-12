@@ -1,0 +1,592 @@
+/* ============================================================
+   MANAJEMEN KELAS — kelas.css
+   Diimpor via: resources/js/kelas.js → import '../css/kelas.css'
+   Font (DM Sans, Outfit) sudah ada di app.css sebagai local woff2.
+   ============================================================ */
+
+/* ---------- Tokens (selaras dengan app.css) ---------- */
+:root {
+    /* Warna utama — diambil dari referensi global */
+    --kls-900:         #003d24;
+    --kls-800:         #00542f;
+    --kls-700:         #00693E;
+
+    /* Aksen biru muda */
+    --kls-acc:         #B9D9EB;
+    --kls-acc-2:       #8ec8e0;
+
+    /* Surface & background */
+    --kls-surface:     #ffffff;
+    --kls-surface-2:   #f5fbf8;
+    --kls-surface-3:   #eaf4f0;
+
+    /* Border */
+    --kls-border:      #cce4f0;
+    --kls-border-2:    #a8d4e8;
+
+    /* Text */
+    --kls-text-1:      #0d2416;
+    --kls-text-3:      #6b8fa3;
+    --kls-text-4:      #a0bfcc;
+
+    /* Shadows */
+    --kls-shadow-sm:   0 1px 4px rgba(0,105,62,.07);
+    --kls-shadow-lg:   0 6px 28px rgba(0,105,62,.14);
+
+    /* Typography */
+    --kls-font:        'DM Sans', system-ui, sans-serif;
+    --kls-font-head:   'Outfit', 'DM Sans', system-ui, sans-serif;
+    --kls-mono:        'DM Mono', 'Courier New', monospace;
+
+    /* Radius */
+    --kls-radius:      10px;
+    --kls-radius-lg:   14px;
+
+    --kls-transition:  .18s ease;
+}
+
+/* ---------- Animations ---------- */
+@keyframes klsFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes klsSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Page Wrapper ---------- */
+.kls-wrap {
+    font-family: var(--kls-font);
+    animation: klsFadeUp .38s ease both;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PAGE HEADER
+   ────────────────────────────────────────────────────────────── */
+.kls-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.kls-page-title {
+    font-family: var(--kls-font-head);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--kls-text-1);
+    letter-spacing: -.02em;
+    line-height: 1.25;
+}
+
+.kls-page-subtitle {
+    font-size: 13px;
+    color: var(--kls-text-3);
+    margin-top: 3px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   BUTTONS
+   ────────────────────────────────────────────────────────────── */
+.kls-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border: none;
+    border-radius: var(--kls-radius);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--kls-font);
+    cursor: pointer;
+    transition: opacity var(--kls-transition), transform var(--kls-transition), box-shadow var(--kls-transition);
+    white-space: nowrap;
+    text-decoration: none;
+    line-height: 1;
+}
+
+/* Primary — gradien hijau tua seperti navbar */
+.kls-btn--primary {
+    background: linear-gradient(135deg, var(--kls-900), var(--kls-700));
+    color: var(--kls-acc);
+    border: 1px solid transparent;
+}
+.kls-btn--primary:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,105,62,.28);
+}
+
+/* Ghost */
+.kls-btn--ghost {
+    background: var(--kls-surface);
+    color: var(--kls-text-1);
+    border: 1px solid var(--kls-border);
+}
+.kls-btn--ghost:hover {
+    background: var(--kls-surface-3);
+    border-color: var(--kls-border-2);
+}
+
+/* Danger */
+.kls-btn--danger {
+    background: #fff1f1;
+    color: #c0392b;
+    border: 1px solid #fecaca;
+}
+.kls-btn--danger:hover { background: #fee2e2; }
+
+/* Size modifier */
+.kls-btn--sm {
+    padding: 5px 10px;
+    font-size: 11px;
+    border-radius: 7px;
+    gap: 4px;
+}
+
+/* Icon-only */
+.kls-btn--icon {
+    padding: 5px;
+    background: none;
+    border: none;
+    color: var(--kls-text-3);
+    cursor: pointer;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--kls-transition), background var(--kls-transition);
+}
+.kls-btn--icon:hover {
+    color: var(--kls-700);
+    background: var(--kls-surface-3);
+}
+.kls-btn--icon svg { width: 15px; height: 15px; display: block; }
+
+/* Reset / Generate PIN */
+.kls-btn--reset {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--kls-font);
+    cursor: pointer;
+    transition: background var(--kls-transition);
+    white-space: nowrap;
+    line-height: 1.4;
+}
+.kls-btn--reset:hover { background: #fef3c7; }
+
+/* ──────────────────────────────────────────────────────────────
+   TOOLBAR
+   ────────────────────────────────────────────────────────────── */
+.kls-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+/* Search */
+.kls-search { flex: 1; min-width: 220px; position: relative; }
+
+.kls-search__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--kls-text-4);
+    pointer-events: none;
+}
+
+.kls-search__input {
+    width: 100%;
+    padding: 9px 12px 9px 38px;
+    border: 1px solid var(--kls-border);
+    border-radius: var(--kls-radius);
+    background: var(--kls-surface);
+    font-size: 13px;
+    font-family: var(--kls-font);
+    color: var(--kls-text-1);
+    outline: none;
+    transition: border-color var(--kls-transition), box-shadow var(--kls-transition);
+}
+.kls-search__input:focus {
+    border-color: var(--kls-700);
+    box-shadow: 0 0 0 3px rgba(0,135,79,.12);
+}
+.kls-search__input::placeholder { color: var(--kls-text-4); }
+
+/* Filter select */
+.kls-filter {
+    padding: 9px 14px;
+    border: 1px solid var(--kls-border);
+    border-radius: var(--kls-radius);
+    background: var(--kls-surface);
+    font-size: 13px;
+    font-family: var(--kls-font);
+    color: var(--kls-text-1);
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--kls-transition);
+}
+.kls-filter:focus {
+    border-color: var(--kls-700);
+    box-shadow: 0 0 0 3px rgba(0,135,79,.12);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   CARD BASE
+   ────────────────────────────────────────────────────────────── */
+.kls-card {
+    background: var(--kls-surface);
+    border: 1px solid var(--kls-border);
+    border-radius: var(--kls-radius-lg);
+    box-shadow: var(--kls-shadow-sm);
+    overflow: hidden;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ADD FORM CARD
+   ────────────────────────────────────────────────────────────── */
+.kls-add-card { margin-bottom: 1.25rem; }
+
+.kls-add-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--kls-900), var(--kls-700));
+    cursor: pointer;
+    user-select: none;
+    transition: filter var(--kls-transition);
+}
+.kls-add-head:hover { filter: brightness(1.06); }
+
+.kls-add-head__left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--kls-font-head);
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.01em;
+}
+.kls-add-head__icon { width: 17px; height: 17px; color: var(--kls-acc); }
+
+.kls-add-chevron {
+    width: 18px;
+    height: 18px;
+    color: var(--kls-acc);
+    transition: transform .22s cubic-bezier(.16,1,.3,1);
+}
+.kls-add-chevron--open { transform: rotate(180deg); }
+
+.kls-add-body {
+    padding: 20px;
+    display: none;
+    border-top: 1px solid var(--kls-border);
+}
+.kls-add-body--open {
+    display: block;
+    animation: klsSlideDown .22s ease both;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   FORM GRID & FIELDS
+   ────────────────────────────────────────────────────────────── */
+.kls-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 18px;
+}
+@media (max-width: 520px) {
+    .kls-form-grid { grid-template-columns: 1fr; }
+}
+
+.kls-field { display: flex; flex-direction: column; gap: 5px; }
+
+.kls-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--kls-text-3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.kls-input,
+.kls-select {
+    padding: 9px 12px;
+    border: 1px solid var(--kls-border);
+    border-radius: 8px;
+    background: var(--kls-surface-2);
+    font-size: 13px;
+    font-family: var(--kls-font);
+    color: var(--kls-text-1);
+    outline: none;
+    width: 100%;
+    transition: border-color var(--kls-transition), box-shadow var(--kls-transition), background var(--kls-transition);
+}
+.kls-input:focus,
+.kls-select:focus {
+    border-color: var(--kls-700);
+    background: var(--kls-surface);
+    box-shadow: 0 0 0 3px rgba(0,135,79,.12);
+}
+.kls-input::placeholder { color: var(--kls-text-4); }
+
+/* PIN notice */
+.kls-pin-notice {
+    margin: 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, rgba(0,61,36,.04), rgba(0,105,62,.06));
+    border: 1px solid rgba(0,105,62,.18);
+    border-radius: 9px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--kls-800);
+    font-weight: 500;
+}
+.kls-pin-notice__icon { width: 15px; height: 15px; flex-shrink: 0; color: var(--kls-700); }
+
+/* Form actions */
+.kls-form-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+/* ──────────────────────────────────────────────────────────────
+   TABLE CARD
+   ────────────────────────────────────────────────────────────── */
+.kls-tbl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--kls-border);
+    flex-wrap: wrap;
+    gap: 8px;
+    background: linear-gradient(to right, var(--kls-surface-2), var(--kls-surface));
+}
+
+.kls-tbl-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--kls-font-head);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--kls-text-1);
+    letter-spacing: -.01em;
+}
+.kls-tbl-title__icon { width: 17px; height: 17px; color: var(--kls-700); }
+
+.kls-tbl-hint { font-size: 11px; color: var(--kls-text-4); }
+
+.kls-tbl-wrap { overflow-x: auto; }
+
+/* Table */
+.kls-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 680px;
+    font-family: var(--kls-font);
+}
+
+.kls-table thead tr { background: var(--kls-surface-2); }
+
+.kls-table thead th {
+    padding: 9px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--kls-text-3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    border-bottom: 1px solid var(--kls-border);
+    white-space: nowrap;
+}
+
+.kls-table tbody tr {
+    border-top: 1px solid #f0f7fb;
+    transition: background var(--kls-transition);
+}
+.kls-table tbody tr:hover { background: var(--kls-surface-2); }
+
+.kls-table tbody td {
+    padding: 13px 16px;
+    vertical-align: middle;
+    color: var(--kls-text-1);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   TABLE CELL COMPONENTS
+   ────────────────────────────────────────────────────────────── */
+
+/* Nomor urut */
+.kls-no {
+    font-size: 11px;
+    color: var(--kls-text-4);
+    font-weight: 500;
+}
+
+/* Badge sekolah */
+.kls-school-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--kls-800);
+    background: linear-gradient(135deg, rgba(0,61,36,.06), rgba(0,105,62,.04));
+    border: 1px solid rgba(0,105,62,.2);
+    border-radius: 6px;
+    padding: 3px 9px;
+    white-space: nowrap;
+}
+.kls-school-badge svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+/* Nama kelas */
+.kls-class-name {
+    font-weight: 600;
+    color: var(--kls-text-1);
+    font-size: 13px;
+}
+
+/* Tingkat / jurusan */
+.kls-grade-wrap { display: flex; align-items: center; gap: 6px; }
+
+.kls-grade-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--kls-800);
+    background: rgba(0,105,62,.08);
+    border: 1px solid rgba(0,105,62,.16);
+    border-radius: 5px;
+    padding: 2px 7px;
+    letter-spacing: .02em;
+}
+
+.kls-major { font-size: 12px; color: var(--kls-text-3); }
+
+/* Jumlah siswa */
+.kls-student-count { font-weight: 600; font-size: 13px; }
+.kls-student-label { font-size: 11px; color: var(--kls-text-4); margin-left: 2px; }
+
+/* ──────────────────────────────────────────────────────────────
+   PIN
+   ────────────────────────────────────────────────────────────── */
+.kls-pin-wrap { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.kls-pin-badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--kls-mono);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .16em;
+    /* Aksen biru muda dari referensi */
+    color: #003d5c;
+    background: linear-gradient(135deg, #dff0f8, #e8f5fb);
+    border: 1px solid var(--kls-acc-2);
+    border-radius: 7px;
+    padding: 5px 12px;
+}
+
+.kls-pin-none { font-size: 11px; color: var(--kls-text-4); font-style: italic; }
+
+/* ──────────────────────────────────────────────────────────────
+   INLINE EDIT FORM
+   ────────────────────────────────────────────────────────────── */
+.kls-edit-form {
+    display: none;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--kls-surface-2);
+    border: 1px dashed var(--kls-border-2);
+    border-radius: 9px;
+}
+.kls-edit-form--show { display: flex; }
+
+.kls-input-sm {
+    border: 1px solid var(--kls-border);
+    border-radius: 7px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-family: var(--kls-font);
+    color: var(--kls-text-1);
+    background: var(--kls-surface);
+    outline: none;
+    transition: border-color var(--kls-transition), box-shadow var(--kls-transition);
+}
+.kls-input-sm:focus {
+    border-color: var(--kls-700);
+    box-shadow: 0 0 0 2px rgba(0,135,79,.12);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ACTIONS
+   ────────────────────────────────────────────────────────────── */
+.kls-actions { display: flex; gap: 5px; align-items: center; }
+
+/* ──────────────────────────────────────────────────────────────
+   EMPTY STATE
+   ────────────────────────────────────────────────────────────── */
+.kls-empty { padding: 48px 20px; text-align: center; color: var(--kls-text-4); }
+.kls-empty__icon { width: 36px; height: 36px; margin: 0 auto 10px; color: var(--kls-border); }
+.kls-empty__text { font-size: 13px; }
+
+/* ──────────────────────────────────────────────────────────────
+   TOAST
+   ────────────────────────────────────────────────────────────── */
+.kls-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: linear-gradient(135deg, var(--kls-900), var(--kls-700));
+    color: var(--kls-acc);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--kls-font);
+    box-shadow: var(--kls-shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity .22s ease, transform .22s ease;
+    white-space: nowrap;
+    border: 1px solid rgba(185,217,235,.2);
+}
+.kls-toast--show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   VALIDATION ERRORS (Laravel @error)
+   ────────────────────────────────────────────────────────────── */
+.kls-error {
+    font-size: 11px;
+    color: #c0392b;
+    margin-top: 3px;
+}
+.kls-input--error,
+.kls-select--error {
+    border-color: #fca5a5 !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,.1) !important;
+}

@@ -15,7 +15,12 @@ class User extends Authenticatable
 
     protected $fillable = [
         'username', 'email', 'password_hash',
-        'full_name', 'phone', 'role', 'organization_id', 'is_active',
+        'full_name', 'phone', 'role', 'organization_id', 'is_active', 'metadata',
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
+        'is_active' => 'boolean',
     ];
 
     protected $hidden = [

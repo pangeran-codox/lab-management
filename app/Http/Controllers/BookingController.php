@@ -4,20 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use App\Models\TimeSlot;
 use App\Models\Booking;
 use App\Models\SundayBooking;
 use App\Services\Booking\BookingAccessService;
 use App\Services\Booking\BookingQueryService;
 use App\Services\Booking\BookingApprovalService;
 use App\Services\Booking\SundayBookingService;
+use App\Services\Booking\ConflictCheckerService;
 
 class BookingController extends Controller
 {
     public function __construct(
-        private BookingAccessService  $access,
-        private BookingQueryService   $query,
+        private BookingAccessService   $access,
+        private BookingQueryService    $query,
         private BookingApprovalService $approval,
-        private SundayBookingService  $sunday,
+        private SundayBookingService   $sunday,
+        private ConflictCheckerService $conflict,  // ← TAMBAH
     ) {}
 
     // ══════════════════════════════════════════════════════════════════
@@ -26,12 +30,46 @@ class BookingController extends Controller
 
     public function index(Request $request)
     {
-        $bookings       = $this->query->getBookings($request);
+        $bookings = $this->query->getBookings($request);
         $sundayBookings = $this->query->getSundayBookings($request);
-        $resources      = $this->access->getAccessibleResources();
-        $stats          = $this->query->getStats();
+        $resources = $this->access->getAccessibleResources();
+        $stats = $this->query->getStats();
 
-        return view('booking.index', compact('bookings', 'sundayBookings', 'resources', 'stats'));
+        // ─── WEEKLY GRID OPTIMIZATION ──────────────────────────
+        $weekDate = $request->get('week');
+        $weekStart = $weekDate ? Carbon::parse($weekDate)->startOfWeek(Carbon::SUNDAY) : now()->startOfWeek(Carbon::SUNDAY);
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SATURDAY);
+
+        $resourceIds = $resources->pluck('id');
+
+        // Gunakan ScheduleQueryService untuk data grid mingguan (O(1) lookup)
+        $weeklyBookings = Booking::with(['timeSlot', 'resource'])
+            ->whereIn('resource_id', $resourceIds)
+            ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereIn('status', ['pending', 'approved'])
+            ->get();
+
+        $bookingGrid = $weeklyBookings->groupBy(function ($b) {
+            return $b->resource_id . '_' . $b->booking_date->toDateString() . '_' . $b->time_slot_id;
+        })->map(fn($group) => $group->first());
+
+        $timeSlots = TimeSlot::where('is_break', false)->orderBy('start_time')->get();
+
+        $weekDays = [];
+        for ($i = 0; $i < 7; $i++) {
+            $date = $weekStart->copy()->addDays($i);
+            $weekDays[] = [
+                'date'    => $date,
+                'label'   => $date->translatedFormat('D'),
+                'display' => $date->translatedFormat('d M'),
+                'full'    => $date->translatedFormat('l'),
+            ];
+        }
+
+        return view('booking.index', compact(
+            'bookings', 'sundayBookings', 'resources', 'stats',
+            'weekStart', 'weekEnd', 'weekDays', 'timeSlots', 'bookingGrid', 'weeklyBookings'
+        ));
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -147,8 +185,7 @@ class BookingController extends Controller
             return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
         }
 
-        $title = $booking->title;
-        $booking->delete();
+        $title = $this->approval->destroy($booking);
 
         return back()->with('success', 'Booking "' . $title . '" berhasil dihapus.');
     }

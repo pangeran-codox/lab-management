@@ -45,23 +45,8 @@
             $hasImp   = $impEvents->isNotEmpty();
             $firstImp = $impEvents->first();
 
-            // Hitung slot tersedia untuk footer
-            $availCount = 0;
-            foreach ($timeSlots->where('is_break', false) as $_s) {
-                $_sk   = $resource->id . '_' . $dayEn . '_' . $_s->id;
-                $_bk   = $resource->id . '_' . $date . '_' . $_s->id;
-                $_sch  = $schedules->get($_sk)?->first();
-                $_bk2  = $bookings->get($_bk)?->first();
-                $_past = $dm['isPast'] || ($dm['isToday'] && ($slotPastMap[$_s->id] ?? false));
-                $_imp  = false;
-                foreach ($impEvents as $_ev) {
-                    if ($_ev->is_full_day || (
-                        $_s->slot_order >= ($_ev->startSlot?->slot_order ?? 0) &&
-                        $_s->slot_order <= ($_ev->endSlot?->slot_order ?? 0)
-                    )) { $_imp = true; break; }
-                }
-                if (!$_sch && !$_bk2 && !$_past && !$_imp) $availCount++;
-            }
+            // Ambil ketersediaan dari data yang sudah di-precompute
+            $availCount = $availCounts[$resource->id . '_' . $date] ?? 0;
         @endphp
 
         <div class="day-card {{ $dm['isToday'] ? 'day-card--today' : '' }}">

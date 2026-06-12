@@ -1,6 +1,10 @@
 {
+  "_chart-BR_H7_9u.js": {
+    "file": "assets/chart-BR_H7_9u.js",
+    "name": "chart"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-7a_c3FpV.css",
+    "file": "assets/app-Bm-f2xmS.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -9,9 +13,39 @@
     "src": "resources/css/assignment.css",
     "isEntry": true
   },
+  "resources/css/booking.css": {
+    "file": "assets/booking-K1nFyhG1.css",
+    "src": "resources/css/booking.css",
+    "isEntry": true
+  },
+  "resources/css/dashboard.css": {
+    "file": "assets/dashboard-BZhs45Pt.css",
+    "src": "resources/css/dashboard.css",
+    "isEntry": true
+  },
+  "resources/css/important.css": {
+    "file": "assets/important-C_j2EJKA.css",
+    "src": "resources/css/important.css",
+    "isEntry": true
+  },
   "resources/css/inventory.css": {
     "file": "assets/inventory-DJF4E8l8.css",
     "src": "resources/css/inventory.css",
+    "isEntry": true
+  },
+  "resources/css/inventoryadmin.css": {
+    "file": "assets/inventoryadmin-BxWykNUN.css",
+    "src": "resources/css/inventoryadmin.css",
+    "isEntry": true
+  },
+  "resources/css/jadwal.css": {
+    "file": "assets/jadwal-BDhnTPLx.css",
+    "src": "resources/css/jadwal.css",
+    "isEntry": true
+  },
+  "resources/css/kelas.css": {
+    "file": "assets/kelas-Bln-vWHY.css",
+    "src": "resources/css/kelas.css",
     "isEntry": true
   },
   "resources/css/login.css": {
@@ -34,22 +68,98 @@
     "src": "resources/css/schedule.css",
     "isEntry": true
   },
+  "resources/css/sekolah.css": {
+    "file": "assets/sekolah-CF-y3bJL.css",
+    "src": "resources/css/sekolah.css",
+    "isEntry": true
+  },
+  "resources/css/teacher.css": {
+    "file": "assets/teacher-D9kLXHCH.css",
+    "src": "resources/css/teacher.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-UyRVujZY.js",
+    "file": "assets/app-CWa72sNU.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
   },
+  "resources/js/booking.js": {
+    "file": "assets/booking-09wGyUTa.js",
+    "name": "booking",
+    "src": "resources/js/booking.js",
+    "isEntry": true
+  },
+  "resources/js/dashboard.js": {
+    "file": "assets/dashboard-BR9ufn90.js",
+    "name": "dashboard",
+    "src": "resources/js/dashboard.js",
+    "isEntry": true,
+    "imports": [
+      "_chart-BR_H7_9u.js"
+    ]
+  },
+  "resources/js/important.js": {
+    "file": "assets/important-6RYVGh4C.js",
+    "name": "important",
+    "src": "resources/js/important.js",
+    "isEntry": true
+  },
   "resources/js/inventory.js": {
-    "file": "assets/inventory-CjOCwkjj.js",
+    "file": "assets/inventory-A0gwbG8g.js",
     "name": "inventory",
     "src": "resources/js/inventory.js",
     "isEntry": true
   },
+  "resources/js/inventoryadmin.js": {
+    "file": "assets/inventoryadmin-B8TE28mX.js",
+    "name": "inventoryadmin",
+    "src": "resources/js/inventoryadmin.js",
+    "isEntry": true
+  },
+  "resources/js/jadwal.js": {
+    "file": "assets/jadwal-DSNqVltb.js",
+    "name": "jadwal",
+    "src": "resources/js/jadwal.js",
+    "isEntry": true
+  },
+  "resources/js/kelas.js": {
+    "file": "assets/kelas-Cwbckzea.js",
+    "name": "kelas",
+    "src": "resources/js/kelas.js",
+    "isEntry": true,
+    "css": [
+      "assets/kelas-Bln-vWHY.css"
+    ]
+  },
+  "resources/js/rekap.js": {
+    "file": "assets/rekap-BtSdRiN-.js",
+    "name": "rekap",
+    "src": "resources/js/rekap.js",
+    "isEntry": true,
+    "imports": [
+      "_chart-BR_H7_9u.js"
+    ]
+  },
   "resources/js/schedule.js": {
-    "file": "assets/schedule-DAg5tCMC.js",
+    "file": "assets/schedule-BAVJWNMA.js",
     "name": "schedule",
     "src": "resources/js/schedule.js",
+    "isEntry": true
+  },
+  "resources/js/sekolah.js": {
+    "file": "assets/sekolah-BG-KNWBy.js",
+    "name": "sekolah",
+    "src": "resources/js/sekolah.js",
+    "isEntry": true,
+    "css": [
+      "assets/sekolah-CF-y3bJL.css"
+    ]
+  },
+  "resources/js/teacher.js": {
+    "file": "assets/teacher-DajjJY8z.js",
+    "name": "teacher",
+    "src": "resources/js/teacher.js",
     "isEntry": true
   }
 }

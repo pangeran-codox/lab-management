@@ -62,24 +62,41 @@ class BookingQueryService
     {
         $allowed = $this->access->getAllowedResources();
 
-        $query = Booking::query();
-
-        if ($allowed !== null) $query->whereIn('resource_id', $allowed);
-
-        $raw = (clone $query)
+        $bookingStats = Booking::query()
+            ->when($allowed, fn($q) => $q->whereIn('resource_id', $allowed))
             ->selectRaw("
                 COUNT(*) as total,
-                SUM(CASE WHEN status = 'pending'  THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
+            ")
+            ->first();
+
+        $sundayStats = SundayBooking::query()
+            ->when($allowed, fn($q) => $q->whereIn('resource_id', $allowed))
+            ->selectRaw("
+                COUNT(*) as total,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
             ")
             ->first();
 
         return [
-            'total'    => (int) ($raw->total    ?? 0),
-            'pending'  => (int) ($raw->pending  ?? 0),
-            'approved' => (int) ($raw->approved ?? 0),
-            'rejected' => (int) ($raw->rejected ?? 0),
+            'regular' => [
+                'total'    => (int) ($bookingStats->total    ?? 0),
+                'pending'  => (int) ($bookingStats->pending  ?? 0),
+                'approved' => (int) ($bookingStats->approved ?? 0),
+                'rejected' => (int) ($bookingStats->rejected ?? 0),
+            ],
+            'sunday' => [
+                'total'    => (int) ($sundayStats->total    ?? 0),
+                'pending'  => (int) ($sundayStats->pending  ?? 0),
+                'approved' => (int) ($sundayStats->approved ?? 0),
+                'rejected' => (int) ($sundayStats->rejected ?? 0),
+            ],
+            // Totals
+            'total_pending' => (int) (($bookingStats->pending ?? 0) + ($sundayStats->pending ?? 0)),
         ];
     }
 }
