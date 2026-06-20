@@ -16,8 +16,8 @@ class DashboardController extends Controller
         $authUser = auth()->user();
         $allowedResources = null;
         
-        if (!in_array($authUser->role, ['admin', 'operator'])) {
-            $allowedResources = $authUser->metadata['allowed_resources'] ?? [];
+        if (!$authUser->hasFullAccess()) {
+            $allowedResources = $authUser->getAssignedLabIds();
         }
 
         $data = $this->dashboardService->getDashboardData($allowedResources);

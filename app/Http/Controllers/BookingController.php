@@ -42,12 +42,8 @@ class BookingController extends Controller
 
         $resourceIds = $resources->pluck('id');
 
-        // Gunakan ScheduleQueryService untuk data grid mingguan (O(1) lookup)
-        $weeklyBookings = Booking::with(['timeSlot', 'resource'])
-            ->whereIn('resource_id', $resourceIds)
-            ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
-            ->whereIn('status', ['pending', 'approved'])
-            ->get();
+        // Gunakan BookingQueryService untuk weekly bookings
+        $weeklyBookings = $this->query->getWeeklyBookings($weekStart, $weekEnd, $resourceIds);
 
         $bookingGrid = $weeklyBookings->groupBy(function ($b) {
             return $b->resource_id . '_' . $b->booking_date->toDateString() . '_' . $b->time_slot_id;
@@ -173,6 +169,28 @@ class BookingController extends Controller
         }
 
         return back()->with('success', 'Booking "' . $booking->title . '" telah ditolak.');
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // REJECT GROUP
+    // ══════════════════════════════════════════════════════════════════
+
+    public function rejectGroup(Request $request)
+    {
+        if (!$this->access->checkResourceAccess((int) $request->resource_id)) {
+            return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
+        }
+
+        try {
+            $count = $this->approval->rejectGroup($request);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('rejectGroup failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menolak booking. Silakan coba lagi.');
+        }
+
+        return back()->with('success', "{$count} slot booking berhasil ditolak sekaligus.");
     }
 
     // ══════════════════════════════════════════════════════════════════

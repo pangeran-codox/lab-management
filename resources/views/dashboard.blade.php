@@ -351,10 +351,7 @@ $thisWeekBook = array_sum($bookingPerDay);
                     <div style="flex:1;min-width:0">
                         <p class="sched-name">{{ $is->title }}</p>
                         <p class="sched-sub">
-                            {{ \Carbon\Carbon::parse($is->start_date)->translatedFormat('d M') }}
-                            @if($is->start_date->toDateString() !== $is->end_date->toDateString())
-                                – {{ \Carbon\Carbon::parse($is->end_date)->translatedFormat('d M Y') }}
-                            @endif
+                            {{ $is->date->translatedFormat('d M Y') }}
                         </p>
                     </div>
                 </div>

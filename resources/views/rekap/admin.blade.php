@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-            📊 Rekap Penggunaan Laboratorium
+        <h2 class="text-xl font-bold text-gray-800">
+            📊 Dashboard Rekap Penggunaan Laboratorium
         </h2>
     </x-slot>
 
@@ -9,37 +9,37 @@
     @vite(['resources/css/rekap.css'])
     @endpush
 
-    <div class="py-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {{-- ═══ FILTER ═══ --}}
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-            <form method="GET" action="{{ route('reports.usage.index') }}" class="flex flex-wrap items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-gray-700 dark:text-gray-300 font-medium">Bulan:</label>
-                    <select name="month" class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary focus:border-transparent">
-                        @foreach($months as $m => $mName)
-                        <option value="{{ $m }}" {{ $month == $m ? 'selected' : '' }}>{{ $mName }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-gray-700 dark:text-gray-300 font-medium">Tahun:</label>
-                    <select name="year" class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-primary focus:border-transparent">
-                        @foreach($years as $y)
-                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-bold px-4 py-2 rounded-lg transition-all duration-300">
-                    Tampilkan
-                </button>
-                <div class="text-gray-600 dark:text-gray-400 ml-auto">
-                    {{ $startDate->translatedFormat('d M') }} – {{ $endDate->translatedFormat('d M Y') }}
-                </div>
-            </form>
-        </div>
+    {{-- ═══ FILTER ═══ --}}
+    <div class="filter-bar">
+        <form method="GET" action="{{ route('reports.usage.index') }}" class="flex flex-wrap items-center gap-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium" style="color: #6b8fa3;">Bulan:</label>
+                <select name="month" class="inp">
+                    @foreach($months as $m => $mName)
+                    <option value="{{ $m }}" {{ $month == $m ? 'selected' : '' }}>{{ $mName }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium" style="color: #6b8fa3;">Tahun:</label>
+                <select name="year" class="inp">
+                    @foreach($years as $y)
+                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">
+                Tampilkan
+            </button>
+            <div class="period-lbl ml-auto">
+                {{ $startDate->translatedFormat('d M') }} – {{ $endDate->translatedFormat('d M Y') }}
+            </div>
+        </form>
+    </div>
 
+    <div class="py-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {{-- ═══ MAIN WRAP ═══ --}}
-        <div class="wrap">
+        <div>
             {{-- SUMMARY --}}
             <div class="sum-grid">
                 <div class="sum-card">
@@ -220,10 +220,10 @@
                     {{-- Header --}}
                     <div class="lab-hdr">
                         <div>
-                            <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:#fff;margin:0">
+                            <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;margin:0">
                                 🏫 {{ $lab['resource']->name }} @if($lab['resource']->organization) ({{ $lab['resource']->organization->name }}) @endif
                             </h2>
-                            <p style="font-size:11px;color:rgba(172,200,162,.4);margin-top:4px">
+                            <p style="font-size:11px;margin-top:4px">
                                 {{ $lab['totalCapacity'] }} slot kapasitas · {{ $totalSlotPerDay }} slot/hari
                                 @if($lab['resource']->building) · {{ $lab['resource']->building }} @endif
                             </p>
@@ -231,10 +231,10 @@
                         <div style="display:flex;align-items:center;gap:14px">
                             <div style="text-align:right">
                                 <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800;color:{{ $pctColor }};line-height:1">{{ $pct }}%</div>
-                                <div style="font-size:10px;color:rgba(172,200,162,.35);margin-top:2px">Tingkat Penggunaan</div>
+                                <div style="font-size:10px;margin-top:2px">Tingkat Penggunaan</div>
                             </div>
                             <svg viewBox="0 0 36 36" style="width:56px;height:56px;transform:rotate(-90deg)">
-                                <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(172,200,162,.1)" stroke-width="3.5"/>
+                                <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="3.5"/>
                                 <circle cx="18" cy="18" r="15.9" fill="none" stroke="{{ $pctColor }}" stroke-width="3.5"
                                     stroke-dasharray="{{ $pct }} {{ 100-$pct }}" stroke-linecap="round"/>
                             </svg>
@@ -243,11 +243,11 @@
 
                     {{-- Stats --}}
                     <div class="stat-row">
-                        <div class="stat-cell" style="background:rgba(172,200,162,.05)">
+                        <div class="stat-cell">
                             <div class="stat-val" style="color:#1A2517">{{ $lab['scheduledSlots'] }}</div>
                             <div class="stat-key">Jadwal Tetap</div>
                         </div>
-                        <div class="stat-cell" style="background:#eff6ff">
+                        <div class="stat-cell">
                             <div class="stat-val" style="color:#2563eb">{{ $lab['bookingSlots'] }}</div>
                             <div class="stat-key">Booking</div>
                         </div>
@@ -255,7 +255,7 @@
                             <div class="stat-val" style="color:#1A2517">{{ $lab['totalUsed'] }}</div>
                             <div class="stat-key">Total Terpakai</div>
                         </div>
-                        <div class="stat-cell" style="background:#f9fafb">
+                        <div class="stat-cell">
                             <div class="stat-val" style="color:#9ca3af">{{ $lab['totalFree'] }}</div>
                             <div class="stat-key">Slot Kosong</div>
                         </div>
@@ -276,6 +276,15 @@
                                 <div class="prog-fill" style="width:{{ $pb }}%;background:linear-gradient(90deg,#93c5fd,#2563eb)"></div>
                             </div>
                             <span class="prog-pct" style="color:#2563eb">{{ round($pb,1) }}%</span>
+                        </div>
+                    </div>
+
+                    {{-- Donut Chart Guru --}}
+                    <div class="donut-card">
+                        <div class="sec-lbl">Distribusi Penggunaan per Guru</div>
+                        <div class="donut-content">
+                            <canvas class="donut-canvas" data-teacher-usage="{{ json_encode($lab['teacherUsage']) }}" data-total-used="{{ $lab['totalUsed'] }}"></canvas>
+                            <div class="donut-legend"></div>
                         </div>
                     </div>
 
@@ -503,6 +512,7 @@
         };
 
         function switchTab(idx, resourceId) {
+            console.log('🔄 Switching to tab:', idx, 'Resource ID:', resourceId);
             document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('on'); });
             document.querySelectorAll('.tab').forEach(function(t)   { t.classList.remove('on'); });
             document.getElementById('panel-' + idx).classList.add('on');

@@ -185,6 +185,55 @@ function openReject(id, title, teacher, type = 'regular') {
     $id('reject-form').action = base + '/' + id + '/reject';
     $id('reject-type').value  = type;
 
+    // Reset hidden inputs
+    let groupInputs = $id('reject-form').querySelectorAll('[name="teacher_name"],[name="resource_id"],[name="booking_date"]');
+    groupInputs.forEach(el => el.remove());
+
+    // Change method to PATCH for single
+    let methodInput = $id('reject-form').querySelector('input[name="_method"]');
+    if (!methodInput) {
+        methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        $id('reject-form').prepend(methodInput);
+    }
+    methodInput.value = 'PATCH';
+
+    // Update button text
+    $id('reject-submit-btn').textContent = '✗ Tolak Booking';
+
+    $id('reject-modal').classList.add('open');
+    bodyLock();
+}
+
+function openRejectGroup(teacherName, resourceId, bookingDate, count) {
+    $id('reject-subtitle').textContent = `Tolak ${count} slot booking ${teacherName} sekaligus`;
+
+    const base = window.BOOKING_ROUTE_BASE || '/booking';
+    $id('reject-form').action = base + '/reject-group';
+    $id('reject-type').value  = 'regular';
+
+    // Reset and add group hidden inputs
+    let groupInputs = $id('reject-form').querySelectorAll('[name="teacher_name"],[name="resource_id"],[name="booking_date"],[name="_method"]');
+    groupInputs.forEach(el => el.remove());
+
+    // Add group inputs
+    const inputs = [
+        { name: 'teacher_name', value: teacherName },
+        { name: 'resource_id',  value: resourceId },
+        { name: 'booking_date', value: bookingDate }
+    ];
+    inputs.forEach(({ name, value }) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        $id('reject-form').prepend(input);
+    });
+
+    // Update button text
+    $id('reject-submit-btn').textContent = `✗ Tolak ${count} Slot`;
+
     $id('reject-modal').classList.add('open');
     bodyLock();
 }
@@ -223,4 +272,5 @@ window.bkCloseAdd    = bkCloseAdd;
 window.bkOpenView    = bkOpenView;
 window.bkCloseView   = bkCloseView;
 window.openReject    = openReject;
+window.openRejectGroup = openRejectGroup;
 window.closeReject   = closeReject;

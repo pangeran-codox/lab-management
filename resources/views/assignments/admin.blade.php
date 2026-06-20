@@ -280,7 +280,40 @@
         z-index: 60;
     }
 
+    /* ── Form Fields ── */
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .field-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+    .inp {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        font-family: var(--font-main);
+        font-size: 14px;
+        transition: all 0.2s;
+        background: #fff;
+    }
+    .inp:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0, 105, 62, 0.1);
+    }
+    .field-row-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
     @media (max-width: 1024px) {
+        .field-row-3 { grid-template-columns: 1fr; }
         .mobile-nav { display: flex; }
     }
 </style>
@@ -330,13 +363,19 @@
         </nav>
 
         <div style="margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
                 <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; font-size: 12px;">{{ substr($teacher->name ?? 'G', 0, 1) }}</div>
                 <div>
                     <div style="font-weight: 700; font-size: 13px;">{{ $teacher->name ?? 'Guru' }}</div>
                     <div style="font-size: 11px; color: var(--text-muted);">{{ $teacher->token ?? '-' }}</div>
                 </div>
             </div>
+            <a href="{{ route('assignment.admin.logout') }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; color: var(--text-muted); font-size: 13px; font-weight: 700; transition: all 0.2s; background: rgba(0, 105, 62, 0.05);">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </a>
         </div>
     </aside>
 

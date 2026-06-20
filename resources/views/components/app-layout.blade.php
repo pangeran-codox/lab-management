@@ -22,6 +22,62 @@
         .nav-item { border-left:3px solid transparent; }
         .nav-item:hover { background:rgba(185,217,235,.08) !important; color:rgba(185,217,235,.8) !important; }
 
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #003d24, #00331e);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+            opacity: 1; pointer-events: all; transition: opacity 0.5s ease;
+        }
+        .loading-screen.hidden {
+            opacity: 0; pointer-events: none;
+        }
+        .loading-logo {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
+            opacity: 0; transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        .loading-logo-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: rgba(185,217,235,0.15);
+            border: 2px solid rgba(185,217,235,0.3);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 15px 50px rgba(0,0,0,0.3); }
+        }
+        .loading-logo-text {
+            text-align: left;
+        }
+        .loading-logo-text h1 {
+            color: #fff; font-size: 24px; font-weight: 700; font-family: 'Outfit', sans-serif;
+            margin: 0; line-height: 1.1;
+        }
+        .loading-logo-text p {
+            color: #B9D9EB; font-size: 12px; font-weight: 500; margin: 2px 0 0 0;
+        }
+        .loading-spinner-container {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .loading-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #B9D9EB;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Global Toast */
         #global-toast-wrap { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
         .g-toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:11px; font-size:13px; font-weight:500; box-shadow:0 8px 32px rgba(0,61,36,.2); pointer-events:all; animation:g-toastIn .3s cubic-bezier(.16,1,.3,1); min-width:260px; max-width:340px; }
@@ -42,9 +98,39 @@
 </head>
 <body class="bg-gray-50 antialiased">
 
+<!-- Loading Screen -->
+<div class="loading-screen" id="loading-screen">
+    <div class="loading-logo">
+        <div class="loading-logo-icon">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#B9D9EB" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <div class="loading-logo-text">
+            <h1>Lab Management</h1>
+            <p>Nuris Jember</p>
+        </div>
+    </div>
+    <div class="loading-spinner-container">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+    </div>
+</div>
+
 <div id="global-toast-wrap"></div>
 
 <script>
+    // Hide loading screen when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+            }
+        }, 300); // Minimum delay so it doesn't flash
+    });
+
     window.showGlobalNotification = function(msg, type = 'ok') {
         const wrap = document.getElementById('global-toast-wrap');
         if (!wrap) return;
@@ -80,7 +166,7 @@
     // Pass allowed resources to JS for Reverb filtering
     window.userConfig = {
         role: "{{ auth()->user()->role }}",
-        allowedResources: @json(auth()->user()->metadata['allowed_resources'] ?? [])
+        allowedResources: @json(auth()->user()->getAssignedLabIds())
     };
 </script>
 
@@ -126,8 +212,9 @@
                 ['route'=>'reports.usage.index',    'label'=>'Laporan Penggunaan','icon'=>'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                 ['route'=>'teacher.index',          'label'=>'Data Guru',      'icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'roles' => ['admin', 'staff']],
                 ['route'=>'organization.index',     'label'=>'Sekolah & Kelas','icon'=>'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 'roles' => ['admin', 'staff']],
-                ['route'=>'assignment.admin',       'label'=>'Tugas',          'icon'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
+                ['route'=>'assignment.admin',       'label'=>'Tugas',          'icon'=>'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
                 ['route'=>'important-schedule.index','label'=>'Jadwal Penting','icon'=>'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z', 'roles' => ['admin', 'staff']],
+                ['route'=>'users.index',            'label'=>'Pengelolaan Pengguna','icon'=>'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', 'roles' => ['admin', 'super_admin']],
             ];
             @endphp
 
@@ -135,6 +222,7 @@
             @if(!isset($item['roles']) || in_array(auth()->user()->role, $item['roles']))
             @php $active = request()->routeIs($item['route']); @endphp
             <a href="{{ route($item['route']) }}"
+               @click="sidebarOpen = false"
                class="nav-item {{ $active ? 'nav-active' : '' }} group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
                style="color:{{ $active ? '#B9D9EB' : 'rgba(185,217,235,.45)' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -152,9 +240,7 @@
                             ->when($allowed, fn($q) => $q->whereIn('resource_id', $allowed))
                             ->count();
                     @endphp
-                    @if($pc > 0)
-                    <span class="ml-auto text-white text-xs font-bold px-1.5 py-0.5 rounded-full" style="background:#ef4444;font-size:10px">{{ $pc }}</span>
-                    @endif
+                    <span class="notification-badge ml-auto text-white text-xs font-bold px-1.5 py-0.5 rounded-full" style="background:#ef4444;font-size:10px;{{ $pc >0 ? '' : 'display:none;' }}">{{ $pc }}</span>
                 @endif
             </a>
             @endif
@@ -264,5 +350,22 @@
 
 @livewireScripts
 @stack('scripts')     {{-- ← tambah ini --}}
+
+<script>
+    // Fallback untuk menutup sidebar ketika mengklik link navigasi
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarLinks = document.querySelectorAll('.nav-item');
+        sidebarLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                // Cari elemen dengan Alpine.js dan tutup sidebar
+                const layout = document.querySelector('[x-data]');
+                if (layout && layout.__x) {
+                    layout.__x.$data.sidebarOpen = false;
+                }
+            });
+        });
+    });
+</script>
+
 </body>
 </html>

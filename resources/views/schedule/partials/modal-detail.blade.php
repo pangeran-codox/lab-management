@@ -91,13 +91,19 @@ function showDetail(d) {
             ${d.title        ? rowHtml(iconDoc(),     d.title)                       : ''}
             ${rowHtml(iconClock(), (d.slot ?? '') + (d.time ? ' · ' + d.time : ''))}
             ${rowHtml(iconLab(),   d.lab ?? '')}
-            ${d.participants ? rowHtml(iconPeople(),  d.participants + ' siswa')     : ''}
+            ${d.participants ? rowHtml(iconPeople(),  d.participants + ' peserta')     : ''}
             ${d.desc         ? rowHtml(iconText(),    d.desc)                        : ''}
             ${d.phone        ? `<div class="detail-row">
                 <span class="detail-icon">${iconPhone()}</span>
-                <a href="https://wa.me/${escHtml(d.phone)}" target="_blank"
-                   style="color:var(--g7);font-weight:500;text-decoration:none">
-                   +${escHtml(d.phone)}
+                <span style="font-weight:600;color:var(--g7)">${maskPhone(d.phone)}</span>
+            </div>
+            <div style="margin-top:12px">
+                <a href="https://wa.me/${d.phone.replace(/\D/g, '')}" target="_blank"
+                   style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;background:#25d366;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:13px">
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.52 3.48a11.85 11.85 0 00-17 0 11.89 11.89 0 00-2.74 8.46 11.93 11.93 0 003.56 8.29l.17.18-.4 1.46-1.47.4.18.18a11.92 11.92 0 008.68 3.04h.01a11.94 11.94 0 008.46-3.05 11.89 11.89 0 003.05-8.46 11.85 11.85 0 00-3.48-8.46zM17.86 15.9c-.33.93-1.91 1.78-2.65 1.8-.68.02-1.55.04-2.51-.16-.58-.12-1.32-.42-2.27-.88-3.96-1.93-6.53-6.3-6.7-6.6-.17-.3-1.4-2.33 1.41-4.48 1.25-.97 2.5-1.13 3.04-1.13.47 0 1.09-.18 1.68.9.59 1.08.79 1.87 1.01 2.35.22.48.11.9-.06 1.28-.18.38-.5.61-.93.97-.43.36-.75.54-1.07.72-.32.18-.07.86.43 1.89.5 1.03 1.03 1.69 1.86 2.24 1.22.8 2.22.7 2.89.62.67-.08 2.08-.85 2.38-1.68.3-.83.3-1.54.21-1.68-.09-.14-.33-.22-.65-.38-.32-.16-1.9-.93-2.19-1.04-.29-.11-.5-.16-.72.11-.22.27-.84.98-1.03 1.18-.19.2-.38.22-.7.08-.32-.14-1.34-.49-2.55-1.57-.94-.84-1.57-1.88-1.76-2.2-.19-.32-.02-.49.14-.64.14-.14.33-.36.5-.54.17-.18.27-.3.4-.5.13-.2.06-.37-.03-.52-.09-.15-.79-1.9-1.08-2.58-.29-.68-.58-.58-.72-.59-.12 0-.26 0-.4.06-.14.06-.36.14-.55.42-.19.28-.73.71-.73 1.73 0 1.01.75 1.99.86 2.13.11.14 1.58 2.42 3.82 3.41.54.24 1.04.37 1.49.48.7.17 1.34.14 1.84.09.59-.06 1.9-.78 2.17-1.54.27-.76.27-1.41.19-1.54-.08-.13-.28-.2-.6-.32z"/>
+                    </svg>
+                    Chat WhatsApp
                 </a>
             </div>` : ''}
             <div class="detail-badge ${isPending ? 'detail-badge--pending' : 'detail-badge--approved'}">
@@ -117,13 +123,23 @@ function closeDetail() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
 
-// ── Helpers ──
+// ─── Helpers ───
 function escHtml(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function rowHtml(icon, text) {
     if (!text) return '';
     return `<div class="detail-row"><span class="detail-icon">${icon}</span><span>${escHtml(text)}</span></div>`;
+}
+function maskPhone(phone) {
+    const clean = String(phone ?? '').replace(/\D/g,'');
+    if (clean.length <= 5) return escHtml(phone);
+    const first3 = clean.slice(0,3);
+    const last2 = clean.slice(-2);
+    const middle = clean.length - 5;
+    const masked = first3 + '*'.repeat(middle) + last2;
+    // Format with spaces if needed
+    return masked;
 }
 
 function iconClock()  { return `<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`; }

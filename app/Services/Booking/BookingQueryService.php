@@ -58,6 +58,15 @@ class BookingQueryService
         return $query->paginate(10, ['*'], 'sunday_page')->withQueryString();
     }
 
+    public function getWeeklyBookings($weekStart, $weekEnd, $resourceIds)
+    {
+        return Booking::with(['timeSlot', 'resource'])
+            ->whereIn('resource_id', $resourceIds)
+            ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereIn('status', ['pending', 'approved'])
+            ->get();
+    }
+
     public function getStats(): array
     {
         $allowed = $this->access->getAllowedResources();

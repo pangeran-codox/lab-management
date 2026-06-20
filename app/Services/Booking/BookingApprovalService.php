@@ -142,6 +142,16 @@ class BookingApprovalService
             }
         }
 
+        // Broadcast perubahan untuk semua slot di group (Update UI Jadwal)
+        foreach ($bookings as $booking) {
+            broadcast(new ScheduleUpdated('regular', 'updated', [
+                'resource_id'  => $booking->resource_id,
+                'booking_date' => $booking->booking_date->toDateString(),
+                'time_slot_id' => $booking->time_slot_id,
+                'status'       => 'approved'
+            ]));
+        }
+
         return $bookings->count();
     }
 
@@ -163,6 +173,54 @@ class BookingApprovalService
             'time_slot_id' => $booking->time_slot_id,
             'status'       => 'rejected'
         ]));
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // REJECT GROUP
+    // ══════════════════════════════════════════════════════════════════
+
+    public function rejectGroup(Request $request): int
+    {
+        $request->validate([
+            'teacher_name' => 'required|string',
+            'resource_id'  => 'required|integer|exists:resources,id',
+            'booking_date' => 'required|date',
+            'notes'        => 'required|string|min:5|max:500',
+        ]);
+
+        $allowed = $this->access->getAllowedResources();
+
+        $bookings = Booking::where('teacher_name', $request->teacher_name)
+            ->where('resource_id', $request->resource_id)
+            ->where('booking_date', $request->booking_date)
+            ->where('status', 'pending')
+            ->when($allowed !== null, fn($q) => $q->whereIn('resource_id', $allowed))
+            ->get();
+
+        if ($bookings->isEmpty()) {
+            throw new \RuntimeException('Tidak ada booking pending yang bisa ditolak.');
+        }
+
+        DB::transaction(function () use ($bookings, $request) {
+            Booking::whereIn('id', $bookings->pluck('id'))
+                ->lockForUpdate()
+                ->update([
+                    'status' => 'rejected',
+                    'notes'  => $request->notes,
+                ]);
+        });
+
+        // Broadcast perubahan untuk semua slot di group
+        foreach ($bookings as $booking) {
+            broadcast(new ScheduleUpdated('regular', 'updated', [
+                'resource_id'  => $booking->resource_id,
+                'booking_date' => $booking->booking_date->toDateString(),
+                'time_slot_id' => $booking->time_slot_id,
+                'status'       => 'rejected'
+            ]));
+        }
+
+        return $bookings->count();
     }
 
     // ══════════════════════════════════════════════════════════════════

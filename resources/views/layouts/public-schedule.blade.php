@@ -146,8 +146,63 @@
             margin-top: 2rem;
         }
 
-        .page-trans {
+        /* Loading screen & page transition */
+        .loading-screen {
             position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, var(--g9), var(--g8));
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+            opacity: 1; pointer-events: all; transition: opacity 0.5s ease;
+        }
+        .loading-screen.hidden {
+            opacity: 0; pointer-events: none;
+        }
+        .loading-logo {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
+            opacity: 0; transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        .loading-logo-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: rgba(185,217,235,0.15);
+            border: 2px solid rgba(185,217,235,0.3);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 15px 50px rgba(0,0,0,0.3); }
+        }
+        .loading-logo-text {
+            text-align: left;
+        }
+        .loading-logo-text h1 {
+            color: #fff; font-size: 24px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0; line-height: 1.1;
+        }
+        .loading-logo-text p {
+            color: var(--acc2); font-size: 12px; font-weight: 500; margin: 2px 0 0 0;
+        }
+        .loading-spinner-container {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .loading-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--acc2);
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .page-trans {
+            position: fixed; inset: 0; z-index: 9998;
             background: linear-gradient(135deg, var(--g9), var(--g8));
             opacity: 0; pointer-events: none; transition: opacity .22s ease;
         }
@@ -235,6 +290,8 @@
                class="pub-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
             <a href="{{ route('assignment.public') }}"
                class="pub-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
+            <a href="{{ route('assignment.admin') }}"
+               class="pub-link {{ request()->routeIs('assignment.admin') ? 'on' : '' }}">Panel Guru</a>
         </div>
 
         {{-- CTA --}}
@@ -259,46 +316,79 @@
     </div>
 
     {{-- Mobile nav row 2 --}}
-        <div class="pub-nav-row2">
-            <a href="{{ route('home') }}"
-               class="pub-nav2-link {{ request()->routeIs('home') ? 'on' : '' }}">Jadwal</a>
-            <a href="{{ route('inventory.public') }}"
-               class="pub-nav2-link {{ request()->routeIs('inventory.public') ? 'on' : '' }}">Inventaris</a>
-            <a href="{{ route('rekap.public') }}"
-               class="pub-nav2-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
-            <a href="{{ route('assignment.public') }}"
-               class="pub-nav2-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
-        </div>
+    <div class="pub-nav-row2">
+        <a href="{{ route('home') }}"
+           class="pub-nav2-link {{ request()->routeIs('home') ? 'on' : '' }}">Jadwal</a>
+        <a href="{{ route('inventory.public') }}"
+           class="pub-nav2-link {{ request()->routeIs('inventory.public') ? 'on' : '' }}">Inventaris</a>
+        <a href="{{ route('rekap.public') }}"
+           class="pub-nav2-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
+        <a href="{{ route('assignment.public') }}"
+           class="pub-nav2-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
+        <a href="{{ route('assignment.admin') }}"
+           class="pub-nav2-link {{ request()->routeIs('assignment.admin') ? 'on' : '' }}">Panel Guru</a>
+    </div>
 </nav>
 
 {{-- ═══ KONTEN HALAMAN ═══ --}}
 @yield('content')
 
-<footer>© {{ date('Y') }} Lab Management System · Nuris Jember</footer>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-logo">
+            <div class="loading-logo-icon">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#B9D9EB" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="loading-logo-text">
+                <h1>Lab Management</h1>
+                <p>Nuris Jember</p>
+            </div>
+        </div>
+        <div class="loading-spinner-container">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
 
-<div class="page-trans" id="pt"></div>
+    <footer>© {{ date('Y') }} Lab Management System · Nuris Jember</footer>
 
-@yield('scripts')
+    <div class="page-trans" id="pt"></div>
 
-<script>
-document.querySelectorAll('a.pub-link, a.pub-btn, a.pub-brand, a.pub-nav2-link').forEach(function(a) {
-    var href = a.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('javascript') || a.getAttribute('target') === '_blank') return;
-    a.addEventListener('click', function(e) {
-        var current = window.location.pathname;
-        try {
-            var target = new URL(href, window.location.href).pathname;
-            if (target === current) return;
-        } catch(err) {}
-        e.preventDefault();
-        document.getElementById('pt').classList.add('go');
-        setTimeout(function() { window.location.href = href; }, 220);
-    });
-});
-window.addEventListener('pageshow', function() {
-    document.getElementById('pt').classList.remove('go');
-});
-</script>
+    @yield('scripts')
+
+    <script>
+        // Hide loading screen when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.classList.add('hidden');
+                }
+            }, 300); // Minimum delay so it doesn't flash
+        });
+
+        // Page transition
+        document.querySelectorAll('a.pub-link, a.pub-btn, a.pub-brand, a.pub-nav2-link').forEach(function(a) {
+            var href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript') || a.getAttribute('target') === '_blank') return;
+            a.addEventListener('click', function(e) {
+                var current = window.location.pathname;
+                try {
+                    var target = new URL(href, window.location.href).pathname;
+                    if (target === current) return;
+                } catch(err) {}
+                e.preventDefault();
+                document.getElementById('pt').classList.add('go');
+                setTimeout(function() { window.location.href = href; }, 220);
+            });
+        });
+        window.addEventListener('pageshow', function() {
+            document.getElementById('pt').classList.remove('go');
+        });
+    </script>
 
 </body>
 </html>

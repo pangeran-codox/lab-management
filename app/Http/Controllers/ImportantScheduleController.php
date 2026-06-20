@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ScheduleUpdated;
 use App\Models\ImportantSchedule;
 use App\Models\Resource;
 use App\Models\TimeSlot;
+use App\Services\Booking\BookingAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ImportantScheduleController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private BookingAccessService $accessService
+    ) {
         // Hanya admin yang bisa akses semua method
         $this->middleware(['auth']);
     }
@@ -19,8 +22,13 @@ class ImportantScheduleController extends Controller
     // ── Index: daftar semua jadwal penting ──────────────────
     public function index(Request $request)
     {
+        $allowed = $this->accessService->getAllowedResources();
         $query = ImportantSchedule::with(['resource', 'startSlot', 'endSlot'])
             ->orderBy('date', 'desc');
+        
+        if ($allowed) {
+            $query->whereIn('resource_id', $allowed);
+        }
 
         if ($request->filled('resource_id')) {
             $query->where('resource_id', $request->resource_id);
@@ -32,7 +40,7 @@ class ImportantScheduleController extends Controller
         }
 
         $importantSchedules = $query->paginate(15)->withQueryString();
-        $resources = Resource::where('status', 'active')->orderBy('name')->get();
+        $resources = $this->accessService->getAccessibleResources();
 
         return view('important-schedule.index', compact('importantSchedules', 'resources'));
     }
@@ -40,7 +48,7 @@ class ImportantScheduleController extends Controller
     // ── Create form ─────────────────────────────────────────
     public function create()
     {
-        $resources  = Resource::where('status', 'active')->orderBy('name')->get();
+        $resources  = $this->accessService->getAccessibleResources();
         $timeSlots  = TimeSlot::where('is_active', true)->where('is_break', false)->orderBy('slot_order')->get();
         $typeLabels = ImportantSchedule::$typeLabels;
 
@@ -50,6 +58,10 @@ class ImportantScheduleController extends Controller
     // ── Store ────────────────────────────────────────────────
     public function store(Request $request)
     {
+        if (!$this->accessService->checkResourceAccess((int)$request->resource_id)) {
+            return back()->withErrors(['error' => 'Anda tidak memiliki akses ke lab ini.'])->withInput();
+        }
+        
         $validated = $request->validate([
             'resource_id'   => 'required|exists:resources,id',
             'title'         => 'required|string|max:255',
@@ -73,7 +85,13 @@ class ImportantScheduleController extends Controller
 
         $validated['created_by'] = Auth::id();
 
-        ImportantSchedule::create($validated);
+        $importantSchedule = ImportantSchedule::create($validated);
+
+        // Broadcast event untuk update jadwal publik
+        broadcast(new ScheduleUpdated('regular', 'created', [
+            'resource_id'  => $importantSchedule->resource_id,
+            'booking_date' => $importantSchedule->date,
+        ]));
 
         return redirect()
             ->route('important-schedule.index')
@@ -83,7 +101,11 @@ class ImportantScheduleController extends Controller
     // ── Edit form ────────────────────────────────────────────
     public function edit(ImportantSchedule $importantSchedule)
     {
-        $resources  = Resource::where('status', 'active')->orderBy('name')->get();
+        if (!$this->accessService->checkResourceAccess($importantSchedule->resource_id)) {
+            return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
+        }
+        
+        $resources  = $this->accessService->getAccessibleResources();
         $timeSlots  = TimeSlot::where('is_active', true)->where('is_break', false)->orderBy('slot_order')->get();
         $typeLabels = ImportantSchedule::$typeLabels;
 
@@ -93,6 +115,14 @@ class ImportantScheduleController extends Controller
     // ── Update ───────────────────────────────────────────────
     public function update(Request $request, ImportantSchedule $importantSchedule)
     {
+        if (!$this->accessService->checkResourceAccess($importantSchedule->resource_id)) {
+            return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
+        }
+        
+        if ($request->resource_id && !$this->accessService->checkResourceAccess((int)$request->resource_id)) {
+            return back()->withErrors(['error' => 'Anda tidak memiliki akses ke lab ini.'])->withInput();
+        }
+        
         $validated = $request->validate([
             'resource_id'   => 'required|exists:resources,id',
             'title'         => 'required|string|max:255',
@@ -112,6 +142,12 @@ class ImportantScheduleController extends Controller
 
         $importantSchedule->update($validated);
 
+        // Broadcast event untuk update jadwal publik
+        broadcast(new ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $importantSchedule->resource_id,
+            'booking_date' => $importantSchedule->date,
+        ]));
+
         return redirect()
             ->route('important-schedule.index')
             ->with('success', 'Jadwal penting berhasil diperbarui.');
@@ -120,7 +156,20 @@ class ImportantScheduleController extends Controller
     // ── Destroy ──────────────────────────────────────────────
     public function destroy(ImportantSchedule $importantSchedule)
     {
+        if (!$this->accessService->checkResourceAccess($importantSchedule->resource_id)) {
+            return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
+        }
+        
+        $resourceId = $importantSchedule->resource_id;
+        $date = $importantSchedule->date;
+
         $importantSchedule->delete();
+
+        // Broadcast event untuk update jadwal publik
+        broadcast(new ScheduleUpdated('regular', 'deleted', [
+            'resource_id'  => $resourceId,
+            'booking_date' => $date,
+        ]));
 
         return redirect()
             ->route('important-schedule.index')
@@ -134,6 +183,10 @@ class ImportantScheduleController extends Controller
             'resource_id' => 'required|exists:resources,id',
             'date'        => 'required|date',
         ]);
+        
+        if (!$this->accessService->checkResourceAccess((int)$request->resource_id)) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
 
         $schedules = ImportantSchedule::forResourceOnDate(
             $request->resource_id,

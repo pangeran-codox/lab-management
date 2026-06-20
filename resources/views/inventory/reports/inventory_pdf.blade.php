@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Inventaris Laboratorium</title>
     <style>
-        body { font-family: sans-serif; font-size: 12px; color: #333; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; font-size: 12px; color: #333; margin: 10px; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #444; padding-bottom: 10px; }
-        .header h1 { margin: 0; font-size: 20px; text-transform: uppercase; }
-        .header p { margin: 5px 0 0; color: #666; }
+        .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; }
+        .header p { margin: 5px 0 0; color: #666; font-size: 12px; }
         .info { margin-bottom: 20px; }
         .info table { width: 100%; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th { background-color: #f2f2f2; font-weight: bold; text-align: left; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; display: block; overflow-x: auto; }
+        th { background-color: #f2f2f2; font-weight: bold; text-align: left; white-space: nowrap; }
+        th, td { border: 1px solid #ddd; padding: 6px; font-size: 11px; }
         .tc { text-align: center; }
         .tr { text-align: right; }
         .footer { margin-top: 50px; text-align: right; }
@@ -20,6 +22,10 @@
         .cond-excellent { background-color: #dcfce7; color: #15803d; }
         .cond-good { background-color: #dcfce7; color: #15803d; }
         .cond-broken { background-color: #fee2e2; color: #b91c1c; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 16px; }
+        }
     </style>
 </head>
 <body>

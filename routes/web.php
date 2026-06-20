@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use App\Models\User;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ScheduleController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\ImportantScheduleController;
 use App\Http\Controllers\InventoryMaintenanceController;
 use App\Http\Controllers\InventoryReportController;
 use App\Http\Controllers\UsageReportController;
+use App\Http\Controllers\UserController;
 
 // ═══ PUBLIK ═══
 Route::get('/', [ScheduleController::class, 'index'])->name('home');
@@ -46,10 +48,15 @@ Route::post('/tugas/{assignment}/submit', [AssignmentPublicController::class, 's
 // ─── Tugas admin (pakai token guru, tanpa login) ──────────────────
 Route::get('/tugas-admin', [AssignmentAdminController::class, 'index'])->name('assignment.admin');
 Route::post('/tugas-admin', [AssignmentAdminController::class, 'store'])->name('assignment.store');
+
 Route::delete('/tugas-admin/{assignment}', [AssignmentAdminController::class, 'destroy'])->name('assignment.destroy');
 Route::post('/tugas-admin/submission/{submission}/grade', [AssignmentAdminController::class, 'gradeSubmission'])->name('assignment.grade');
 Route::get('/tugas-admin/submission/{submission}/download', [AssignmentAdminController::class, 'downloadSubmission'])->name('assignment.download');
 Route::get('/tugas/{assignment}/download-attachment', [AssignmentAdminController::class, 'downloadAttachment'])->name('assignment.download.attachment');
+Route::get('/tugas-admin/logout', function() {
+    session()->forget('teacher_token');
+    return redirect()->route('assignment.admin');
+})->name('assignment.admin.logout');
 
 // Token guru (publik)
 Route::post('/guru/verify-token', [TeacherController::class, 'verifyToken'])->name('teacher.verify');
@@ -90,6 +97,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/booking/{booking}', [BookingController::class, 'show'])->name('booking.show');
     Route::patch('/booking/{booking}/approve', [BookingController::class, 'approve'])->name('booking.approve');
     Route::post('/booking/approve-group', [BookingController::class, 'approveGroup'])->name('booking.approve.group');
+    Route::post('/booking/reject-group', [BookingController::class, 'rejectGroup'])->name('booking.reject.group');
     Route::patch('/booking/{id}/reject', [BookingController::class, 'reject'])->name('booking.reject');
     Route::delete('/booking/{booking}', [BookingController::class, 'destroy'])->name('booking.destroy');
 
@@ -150,4 +158,10 @@ Route::delete('/jadwal-penting/{importantSchedule}', [ImportantScheduleControlle
 Route::get('/api/jadwal-penting/blocked-slots', [ImportantScheduleController::class, 'blockedSlots'])->name('important-schedule.blocked-slots');
     // Lab control admin
     Route::post('/lab-control-admin/generate', [LabControlController::class, 'generateToken'])->name('lab.generate');
+
+    // Pengelolaan Pengguna
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 });

@@ -19,11 +19,11 @@ class BookingAccessService
             return []; // Jika tidak login, tidak punya akses ke lab manapun
         }
 
-        if ($user->role === 'admin' || $user->role === 'operator') {
+        if ($user->hasFullAccess()) {
             return null;
         }
 
-        return $user->metadata['allowed_resources'] ?? [];
+        return $user->getAssignedLabIds();
     }
 
     public function checkResourceAccess(int $resourceId): bool

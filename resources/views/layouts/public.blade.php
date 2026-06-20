@@ -116,7 +116,11 @@
                     <p class="text-xs" style="color:rgba(172,200,162,0.6)">Nuris Jember</p>
                 </div>
             </div>
-            <a href="{{ route('login') }}" class="nav-login-btn">Login Admin →</a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('assignment.public') }}" class="nav-login-btn">Tugas</a>
+                <a href="{{ route('assignment.admin') }}" class="nav-login-btn">Panel Guru</a>
+                <a href="{{ route('login') }}" class="nav-login-btn">Login Admin →</a>
+            </div>
         </div>
     </nav>
 

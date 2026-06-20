@@ -39,4 +39,9 @@ class Resource extends Model
     {
         return $this->belongsTo(Organization::class);
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'resource_user');
+    }
 }

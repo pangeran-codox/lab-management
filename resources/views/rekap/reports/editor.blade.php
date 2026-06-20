@@ -6,79 +6,365 @@
     <title>Editor Laporan Rekap Penggunaan Laboratorium</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p: #003d24; --s: #B9D9EB; }
+        :root { 
+            --p: #003d24; 
+            --p-light: #005c36;
+            --p-lighter: #e6f4ee;
+            --s: #B9D9EB; 
+            --bg: #f0f4f8;
+        }
         * { box-sizing: border-box; }
-        body { background: #525659; font-family: 'DM Sans', sans-serif; margin: 0; padding: 0; }
+        body { 
+            background: linear-gradient(135deg, #e8f5e9 0%, #e3f2fd 100%); 
+            font-family: 'DM Sans', sans-serif; 
+            margin: 0; 
+            padding: 20px;
+        }
 
         /* ── Toolbar ────────────────────────────────── */
         .toolbar { 
-            background: #323639; color: white; padding: 10px 20px; 
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, var(--p) 0%, #004d2b 100%);
+            color: white; 
+            padding: 14px 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            box-shadow: 0 8px 24px rgba(0, 61, 36, 0.25);
+            border-radius: 12px;
+            margin-bottom: 24px;
         }
-        .toolbar-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; }
+        .toolbar-title { 
+            font-family: 'Outfit', sans-serif; 
+            font-weight: 700; 
+            font-size: 15px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .btn-print { 
-            background: var(--p); color: white; border: none; padding: 8px 20px; 
-            border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px;
-            display: flex; align-items: center; gap: 8px; transition: 0.2s;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); 
+            color: white; 
+            border: none; 
+            padding: 10px 22px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 14px;
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
         }
-        .btn-print:hover { background: #005c36; transform: translateY(-1px); }
+        .btn-print:hover { 
+            background: linear-gradient(135deg, #15803d 0%, #166534 100%); 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.45);
+        }
         .btn-back {
-            text-decoration: none; color: white; background: #64748b; padding: 8px 16px;
-            border-radius: 6px; font-size: 13px; font-weight: 600; margin-right: 15px;
-            transition: 0.2s;
+            text-decoration: none; 
+            color: white; 
+            background: rgba(255,255,255,0.15); 
+            padding: 10px 18px;
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            margin-right: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
-        .btn-back:hover { background: #475569; }
+        .btn-back:hover { 
+            background: rgba(255,255,255,0.25); 
+            transform: translateX(-2px);
+        }
 
         /* ── A4 Page ────────────────────────────────── */
         .page {
-            width: 210mm; min-height: 297mm; padding: 20mm;
-            margin: 30px auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            width: 210mm; 
+            min-height: 297mm; 
+            padding: 20mm;
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 20px 60px rgba(0, 61, 36, 0.15);
             position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        /* ── Mobile Responsiveness ─────────────────────────── */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            
+            .toolbar { 
+                flex-wrap: wrap; 
+                gap: 12px; 
+                padding: 12px 16px;
+                border-radius: 10px;
+            }
+            .toolbar-title { 
+                font-size: 13px; 
+                flex-basis: 100%; 
+                text-align: center; 
+                order: 3;
+                justify-content: center;
+            }
+            .btn-back, .btn-print { 
+                font-size: 13px; 
+                padding: 10px 14px; 
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .page {
+                width: 100%; 
+                min-height: auto; 
+                padding: 18px; 
+                margin: 0 auto;
+                box-shadow: 0 4px 20px rgba(0, 61, 36, 0.08);
+                border-radius: 12px;
+            }
+
+            .kop { flex-direction: column; text-align: center; gap: 16px; }
+            .kop-logo { margin-right: 0; }
+            .kop-h1 { font-size: 18px; }
+            .kop-h2 { font-size: 15px; }
+            .kop-p { font-size: 11px; }
+
+            .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+            .main-table, .info-table {
+                font-size: 10px; 
+                display: block; 
+                overflow-x: auto;
+            }
+
+            .footer { justify-content: center; }
         }
 
         /* ── Kop Surat ──────────────────────────────── */
-        .kop { display: flex; align-items: center; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
-        .kop-logo { width: 80px; height: 80px; margin-right: 20px; }
+        .kop { 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 3px solid var(--p); 
+            padding-bottom: 18px; 
+            margin-bottom: 32px; 
+        }
+        .kop-logo { 
+            width: 90px; 
+            height: 90px; 
+            margin-right: 24px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background: linear-gradient(135deg, var(--p) 0%, var(--p-light) 100%);
+            border-radius: 20px;
+            color: white;
+            box-shadow: 0 4px 14px rgba(0, 61, 36, 0.2);
+        }
         .kop-text { flex: 1; text-align: center; }
-        .kop-h1 { font-size: 22px; font-weight: 800; margin: 0; text-transform: uppercase; font-family: 'Outfit', sans-serif; }
-        .kop-h2 { font-size: 18px; font-weight: 700; margin: 5px 0; color: var(--p); }
-        .kop-p { font-size: 12px; margin: 0; color: #666; font-style: italic; }
+        .kop-h1 { 
+            font-size: 24px; 
+            font-weight: 800; 
+            margin: 0; 
+            text-transform: uppercase; 
+            font-family: 'Outfit', sans-serif; 
+            color: var(--p);
+        }
+        .kop-h2 { 
+            font-size: 18px; 
+            font-weight: 700; 
+            margin: 8px 0 4px; 
+            color: var(--p-light); 
+        }
+        .kop-p { 
+            font-size: 12px; 
+            margin: 0; 
+            color: #64748b; 
+            font-style: italic; 
+        }
 
         /* ── Content ────────────────────────────────── */
-        .report-title { text-align: center; font-size: 18px; font-weight: 800; text-decoration: underline; margin-bottom: 25px; text-transform: uppercase; }
+        .report-title { 
+            text-align: center; 
+            font-size: 20px; 
+            font-weight: 800; 
+            margin-bottom: 30px; 
+            text-transform: uppercase; 
+            color: var(--p);
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .report-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--p) 0%, var(--s) 100%);
+            border-radius: 2px;
+        }
         
-        .info-table { width: 100%; margin-bottom: 20px; font-size: 13px; }
-        .info-table td { padding: 3px 0; }
+        .info-table { 
+            width: 100%; 
+            margin-bottom: 28px; 
+            font-size: 13px; 
+            background: var(--p-lighter);
+            padding: 16px 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--p);
+        }
+        .info-table td { padding: 4px 0; }
+        .info-table td:first-child { 
+            font-weight: 700; 
+            color: var(--p);
+            min-width: 110px;
+        }
 
-        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
-        .summary-card { background: #f8faf7; border: 1px solid #e8f0e6; border-radius: 8px; padding: 12px; text-align: center; }
-        .summary-val { font-size: 20px; font-weight: 800; }
-        .summary-key { font-size: 11px; color: #6b7280; margin-top: 4px; }
+        .summary-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 14px; 
+            margin-bottom: 32px; 
+        }
+        .summary-card { 
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); 
+            border: 1px solid #bbf7d0; 
+            border-radius: 14px; 
+            padding: 18px 12px; 
+            text-align: center; 
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.05);
+        }
+        .summary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(22, 163, 74, 0.12);
+        }
+        .summary-val { 
+            font-size: 24px; 
+            font-weight: 800; 
+            color: var(--p);
+            line-height: 1;
+        }
+        .summary-key { 
+            font-size: 11px; 
+            color: #64748b; 
+            margin-top: 8px; 
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
 
-        .section-title { text-align: left; font-size: 14px; font-weight: 800; margin-bottom: 12px; color: var(--p); }
+        .section-title { 
+            text-align: left; 
+            font-size: 15px; 
+            font-weight: 800; 
+            margin-bottom: 14px; 
+            color: var(--p); 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 6px;
+            height: 22px;
+            background: linear-gradient(180deg, var(--p) 0%, var(--p-light) 100%);
+            border-radius: 3px;
+        }
         
-        .main-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px; }
-        .main-table th { background: #f0f4f8; border: 1px solid #000; padding: 10px 8px; font-weight: 800; text-align: left; }
-        .main-table td { border: 1px solid #000; padding: 8px; vertical-align: top; }
+        .main-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 11px; 
+            margin-bottom: 30px; 
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .main-table thead {
+            background: linear-gradient(135deg, var(--p) 0%, var(--p-light) 100%);
+        }
+        .main-table th { 
+            color: white;
+            border: none; 
+            padding: 12px 10px; 
+            font-weight: 700; 
+            text-align: left; 
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+        }
+        .main-table tbody tr:nth-child(even) {
+            background: #f8faf7;
+        }
+        .main-table tbody tr:hover {
+            background: #e6f4ee;
+        }
+        .main-table td { 
+            border: 1px solid #e2e8f0; 
+            padding: 10px 8px; 
+            vertical-align: top; 
+        }
         .tc { text-align: center; }
 
         /* ── Tanda Tangan ───────────────────────────── */
         .footer { margin-top: 50px; display: flex; justify-content: flex-end; }
-        .ttd-box { width: 250px; text-align: center; }
-        .ttd-space { height: 80px; }
-        .ttd-name { font-weight: 800; text-decoration: underline; margin-bottom: 5px; }
+        .ttd-box { 
+            width: 250px; 
+            text-align: center; 
+            background: #f8faf7;
+            padding: 20px 16px;
+            border-radius: 12px;
+            border: 1px dashed var(--p);
+        }
+        .ttd-space { height: 90px; }
+        .ttd-name { 
+            font-weight: 800; 
+            text-decoration: underline; 
+            margin-bottom: 5px; 
+            color: var(--p);
+        }
 
         /* ── Editable Styles ────────────────────────── */
-        [contenteditable="true"]:hover { background: #fffde7; outline: 1px dashed var(--p); cursor: text; }
-        [contenteditable="true"]:focus { background: #fffde7; outline: 2px solid var(--p); }
+        [contenteditable="true"]:hover { 
+            background: #fffde7; 
+            outline: 2px dashed #f59e0b; 
+            cursor: text; 
+            border-radius: 4px;
+        }
+        [contenteditable="true"]:focus { 
+            background: #fffbeb; 
+            outline: 2px solid var(--p); 
+            border-radius: 4px;
+        }
 
         /* ── Print Styles ───────────────────────────── */
         @media print {
-            body { background: white; }
+            body { 
+                background: white; 
+                padding: 0;
+            }
             .toolbar { display: none; }
-            .page { margin: 0; box-shadow: none; width: 100%; padding: 0; }
-            [contenteditable="true"]:hover { outline: none; background: none; }
+            .page { 
+                margin: 0; 
+                box-shadow: none; 
+                width: 100%; 
+                padding: 0; 
+                border-radius: 0;
+            }
+            [contenteditable="true"]:hover, [contenteditable="true"]:focus { 
+                outline: none; 
+                background: none; 
+            }
+            .summary-card { box-shadow: none; border: 1px solid #e2e8f0; }
             @page { size: A4; margin: 15mm; }
         }
     </style>

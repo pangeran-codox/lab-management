@@ -244,6 +244,14 @@ class BotController extends Controller
             $this->labControl->sendWebhook($session->fresh());
         }
 
+        // Broadcast perubahan via Reverb (Update UI Jadwal)
+        broadcast(new \App\Events\ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => $booking->booking_date->toDateString(),
+            'time_slot_id' => $booking->time_slot_id,
+            'status'       => 'approved'
+        ]));
+
         return response()->json([
             'success'       => true,
             'booking_id'    => $booking->id,
@@ -276,6 +284,14 @@ class BotController extends Controller
             'approved_by' => $approver?->id,
             'approved_at' => now(),
         ]);
+
+        // Broadcast perubahan via Reverb (agar slot yang tadi dipesan jadi kosong lagi)
+        broadcast(new \App\Events\ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => $booking->booking_date->toDateString(),
+            'time_slot_id' => $booking->time_slot_id,
+            'status'       => 'rejected'
+        ]));
 
         return response()->json([
             'success'       => true,

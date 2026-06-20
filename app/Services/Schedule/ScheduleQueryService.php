@@ -113,7 +113,7 @@ class ScheduleQueryService
         return Booking::whereBetween('booking_date', [$weekStart, $weekEnd])
             ->whereIn('resource_id', $resourceIds)
             ->active()
-            ->get(['id', 'resource_id', 'booking_date', 'time_slot_id', 'status', 'teacher_name', 'title', 'class_name'])
+            ->get(['id', 'resource_id', 'booking_date', 'time_slot_id', 'status', 'teacher_name', 'title', 'class_name', 'subject_name', 'description', 'participant_count', 'teacher_phone'])
             ->groupBy(fn ($b) => $b->resource_id . '_' . $b->booking_date->toDateString() . '_' . $b->time_slot_id);
     }
 
@@ -128,7 +128,7 @@ class ScheduleQueryService
         return SundayBooking::whereBetween('booking_date', [$weekStart, $weekEnd])
             ->whereIn('resource_id', $resourceIds)
             ->active()
-            ->get(['id', 'resource_id', 'booking_date', 'status', 'teacher_name', 'title', 'class_name'])
+            ->get(['id', 'resource_id', 'booking_date', 'status', 'teacher_name', 'title', 'class_name', 'subject_name', 'description', 'participant_count', 'teacher_phone'])
             ->groupBy(fn ($b) => $b->resource_id . '_' . $b->booking_date->toDateString());
     }
 

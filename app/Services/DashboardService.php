@@ -21,7 +21,7 @@ class DashboardService
         $today = today()->toDateString();
         $thisMonth = now()->month;
         $thisYear = now()->year;
-        $lastMonthDate = now()->subMonth();
+        $lastMonthDate = now()->copy()->subMonth();
 
         // 1. Stats Utama
         $stats = Booking::query()
@@ -75,6 +75,7 @@ class DashboardService
         $monthlyBookingData = Booking::query()
             ->when($allowedResources, fn($q) => $q->whereIn('resource_id', $allowedResources))
             ->whereBetween('booking_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->whereIn('status', ['pending', 'approved']) // Only count valid bookings
             ->selectRaw("CAST(booking_date AS DATE) as date, COUNT(*) as count")
             ->groupBy('date')
             ->pluck('count', 'date');
@@ -103,8 +104,8 @@ class DashboardService
         // 4. Status Distribusi Bulan Ini
         $statusDistribution = Booking::query()
             ->when($allowedResources, fn($q) => $q->whereIn('resource_id', $allowedResources))
-            ->whereMonth('created_at', $thisMonth)
-            ->whereYear('created_at', $thisYear)
+            ->whereMonth('booking_date', $thisMonth)
+            ->whereYear('booking_date', $thisYear)
             ->selectRaw("status, COUNT(*) as count")
             ->groupBy('status')
             ->pluck('count', 'status');
@@ -122,14 +123,18 @@ class DashboardService
             ->orderBy('name')
             ->get();
 
-        $todayActiveBookings = Booking::whereDate('booking_date', $today)
-            ->where('status', 'approved')
-            ->when($allowedResources, fn($q) => $q->whereIn('resource_id', $allowedResources))
-            ->whereHas('timeSlot', fn($q) => $q->where('start_time', '<=', $currentTime)->where('end_time', '>=', $currentTime))
-            ->get()
-            ->groupBy('resource_id');
+        $todayActiveBookings = $currentSlot 
+            ? Booking::whereDate('booking_date', $today)
+                ->where('status', 'approved')
+                ->when($allowedResources, fn($q) => $q->whereIn('resource_id', $allowedResources))
+                ->where('time_slot_id', $currentSlot->id)
+                ->with('resource', 'timeSlot')
+                ->get()
+                ->groupBy('resource_id')
+            : collect();
 
-        $activeSchedules = $currentSlot ? Schedule::where('day_of_week', $currentDay)
+        $activeSchedules = $currentSlot ? Schedule::with('resource', 'timeSlot')
+            ->where('day_of_week', $currentDay)
             ->where('time_slot_id', $currentSlot->id)
             ->where('status', 'active')
             ->when($allowedResources, fn($q) => $q->whereIn('resource_id', $allowedResources))
