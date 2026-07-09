@@ -44,4 +44,8 @@ Thumbs.db
 .vscode
 .idea
 *.swp
-*.swo
+*.swo 
+
+
+public/hot
+public/storage

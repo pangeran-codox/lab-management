@@ -162,10 +162,30 @@ class BotController extends Controller
             ], 404);
         }
 
+        // VALIDASI KUOTA
+        if (!$teacher->hasRemainingQuota(1)) {
+            $usedQuota = $teacher->getUsedQuotaThisWeek();
+            $quota = $teacher->weekly_quota ?? 5;
+            return response()->json([
+                'success' => false,
+                'message' => "Kuota mingguan Anda sudah habis! Anda telah menggunakan {$usedQuota}/{$quota} slot.",
+            ], 403);
+        }
+
         $tanggal = Carbon::createFromFormat('d/m/Y', $request->tanggal)->toDateString();
         $dayEn   = Carbon::parse($tanggal)->format('l');
 
-        return DB::transaction(function () use ($request, $tanggal, $dayEn, $teacher, $lab, $slot) {
+        return DB::transaction(function () use ($request, $tanggal, $dayEn, $teacher) {
+            $lab = Resource::find($request->lab_id);
+            $slot = TimeSlot::find($request->slot_id);
+            
+            if (!$lab || !$slot) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lab atau slot tidak ditemukan.',
+                ], 404);
+            }
+
             // Cek konflik booking dengan lock
             $conflictBooking = Booking::where('resource_id', $request->lab_id)
                 ->where('time_slot_id', $request->slot_id)
@@ -192,6 +212,7 @@ class BotController extends Controller
                 'resource_id'       => $request->lab_id,
                 'time_slot_id'      => $request->slot_id,
                 'organization_id'   => $teacher->organization_id ?? 1,
+                'teacher_id'        => $teacher->id,
                 'booking_date'      => $tanggal,
                 'teacher_name'      => $teacher->name,
                 'teacher_phone'     => $teacher->phone,

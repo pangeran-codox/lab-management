@@ -29,7 +29,7 @@ class AssignmentPublicController extends Controller
                 return LabClass::where('pin', $classPin)
                     ->where('is_active', true)
                     ->whereNull('deleted_at')
-                    ->with('organization:id,name')
+                    ->with('organization')
                     ->first(['id', 'name', 'organization_id', 'pin']);
             });
 
@@ -63,6 +63,7 @@ class AssignmentPublicController extends Controller
         $class = LabClass::where('pin', $pin)
             ->where('is_active', true)
             ->whereNull('deleted_at')
+            ->with('organization')
             ->first(['id', 'name', 'organization_id', 'pin']);
 
         if (!$class) {
@@ -95,7 +96,7 @@ class AssignmentPublicController extends Controller
 
         // Validasi — kelas yang membuka harus sesuai PIN di session
         $classPin    = session('assignment_class_pin');
-        $activeClass = $classPin ? LabClass::where('pin', $classPin)->first(['id', 'name']) : null;
+        $activeClass = $classPin ? LabClass::where('pin', $classPin)->with('organization')->first(['id', 'name', 'organization_id']) : null;
 
         if (!$activeClass || $activeClass->name !== $assignment->class_name) {
             return redirect()->route('assignment.public')
@@ -124,7 +125,7 @@ class AssignmentPublicController extends Controller
 
         // Validasi kelas sesuai PIN
         $classPin    = session('assignment_class_pin');
-        $activeClass = $classPin ? LabClass::where('pin', $classPin)->first(['id', 'name']) : null;
+        $activeClass = $classPin ? LabClass::where('pin', $classPin)->with('organization')->first(['id', 'name', 'organization_id']) : null;
 
         if (!$activeClass || $activeClass->name !== $assignment->class_name) {
             return redirect()->route('assignment.public')
@@ -140,7 +141,13 @@ class AssignmentPublicController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->store('submissions/' . $assignment->id, 'local');
+        
+        // Ambil organization dan kelas untuk struktur folder
+        $activeClassOrg = $activeClass->organization;
+        $orgSlug = $activeClassOrg->slug;
+        $safeClassName = strtolower(str_replace([' ', '.', ',', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', ';', ':', "'", '"', ',', '<', '>', '?', '/', '\\', '|', '`', '~'], '_', $activeClass->name));
+        
+        $path = $file->store("submissions/{$orgSlug}/{$safeClassName}/{$assignment->id}", 'local');
 
         AssignmentSubmission::create([
             'assignment_id' => $assignment->id,

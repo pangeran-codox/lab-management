@@ -19,7 +19,10 @@ class TeacherController extends Controller
     {
         $request->validate([
             'name'  => 'required|string|max:100',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20|unique:teachers,phone',
+            'weekly_quota' => 'nullable|integer|min:1',
+        ], [
+            'phone.unique' => 'Nomor HP sudah terdaftar untuk guru lain.',
         ]);
 
         // Generate token unik otomatis
@@ -37,6 +40,7 @@ class TeacherController extends Controller
             'phone'     => $request->phone,
             'token'     => $token,
             'is_active' => true,
+            'weekly_quota' => $request->weekly_quota ?? 5,
         ]);
 
         return back()->with('success', "Guru {$request->name} berhasil ditambahkan. Token: {$token}");
@@ -48,12 +52,14 @@ class TeacherController extends Controller
             'name'      => 'required|string|max:100',
             'phone'     => 'nullable|string|max:20',
             'is_active' => 'boolean',
+            'weekly_quota' => 'nullable|integer|min:1',
         ]);
 
         $teacher->update([
             'name'      => $request->name,
             'phone'     => $request->phone,
             'is_active' => $request->boolean('is_active'),
+            'weekly_quota' => $request->weekly_quota ?? 5,
         ]);
 
         return back()->with('success', 'Data guru berhasil diperbarui.');

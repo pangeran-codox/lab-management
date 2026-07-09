@@ -89,21 +89,34 @@
                         <tr>
                             <th>No</th>
                             <th>Lembaga</th>
-                            <th class="tc">Total Kapasitas</th>
-                            <th class="tc">Digunakan</th>
-                            <th class="tc">Persentase</th>
+                            <th class="tc">Jadwal Tetap</th>
+                            <th class="tc">Booking</th>
+                            <th class="tc">Total Sesi</th>
+                            <th>Pengajar Terbanyak</th>
                         </tr>
                     </thead>
                     <tbody>
                         @php $idx = 1; @endphp
                         @foreach($lembagaUsage as $lembagaName => $data)
+                        @php
+                            $topTeacher = array_key_first($data['teacherUsage'] ?? []);
+                            $topCount   = $topTeacher ? $data['teacherUsage'][$topTeacher] : 0;
+                        @endphp
                         <tr>
                             <td class="tc">{{ $idx++ }}</td>
-                            <td>{{ $lembagaName }}</td>
-                            <td class="tc">{{ number_format($data['totalCapacity']) }} slot</td>
-                            <td class="tc">{{ number_format($data['totalUsed']) }} slot</td>
+                            <td><strong>{{ $lembagaName }}</strong></td>
+                            <td class="tc">{{ number_format($data['scheduledSlots']) }}×</td>
+                            <td class="tc">{{ number_format($data['bookingSlots']) }}×</td>
                             <td class="tc">
-                                {{ $data['totalCapacity'] > 0 ? number_format(($data['totalUsed'] / $data['totalCapacity']) * 100, 2) : 0 }}%
+                                <span style="font-weight:700;color:#00693E">{{ number_format($data['sessionCount']) }} sesi</span>
+                            </td>
+                            <td>
+                                @if($topTeacher)
+                                    <span style="font-weight:600">{{ $topTeacher }}</span>
+                                    <span style="color:#9ca3af;font-size:11px"> ({{ $topCount }} sesi)</span>
+                                @else
+                                    <span style="color:#9ca3af">–</span>
+                                @endif
                             </td>
                         </tr>
                         @endforeach

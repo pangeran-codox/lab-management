@@ -343,21 +343,21 @@
         </div>
 
         {{-- JUDUL --}}
-        <div class="report-title" contenteditable="true">Laporan Inventaris Barang Laboratorium</div>
+        <div class="report-title">Laporan Inventaris Barang Laboratorium</div>
 
         {{-- INFO --}}
         <table class="info-table">
             <tr>
                 <td style="width: 120px;">Unit Kerja</td>
-                <td>: <strong contenteditable="true">{{ $labName }}</strong></td>
+                <td>: <strong>{{ $labName }}</strong></td>
             </tr>
             <tr>
                 <td>Tanggal Laporan</td>
-                <td>: <span contenteditable="true">{{ $date }}</span></td>
+                <td>: <span>{{ $date }}</span></td>
             </tr>
             <tr>
                 <td>Kategori</td>
-                <td>: <span contenteditable="true">Semua Aset</span></td>
+                <td>: <span>Semua Aset</span></td>
             </tr>
         </table>
 
@@ -379,16 +379,21 @@
                 <tr>
                     <td class="tc">{{ $index + 1 }}</td>
                     <td>
-                        <div style="font-weight: 800;" contenteditable="true">{{ $item->item_name }}</div>
-                        <div style="font-size: 10px; color: #555;" contenteditable="true">{{ $item->brand }} {{ $item->model }}</div>
+                        <div style="font-weight: 800;">{{ $item->item_name }}</div>
+                        @if($item->brand || $item->model)
+                        <div style="font-size: 10px; color: #555;">{{ $item->brand }} {{ $item->model }}</div>
+                        @endif
+                        @if($item->specifications)
+                        <div style="font-size: 10px; color: #555;">{{ $item->specifications }}</div>
+                        @endif
                     </td>
-                    <td contenteditable="true">{{ ucfirst($item->category) }}</td>
-                    <td class="tc" contenteditable="true">{{ $item->quantity }}</td>
-                    <td class="tc" contenteditable="true">{{ $item->quantity_good }}</td>
-                    <td class="tc" contenteditable="true" style="{{ $item->quantity_broken > 0 ? 'color:red; font-weight:bold;' : '' }}">
+                    <td>{{ ucfirst($item->category) }}</td>
+                    <td class="tc">{{ $item->quantity }}</td>
+                    <td class="tc">{{ $item->quantity_good }}</td>
+                    <td class="tc" style="{{ $item->quantity_broken > 0 ? 'color:red; font-weight:bold;' : '' }}">
                         {{ $item->quantity_broken }}
                     </td>
-                    <td class="tc" contenteditable="true">{{ ucfirst($item->condition) }}</td>
+                    <td class="tc">{{ ucfirst($item->condition) }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -397,8 +402,8 @@
         {{-- TANDA TANGAN --}}
         <div class="footer">
             <div class="ttd-box">
-                <div contenteditable="true">Jember, {{ $date }}</div>
-                <div contenteditable="true" style="margin-top: 5px;">Mengetahui,</div>
+                <div>Jember, {{ $date }}</div>
+                <div style="margin-top: 5px;">Mengetahui,</div>
                 <div class="ttd-space"></div>
                 <div class="ttd-name" contenteditable="true">{{ auth()->user()->full_name ?? '(Nama Pengelola)' }}</div>
                 <div contenteditable="true">NIP/NIY. ...........................</div>

@@ -16,8 +16,8 @@ class AssignmentAdminController extends Controller
      */
     private function resolveAccess(Request $request): array
     {
-        // Jika login biasa (admin/teknisi)
-        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'teknisi'])) {
+        // Jika login biasa (admin/teknisi/staff)
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'teknisi', 'staff', 'technician'])) {
             return ['role' => auth()->user()->role, 'teacher' => null];
         }
 
@@ -59,6 +59,14 @@ class AssignmentAdminController extends Controller
             $assignments = Assignment::with(['teacher', 'submissions'])
                 ->orderByDesc('created_at')
                 ->get();
+            
+            // Buat dummy teacher untuk admin/teknisi agar view tidak error
+            if (!$teacher) {
+                $teacher = (object)[
+                    'name' => auth()->user()->full_name ?? 'Admin',
+                    'token' => ''
+                ];
+            }
         }
 
         $organizations = \App\Models\Organization::where('is_active', true)->orderBy('name')->get();
@@ -70,7 +78,7 @@ class AssignmentAdminController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'teacher_token'   => 'required|string',
+            'teacher_token'   => 'nullable|string',
             'title'           => 'required|string|max:200',
             'description'     => 'nullable|string',
             'subject_name'    => 'required|string|max:100',
@@ -83,17 +91,47 @@ class AssignmentAdminController extends Controller
             'deadline.after'       => 'Deadline harus setelah waktu sekarang.',
         ]);
 
-        $teacher = Teacher::where('token', strtoupper($request->teacher_token))
-            ->where('is_active', true)
-            ->firstOrFail();
+        $teacher = null;
+        
+        // Jika admin/teknisi, pilih guru mana? Wait, for now, let's handle both cases:
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'teknisi', 'staff', 'technician'])) {
+            // For admin, we need to get a teacher, but wait let's check if teacher_token is provided
+            if ($request->teacher_token) {
+                $teacher = Teacher::where('token', strtoupper($request->teacher_token))
+                    ->where('is_active', true)
+                    ->firstOrFail();
+            } else {
+                // If no teacher_token, maybe first active teacher or throw error?
+                // For now, let's get first active teacher as fallback, or throw error
+                $teacher = Teacher::where('is_active', true)->first();
+                if (!$teacher) {
+                    return back()->withErrors(['teacher_token' => 'Pilih guru terlebih dahulu.']);
+                }
+            }
+        } else {
+            $teacher = Teacher::where('token', strtoupper($request->teacher_token))
+                ->where('is_active', true)
+                ->firstOrFail();
+        }
 
         $attachmentPath = null;
         $attachmentName = null;
         $attachmentSize = null;
 
+        // Ambil organization untuk slug
+        $organization = \App\Models\Organization::findOrFail($request->organization_id);
+        $orgSlug = $organization->slug;
+
         if ($request->hasFile('attachment')) {
-            $file           = $request->file('attachment');
-            $attachmentPath = $file->store('attachments', 'local');
+            $file = $request->file('attachment');
+            
+            // Simpan ke attachments/{org_slug}/{class_name} untuk setiap kelas
+            // Kita simpan satu file saja (untuk semua kelas) di path attachments/{org_slug}/
+            // Atau jika ingin per kelas, kita bisa simpan per kelas tapi file sama
+            $firstClassName = $request->class_names[0];
+            $safeClassName = strtolower(str_replace([' ', '.', ',', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', ';', ':', "'", '"', ',', '<', '>', '?', '/', '\\', '|', '`', '~'], '_', $firstClassName));
+            
+            $attachmentPath = $file->store("attachments/{$orgSlug}/{$safeClassName}", 'local');
             $attachmentName = $file->getClientOriginalName();
             $attachmentSize = round($file->getSize() / 1024, 1) . ' KB';
         }

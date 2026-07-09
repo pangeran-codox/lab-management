@@ -103,7 +103,7 @@
                 <div class="us-field-row">
                     <div class="us-field">
                         <label class="us-label">Role <span class="us-required">*</span></label>
-                        <select name="role" class="us-select" required id="add-role" onchange="toggleLabAssignment('add')">
+                        <select name="role" class="us-select" required id="add-role" onchange="toggleLabAssignment('add'); toggleQuotaField('add')">
                             <option value="">Pilih Role</option>
                             <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
                             <option value="operator" {{ old('role') == 'operator' ? 'selected' : '' }}>Operator</option>
@@ -115,6 +115,10 @@
                         <label class="us-label">Password <span class="us-required">*</span></label>
                         <input type="password" name="password" class="us-input" required>
                     </div>
+                </div>
+                <div class="us-field" id="add-quota-field" style="display: none;">
+                    <label class="us-label">Kuota Mingguan <span class="us-required">*</span></label>
+                    <input type="number" name="weekly_quota" class="us-input" value="{{ old('weekly_quota', 5) }}" min="1">
                 </div>
                 <div class="us-field" id="add-lab-assignment" style="display: none;">
                     <label class="us-label">Lab yang Ditugaskan</label>
@@ -160,6 +164,7 @@
                     <tr>
                         <th>Pengguna</th>
                         <th>Role</th>
+                        <th>Kuota Mingguan</th>
                         <th>Lab yang Ditugaskan</th>
                         <th>Status</th>
                         <th>Aksi</th>
@@ -187,6 +192,15 @@
                             <span class="us-badge us-badge--{{ $user->role }}">
                                 {{ ucfirst($user->role) }}
                             </span>
+                        </td>
+                        <td>
+                            @if($user->role == 'guru')
+                                <span class="us-badge" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;">
+                                    {{ $user->weekly_quota ?? 5 }} slot/minggu
+                                </span>
+                            @else
+                                <span style="color: var(--muted); font-size: 12px;">-</span>
+                            @endif
                         </td>
                         <td>
                             @if($user->role == 'admin' || $user->role == 'guru')
@@ -224,7 +238,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="us-empty">
+                        <td colspan="6" class="us-empty">
                             <i class="ti ti-users-off"></i>
                             <div>Belum ada pengguna</div>
                         </td>
@@ -272,7 +286,7 @@
                 <div class="us-field-row">
                     <div class="us-field">
                         <label class="us-label">Role <span class="us-required">*</span></label>
-                        <select name="role" id="edit-role" class="us-select" required onchange="toggleLabAssignment('edit')">
+                        <select name="role" id="edit-role" class="us-select" required onchange="toggleLabAssignment('edit'); toggleQuotaField('edit')">
                             <option value="admin">Admin</option>
                             <option value="operator">Operator</option>
                             <option value="teknisi">Teknisi</option>
@@ -283,6 +297,10 @@
                         <label class="us-label">Password (Opsional)</label>
                         <input type="password" name="password" class="us-input" placeholder="Kosongkan jika tidak diubah">
                     </div>
+                </div>
+                <div class="us-field" id="edit-quota-field">
+                    <label class="us-label">Kuota Mingguan <span class="us-required">*</span></label>
+                    <input type="number" name="weekly_quota" id="edit-weekly-quota" class="us-input" min="1">
                 </div>
                 <div class="us-field" id="edit-lab-assignment">
                     <label class="us-label">Lab yang Ditugaskan</label>
@@ -330,6 +348,18 @@
         }
     }
 
+    function toggleQuotaField(type) {
+        const roleSelect = document.getElementById(type === 'add' ? 'add-role' : 'edit-role');
+        const quotaDiv = document.getElementById(type === 'add' ? 'add-quota-field' : 'edit-quota-field');
+        const role = roleSelect.value;
+        
+        if (role === 'guru') {
+            quotaDiv.style.display = 'block';
+        } else {
+            quotaDiv.style.display = 'none';
+        }
+    }
+
     function openEditModal(userId) {
         const user = usersData.find(u => u.id === userId);
         if (!user) return;
@@ -342,6 +372,7 @@
         document.getElementById('edit-email').value = user.email || '';
         document.getElementById('edit-phone').value = user.phone || '';
         document.getElementById('edit-role').value = user.role;
+        document.getElementById('edit-weekly-quota').value = user.weekly_quota || 5;
 
         // Render lab checkboxes
         const labCheckboxes = document.getElementById('edit-lab-checkboxes');
@@ -360,6 +391,7 @@
         });
 
         toggleLabAssignment('edit');
+        toggleQuotaField('edit');
 
         document.getElementById('edit-modal').classList.add('open');
     }

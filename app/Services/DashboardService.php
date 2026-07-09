@@ -15,8 +15,24 @@ class DashboardService
 {
     /**
      * Get all dashboard data.
+     *
+     * Di-cache 60 detik agar dashboard yang sering di-refresh
+     * tidak menembak 16 query setiap kali.
+     * Cache key berbeda per user/role (admin vs teknisi per lab).
      */
     public function getDashboardData(?array $allowedResources): array
+    {
+        $cacheKey = 'dashboard_' . ($allowedResources === null ? 'all' : md5(implode(',', $allowedResources)));
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($allowedResources) {
+            return $this->buildDashboardData($allowedResources);
+        });
+    }
+
+    /**
+     * Logika query sesungguhnya — dipanggil hanya saat cache miss.
+     */
+    private function buildDashboardData(?array $allowedResources): array
     {
         $today = today()->toDateString();
         $thisMonth = now()->month;

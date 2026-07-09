@@ -85,21 +85,34 @@
                 <tr>
                     <th>No</th>
                     <th>Lembaga</th>
-                    <th class="tc">Total Kapasitas</th>
-                    <th class="tc">Digunakan</th>
-                    <th class="tc">Persentase</th>
+                    <th class="tc">Jadwal Tetap</th>
+                    <th class="tc">Booking</th>
+                    <th class="tc">Total Sesi</th>
+                    <th>Pengajar Terbanyak</th>
                 </tr>
             </thead>
             <tbody>
                 @php $idx = 1; @endphp
                 @foreach($lembagaUsage as $lembagaName => $data)
+                @php
+                    $topTeacher = array_key_first($data['teacherUsage'] ?? []);
+                    $topCount   = $topTeacher ? $data['teacherUsage'][$topTeacher] : 0;
+                @endphp
                 <tr>
                     <td class="tc">{{ $idx++ }}</td>
-                    <td>{{ $lembagaName }}</td>
-                    <td class="tc">{{ number_format($data['totalCapacity']) }} slot</td>
-                    <td class="tc">{{ number_format($data['totalUsed']) }} slot</td>
+                    <td><strong>{{ $lembagaName }}</strong></td>
+                    <td class="tc">{{ number_format($data['scheduledSlots']) }}×</td>
+                    <td class="tc">{{ number_format($data['bookingSlots']) }}×</td>
                     <td class="tc">
-                        {{ $data['totalCapacity'] > 0 ? number_format(($data['totalUsed'] / $data['totalCapacity']) * 100, 2) : 0 }}%
+                        <span style="font-weight:700;color:#00693E">{{ number_format($data['sessionCount']) }} sesi</span>
+                    </td>
+                    <td>
+                        @if($topTeacher)
+                            <span style="font-weight:600">{{ $topTeacher }}</span>
+                            <span style="color:#9ca3af;font-size:11px"> ({{ $topCount }} sesi)</span>
+                        @else
+                            <span style="color:#9ca3af">–</span>
+                        @endif
                     </td>
                 </tr>
                 @endforeach
@@ -322,14 +335,13 @@
                 </div>
             </div>
 
-            {{-- ══ TOP TEACHERS + KEPADATAN PER HARI ══ --}}
+            {{-- ══ TOP TEACHERS + KEPADATAN PER HARI + DONUT ══ --}}
             <div class="insight-row">
 
                 {{-- Top Pengajar --}}
                 <div class="insight-card">
                     <div class="sec-lbl">Top Pengajar Bulan Ini</div>
                     @php
-                        // Ambil top 5 dari teacherUsage
                         $topTeachers = array_slice($lab['teacherUsage'], 0, 5, true);
                         $totalUsed = $lab['totalUsed'];
                     @endphp
@@ -365,6 +377,22 @@
                         </div>
                     @endforeach
                 </div>
+
+                {{-- Donut Chart Pengajar --}}
+                @if(!empty($lab['teacherUsage']))
+                <div class="insight-card">
+                    <div class="sec-lbl">Proporsi Pengajar</div>
+                    <div class="donut-content">
+                        <canvas class="donut-canvas"
+                            data-teacher-usage="{{ json_encode($lab['teacherUsage']) }}"
+                            data-total-used="{{ $lab['totalUsed'] }}"
+                            width="160" height="160"
+                            style="width:160px;height:160px;flex-shrink:0">
+                        </canvas>
+                        <div class="donut-legend"></div>
+                    </div>
+                </div>
+                @endif
 
             </div>
 
@@ -637,122 +665,103 @@ function exportExcel() {
 function doExportExcel() {
     var lab = getActiveLabName(), period = getPeriod(), wb = XLSX.utils.book_new();
 
-    // Dapatkan nama lembaga
-    var resourceIndex = -1;
-    var tabs = document.querySelectorAll('.tab');
-    for (var i = 0; i < tabs.length; i++) {
-        if (tabs[i].classList.contains('on')) {
-            resourceIndex = i;
-            break;
-        }
+    // ── Sheet 1: Ringkasan Lembaga ─────────────────────────────
+    var lembagaData = @json($lembagaUsage);
+    var lembagaRows = [
+        ['RINGKASAN PENGGUNAAN LEMBAGA'],
+        ['Periode: ' + period],
+        [],
+        ['No', 'Lembaga', 'Jadwal Tetap', 'Booking', 'Total Sesi', 'Pengajar Terbanyak']
+    ];
+    var no = 1;
+    for (var nama in lembagaData) {
+        var d = lembagaData[nama];
+        var topTeacher = Object.keys(d.teacherUsage || {})[0] || '-';
+        var topCount   = d.teacherUsage ? (d.teacherUsage[topTeacher] || 0) : 0;
+        lembagaRows.push([
+            no++,
+            nama,
+            d.scheduledSlots,
+            d.bookingSlots,
+            d.sessionCount,
+            topTeacher !== '-' ? topTeacher + ' (' + topCount + ' sesi)' : '-'
+        ]);
     }
-    var labDataFromView = @json($labData);
-    var organizationName = 'Semua Lembaga';
-    if (resourceIndex >= 0 && labDataFromView[resourceIndex]) {
-        organizationName = labDataFromView[resourceIndex].resource.organization?.name || 'Semua Lembaga';
-    }
+    var wsLembaga = XLSX.utils.aoa_to_sheet(lembagaRows);
+    wsLembaga['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(wb, wsLembaga, 'Ringkasan Lembaga');
 
-    console.log('=== EXPORT EXCEL ===');
-    console.log('Lab:', lab);
-    console.log('Period:', period);
-    console.log('Organization:', organizationName);
-
-    // Ambil data teacherUsage
+    // ── Sheet 2: Rekap Guru (per lab aktif) ────────────────────
     var panel = document.querySelector('.panel.on');
     var teacherUsage = JSON.parse(panel.dataset.teacherUsage || '{}');
     var totalUsed = parseInt(panel.dataset.totalUsed || '0');
+    var sortedTeachers = Object.entries(teacherUsage).sort(function(a, b) { return b[1] - a[1]; });
 
-    // Urutkan teacherUsage dari terbesar ke terkecil
-    var sortedTeachers = Object.entries(teacherUsage).sort(function(a, b) {
-        return b[1] - a[1];
-    });
-
-    // Buat sheet Top Pengajar
     var teacherRows = [
-        ['REKAP PENGGUNAAN GURU LAB', '', ''],
-        ['Lembaga: ' + organizationName, '', ''],
-        ['Lab: ' + lab, 'Periode: ' + period, ''],
+        ['REKAP PENGGUNAAN GURU LAB'],
+        ['Lab: ' + lab, 'Periode: ' + period],
         [],
         ['No', 'Nama Guru', 'Total Sesi', 'Persentase Penggunaan']
     ];
-
     var idx = 1;
     for (var i = 0; i < sortedTeachers.length; i++) {
         var name = sortedTeachers[i][0];
         var count = sortedTeachers[i][1];
         var percentage = totalUsed > 0 ? ((count / totalUsed) * 100).toFixed(2) + '%' : '0%';
-        teacherRows.push([idx, name, count, percentage]);
-        idx++;
+        teacherRows.push([idx++, name, count, percentage]);
     }
+    var wsGuru = XLSX.utils.aoa_to_sheet(teacherRows);
+    wsGuru['!cols'] = [{ wch: 6 }, { wch: 30 }, { wch: 12 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsGuru, 'Rekap Guru');
 
-    var ws = XLSX.utils.aoa_to_sheet(teacherRows);
-    ws['!cols'] = [
-        { wch: 6 },
-        { wch: 30 },
-        { wch: 12 },
-        { wch: 20 }
-    ];
-    XLSX.utils.book_append_sheet(wb, ws, 'Rekap Guru');
-
-    XLSX.writeFile(wb, 'Rekap_Guru_' + lab.replace(/\s+/g, '_') + '_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx');
+    XLSX.writeFile(wb, 'Rekap_Lab_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx');
 }
 
 function exportCSV() {
-    var lab = getActiveLabName(), period = getPeriod();
+    var period = getPeriod(), lab = getActiveLabName();
     var panel = document.querySelector('.panel.on');
     var teacherUsage = JSON.parse(panel.dataset.teacherUsage || '{}');
     var totalUsed = parseInt(panel.dataset.totalUsed || '0');
-    
-    // Dapatkan nama lembaga
-    var resourceIndex = -1;
-    var tabs = document.querySelectorAll('.tab');
-    for (var i = 0; i < tabs.length; i++) {
-        if (tabs[i].classList.contains('on')) {
-            resourceIndex = i;
-            break;
-        }
-    }
-    var labDataFromView = @json($labData);
-    var organizationName = 'Semua Lembaga';
-    if (resourceIndex >= 0 && labDataFromView[resourceIndex]) {
-        organizationName = labDataFromView[resourceIndex].resource.organization?.name || 'Semua Lembaga';
-    }
-    
+    var lembagaData = @json($lembagaUsage);
+
     var toCSV = function(rows) {
         return rows.map(function(r) {
-            return r.map(function(c) { return '"' + c.replace(/"/g, '""') + '"'; }).join(',');
+            return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
         }).join('\n');
     };
-    
-    // Urutkan teacherUsage dari terbesar ke terkecil
-    var sortedTeachers = Object.entries(teacherUsage).sort(function(a, b) {
-        return b[1] - a[1];
-    });
-    
-    // Buat CSV hanya untuk rekap guru
-    var csv = 'REKAP PENGGUNAAN GURU LAB\n';
-    csv += 'Lembaga: ' + organizationName + '\n';
-    csv += 'Lab: ' + lab + '\n';
+
+    // Bagian 1: Ringkasan Lembaga
+    var csv = 'RINGKASAN PENGGUNAAN LEMBAGA\n';
     csv += 'Periode: ' + period + '\n\n';
-    
-    var teacherRows = [
-        ['No', 'Nama Guru', 'Total Sesi', 'Persentase Penggunaan']
-    ];
+    var lembagaRows = [['No', 'Lembaga', 'Jadwal Tetap', 'Booking', 'Total Sesi', 'Pengajar Terbanyak']];
+    var no = 1;
+    for (var nama in lembagaData) {
+        var d = lembagaData[nama];
+        var topTeacher = Object.keys(d.teacherUsage || {})[0] || '-';
+        var topCount   = d.teacherUsage ? (d.teacherUsage[topTeacher] || 0) : 0;
+        lembagaRows.push([no++, nama, d.scheduledSlots, d.bookingSlots, d.sessionCount,
+            topTeacher !== '-' ? topTeacher + ' (' + topCount + ' sesi)' : '-']);
+    }
+    csv += toCSV(lembagaRows);
+
+    // Bagian 2: Rekap Guru lab aktif
+    csv += '\n\nREKAP GURU — ' + lab + '\n';
+    csv += 'Periode: ' + period + '\n\n';
+    var sortedTeachers = Object.entries(teacherUsage).sort(function(a, b) { return b[1] - a[1]; });
+    var teacherRows = [['No', 'Nama Guru', 'Total Sesi', 'Persentase']];
     var idx = 1;
     for (var i = 0; i < sortedTeachers.length; i++) {
-        var name = sortedTeachers[i][0];
-        var count = sortedTeachers[i][1];
-        var percentage = totalUsed > 0 ? ((count / totalUsed) * 100).toFixed(2) + '%' : '0%';
-        teacherRows.push([idx, name, count, percentage]);
-        idx++;
+        var name = sortedTeachers[i][0], count = sortedTeachers[i][1];
+        var pct = totalUsed > 0 ? ((count / totalUsed) * 100).toFixed(2) + '%' : '0%';
+        teacherRows.push([idx++, name, count, pct]);
     }
     csv += toCSV(teacherRows);
-    
+
     var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement('a');
     a.href   = url;
-    a.download = 'Rekap_Guru_' + lab.replace(/\s+/g, '_') + '_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.csv';
+    a.download = 'Rekap_Lab_' + period.replace(/[^a-zA-Z0-9]/g, '_') + '.csv';
     a.click();
     URL.revokeObjectURL(url);
 }

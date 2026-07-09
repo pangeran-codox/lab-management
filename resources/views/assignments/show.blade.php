@@ -190,15 +190,13 @@ a{text-decoration:none}
                 <div class="form-body">
                     <form method="POST" action="{{ route('assignment.submit', $assignment) }}" enctype="multipart/form-data" id="submit-form">
                         @csrf
-                        <div class="field-row">
-                            <div class="field">
-                                <label class="field-label">Nama Lengkap *</label>
-                                <input name="student_name" type="text" class="inp" placeholder="Nama lengkapmu" required value="{{ old('student_name') }}">
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Kelas *</label>
-                                <input name="student_class" type="text" class="inp" placeholder="Contoh: XII-TKJ-1" required value="{{ old('student_class') }}">
-                            </div>
+                        <div class="field">
+                            <label class="field-label">Nama Lengkap *</label>
+                            <input name="student_name" type="text" class="inp" placeholder="Nama lengkapmu" required value="{{ old('student_name') }}">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Kelas (otomatis)</label>
+                            <input type="text" class="inp" value="{{ $activeClass->name }}" disabled>
                         </div>
 
                         <div class="field">

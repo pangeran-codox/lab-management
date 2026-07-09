@@ -38,17 +38,17 @@ return [
 
         // ← Tambahan koneksi finance
         'finance' => [
-            'driver'    => 'mysql',
-            'host'      => env('DB_FINANCE_HOST', env('DB_HOST', '127.0.0.1')),
-            'port'      => env('DB_FINANCE_PORT', env('DB_PORT', '3306')),
-            'database'  => env('DB_FINANCE_DATABASE', 'finance'),
-            'username'  => env('DB_FINANCE_USERNAME', env('DB_USERNAME', 'forge')),
-            'password'  => env('DB_FINANCE_PASSWORD', env('DB_PASSWORD', '')),
-            'charset'   => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix'    => '',
-            'strict'    => true,
-            'engine'    => null,
+            'driver'   => 'pgsql',
+            'host'     => env('DB_FINANCE_HOST', env('DB_HOST', '127.0.0.1')),
+            'port'     => env('DB_FINANCE_PORT', env('DB_PORT', '5432')),
+            'database' => env('DB_FINANCE_DATABASE', 'finance'),
+            'username' => env('DB_FINANCE_USERNAME', env('DB_USERNAME', 'forge')),
+            'password' => env('DB_FINANCE_PASSWORD', env('DB_PASSWORD', '')),
+            'charset'  => 'utf8',
+            'prefix'   => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode'  => 'prefer',
         ],
 
         'pgsql' => [

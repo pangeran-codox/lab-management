@@ -31,6 +31,9 @@
 
             <div class="slot-duration-wrap">
                 <label class="field-label">🕐 Durasi Booking</label>
+                <p style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">
+                    Pilih sampai slot mana kamu butuhkan. Slot pertama sudah otomatis terpilih.
+                </p>
                 <div class="slot-opts" id="slot-options"></div>
                 <input type="hidden" name="extra_slot_ids" id="f_extra_slots" value="">
             </div>
@@ -51,6 +54,17 @@
                     <input name="teacher_phone" id="inp_teacher_phone" type="text"
                         placeholder="08xxxxxxxxxx" class="inp" required
                         value="{{ old('teacher_phone') }}">
+                </div>
+            </div>
+
+            {{-- Quota Info --}}
+            <div id="quota_info" style="display:none;background:#f0f7ee;border:1.5px solid #ACC8A2;border-radius:10px;padding:12px 14px;margin-bottom:16px">
+                <div style="font-size:12px;font-weight:700;color:#1A2517;margin-bottom:6px">Kuota Mingguan</div>
+                <div style="display:flex;gap:10px;align-items:center">
+                    <div id="quota_progress" style="flex:1;height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden">
+                        <div id="quota_bar" style="height:100%;width:0;background:linear-gradient(90deg,#5DCA85,#4CAF50);border-radius:999px;transition:width .3s ease"></div>
+                    </div>
+                    <span id="quota_text" style="font-size:13px;font-weight:600;color:#1A2517;white-space:nowrap">0/5</span>
                 </div>
             </div>
 

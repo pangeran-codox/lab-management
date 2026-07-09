@@ -16,7 +16,7 @@ class TrustProxies extends Middleware
      * Karena app ini diakses langsung (Laragon/lokal), set null.
      * Jika nanti di-deploy di belakang Nginx/load balancer, isi dengan IP proxy-nya.
      */
-    protected $proxies = null;
+    protected $proxies = '*';
 
     /**
      * Header yang dipakai untuk mendeteksi proxy.

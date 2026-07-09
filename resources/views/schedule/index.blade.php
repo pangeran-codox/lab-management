@@ -8,6 +8,8 @@
 <script>
     window.ALL_SLOTS = @json($timeSlots->where('is_break', false)->values());
     window.TEACHERS  = @json($teachers);
+    window.BOOKINGS_THIS_WEEK = @json($bookings);
+    window.SUNDAY_BOOKINGS_THIS_WEEK = @json($sundayBookings);
 </script>
 @vite(['resources/js/app.js', 'resources/css/schedule.css', 'resources/css/schedule-cards.css', 'resources/js/schedule.js'])
 @endsection

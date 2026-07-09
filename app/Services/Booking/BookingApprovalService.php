@@ -6,6 +6,7 @@ use App\Events\ScheduleUpdated;
 use App\Models\Booking;
 use App\Services\LabControlService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -55,6 +56,9 @@ class BookingApprovalService
         ]));
 
         $this->generateSessionAndNotify($booking);
+
+        // Invalidasi cache rekap bulan yang terpengaruh agar data rekap tidak stale
+        $this->invalidateRekapCache($booking->booking_date);
     }
 
     public function destroy(Booking $booking): string
@@ -125,10 +129,13 @@ class BookingApprovalService
         });
 
         // Generate session di luar transaction
+        // Load relasi timeSlot yang dibutuhkan generateFromBooking agar tidak trigger lazy load
+        $bookings->load('timeSlot');
+
         $session = null;
         foreach ($bookings as $booking) {
             try {
-                $session = $this->labControl->generateFromBooking($booking->fresh());
+                $session = $this->labControl->generateFromBooking($booking);
             } catch (\Exception $e) {
                 Log::warning('generateFromBooking failed for booking #' . $booking->id . ': ' . $e->getMessage());
             }
@@ -151,6 +158,9 @@ class BookingApprovalService
                 'status'       => 'approved'
             ]));
         }
+
+        // Invalidasi cache rekap bulan yang terpengaruh
+        $this->invalidateRekapCache($bookings->first()->booking_date);
 
         return $bookings->count();
     }
@@ -230,12 +240,32 @@ class BookingApprovalService
     private function generateSessionAndNotify(Booking $booking): void
     {
         try {
-            $session = $this->labControl->generateFromBooking($booking->fresh());
+            // Load relasi yang dibutuhkan agar tidak trigger lazy load / fresh()
+            $booking->loadMissing('timeSlot');
+            $session = $this->labControl->generateFromBooking($booking);
             if ($session) {
                 $this->labControl->sendWebhook($session->fresh());
             }
         } catch (\Exception $e) {
             Log::warning('Session generation failed for booking #' . $booking->id . ': ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Hapus cache rekap bulanan agar data rekap tidak stale setelah
+     * ada perubahan status booking (approve/reject).
+     */
+    private function invalidateRekapCache(mixed $bookingDate): void
+    {
+        try {
+            $date  = $bookingDate instanceof \Carbon\Carbon ? $bookingDate : \Carbon\Carbon::parse($bookingDate);
+            $month = $date->month;
+            $year  = $date->year;
+            Cache::forget("rekap_monthly_{$month}_{$year}");
+            // Dashboard cache (variant admin penuh)
+            Cache::forget('dashboard_all');
+        } catch (\Exception $e) {
+            Log::warning('invalidateRekapCache failed: ' . $e->getMessage());
         }
     }
 }

@@ -6,9 +6,12 @@ use App\Models\Booking;
 use App\Models\Resource;
 use App\Models\Schedule;
 use App\Models\TimeSlot;
+use App\Models\Organization;
+use App\Models\LabClass;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class RekapService
 {
@@ -96,38 +99,84 @@ class RekapService
             ];
         }
 
-        // Hitung penggunaan lembaga secara keseluruhan
+        // ── Hitung penggunaan lembaga ────────────────────────────────────
+        // Sumber 1: Jadwal tetap → lembaga dari classes.organization_id
+        //           karena jadwal tetap selalu milik kelas dari lembaga itu sendiri
+        // Sumber 2: Booking → lembaga dari bookings.organization_id
+        //           karena semua sekolah bisa pakai lab manapun
+
+        // Load semua organizations sekali untuk lookup nama
+        $organizations = Cache::remember('all_organizations', 3600, fn() =>
+            Organization::pluck('name', 'id')->toArray()
+        );
+
+        // Load mapping class_id → organization_id sekali (dari tabel classes)
+        $classOrgMap = Cache::remember('class_org_map', 3600, fn() =>
+            DB::table('classes')->pluck('organization_id', 'id')->toArray()
+        );
+
         $lembagaUsage = [];
+
+        // Sumber 1: Jadwal tetap — hitung per organization via class_id
         foreach ($labData as $lab) {
-            $lembagaName = $lab['resource']->organization->name ?? 'Tidak Ada Lembaga';
-            if (!isset($lembagaUsage[$lembagaName])) {
-                $lembagaUsage[$lembagaName] = [
-                    'totalCapacity' => 0,
-                    'totalUsed' => 0,
-                    'teacherUsage' => []
-                ];
-            }
-            $lembagaUsage[$lembagaName]['totalCapacity'] += $lab['totalCapacity'];
-            $lembagaUsage[$lembagaName]['totalUsed'] += $lab['totalUsed'];
-            
-            // Gabungkan teacherUsage per lembaga
-            foreach ($lab['teacherUsage'] as $name => $count) {
-                if (!isset($lembagaUsage[$lembagaName]['teacherUsage'][$name])) {
-                    $lembagaUsage[$lembagaName]['teacherUsage'][$name] = 0;
+            foreach ($lab['scheduleDetails'] as $sch) {
+                $orgId   = $classOrgMap[$sch->class_id] ?? null;
+                $orgName = $orgId ? ($organizations[$orgId] ?? 'Tidak Ada Lembaga') : 'Tidak Ada Lembaga';
+
+                if (!isset($lembagaUsage[$orgName])) {
+                    $lembagaUsage[$orgName] = [
+                        'scheduledSlots' => 0,
+                        'bookingSlots'   => 0,
+                        'sessionCount'   => 0,
+                        'teacherUsage'   => [],
+                    ];
                 }
-                $lembagaUsage[$lembagaName]['teacherUsage'][$name] += $count;
+
+                $lembagaUsage[$orgName]['scheduledSlots'] += $sch->occurrences;
+                $lembagaUsage[$orgName]['sessionCount']   += $sch->occurrences;
+
+                if (!empty($sch->teacher_name)) {
+                    $name = trim($sch->teacher_name);
+                    $lembagaUsage[$orgName]['teacherUsage'][$name] =
+                        ($lembagaUsage[$orgName]['teacherUsage'][$name] ?? 0) + $sch->occurrences;
+                }
             }
         }
-        
-        // Urutkan lembagaUsage berdasarkan totalUsed terbanyak
-        uasort($lembagaUsage, function($a, $b) {
-            return $b['totalUsed'] <=> $a['totalUsed'];
-        });
-        
+
+        // Sumber 2: Booking — hitung per organization_id dari booking
+        foreach ($labData as $lab) {
+            foreach ($lab['bookingDetails'] as $book) {
+                $orgId   = $book->organization_id ?? null;
+                $orgName = $orgId ? ($organizations[$orgId] ?? 'Tidak Ada Lembaga') : 'Tidak Ada Lembaga';
+
+                if (!isset($lembagaUsage[$orgName])) {
+                    $lembagaUsage[$orgName] = [
+                        'scheduledSlots' => 0,
+                        'bookingSlots'   => 0,
+                        'sessionCount'   => 0,
+                        'teacherUsage'   => [],
+                    ];
+                }
+
+                $lembagaUsage[$orgName]['bookingSlots'] += 1;
+                $lembagaUsage[$orgName]['sessionCount'] += 1;
+
+                if (!empty($book->teacher_name)) {
+                    $name = trim($book->teacher_name);
+                    $lembagaUsage[$orgName]['teacherUsage'][$name] =
+                        ($lembagaUsage[$orgName]['teacherUsage'][$name] ?? 0) + 1;
+                }
+            }
+        }
+
+        // Urutkan berdasarkan sessionCount terbanyak
+        uasort($lembagaUsage, fn($a, $b) => $b['sessionCount'] <=> $a['sessionCount']);
+
         // Urutkan teacherUsage di setiap lembaga
         foreach ($lembagaUsage as &$lembaga) {
             arsort($lembaga['teacherUsage']);
         }
+        unset($lembaga);
         
             return [
                 'labData'   => $labData,
@@ -142,7 +191,8 @@ class RekapService
 
     private function getActiveResources(): Collection
     {
-        return Cache::remember('active_resources', 300, fn() =>
+        // Cache key berbeda dari ScheduleQueryService karena include 'organization' relation
+        return Cache::remember('rekap_active_resources', 300, fn() =>
             Resource::with('organization')->where('status', 'active')->orderBy('name')->get(['id', 'name', 'building', 'capacity', 'status', 'organization_id'])
         );
     }

@@ -52,6 +52,65 @@ function selectTeacher(name, phone) {
     document.getElementById('inp_teacher_name').value  = name;
     document.getElementById('inp_teacher_phone').value = phone;
     document.getElementById('teacher_suggestions').style.display = 'none';
+    updateQuotaInfo(name, phone);
+}
+
+function calculateUsedQuota(teacherName, teacherPhone) {
+    var used = 0;
+    // Count regular bookings
+    if (window.BOOKINGS_THIS_WEEK) {
+        window.BOOKINGS_THIS_WEEK.forEach(function(b) {
+            if (b.teacher_name === teacherName || b.teacher_phone === teacherPhone) {
+                if (b.status === 'pending' || b.status === 'approved') {
+                    used++;
+                }
+            }
+        });
+    }
+    // Count Sunday bookings
+    if (window.SUNDAY_BOOKINGS_THIS_WEEK) {
+        window.SUNDAY_BOOKINGS_THIS_WEEK.forEach(function(b) {
+            if (b.teacher_name === teacherName || b.teacher_phone === teacherPhone) {
+                if (b.status === 'pending' || b.status === 'approved') {
+                    used++;
+                }
+            }
+        });
+    }
+    return used;
+}
+
+function updateQuotaInfo(teacherName, teacherPhone) {
+    var quotaInfoDiv = document.getElementById('quota_info');
+    var quotaBar = document.getElementById('quota_bar');
+    var quotaText = document.getElementById('quota_text');
+
+    // Find teacher in window.TEACHERS
+    var teacher = window.TEACHERS.find(function(t) {
+        return t.name === teacherName || t.phone === teacherPhone;
+    });
+
+    if (!teacher) {
+        quotaInfoDiv.style.display = 'none';
+        return;
+    }
+
+    var weeklyQuota = teacher.weekly_quota || 5;
+    var usedQuota = calculateUsedQuota(teacherName, teacherPhone);
+    var percentage = Math.min((usedQuota / weeklyQuota) * 100, 100);
+
+    quotaInfoDiv.style.display = 'block';
+    quotaText.textContent = usedQuota + '/' + weeklyQuota;
+    quotaBar.style.width = percentage + '%';
+
+    // Change color if quota almost full or full
+    if (percentage >= 100) {
+        quotaBar.style.background = 'linear-gradient(90deg,#EF4444,#DC2626)';
+    } else if (percentage >= 70) {
+        quotaBar.style.background = 'linear-gradient(90deg,#F59E0B,#D97706)';
+    } else {
+        quotaBar.style.background = 'linear-gradient(90deg,#5DCA85,#4CAF50)';
+    }
 }
 
 function filterTeacherSunday(val) {
@@ -74,6 +133,40 @@ function selectTeacherSunday(name, phone) {
     document.getElementById('sb_teacher_name').value  = name;
     document.getElementById('sb_teacher_phone').value = phone;
     document.getElementById('sb_teacher_sug').style.display = 'none';
+    updateSundayQuotaInfo(name, phone);
+}
+
+function updateSundayQuotaInfo(teacherName, teacherPhone) {
+    var quotaInfoDiv = document.getElementById('sb_quota_info');
+    var quotaBar = document.getElementById('sb_quota_bar');
+    var quotaText = document.getElementById('sb_quota_text');
+
+    // Find teacher in window.TEACHERS
+    var teacher = window.TEACHERS.find(function(t) {
+        return t.name === teacherName || t.phone === teacherPhone;
+    });
+
+    if (!teacher) {
+        quotaInfoDiv.style.display = 'none';
+        return;
+    }
+
+    var weeklyQuota = teacher.weekly_quota || 5;
+    var usedQuota = calculateUsedQuota(teacherName, teacherPhone);
+    var percentage = Math.min((usedQuota + 1) / weeklyQuota * 100, 100); // +1 because Sunday booking counts as 1
+
+    quotaInfoDiv.style.display = 'block';
+    quotaText.textContent = (usedQuota + 1) + '/' + weeklyQuota;
+    quotaBar.style.width = percentage + '%';
+
+    // Change color if quota almost full or full
+    if (percentage >= 100) {
+        quotaBar.style.background = 'linear-gradient(90deg,#EF4444,#DC2626)';
+    } else if (percentage >= 70) {
+        quotaBar.style.background = 'linear-gradient(90deg,#F59E0B,#D97706)';
+    } else {
+        quotaBar.style.background = 'linear-gradient(90deg,#5DCA85,#4CAF50)';
+    }
 }
 
 // Tutup dropdown saat klik di luar
@@ -132,9 +225,20 @@ function openBooking(rid, rname, sid, sname, stime, dayEn, dayId, date, bookedSl
     function updateExtraSlots() {
         var extras = availableSlots.slice(1, selectedCount).map(function(s) { return s.id; });
         document.getElementById('f_extra_slots').value = extras.join(',');
-        wrap.querySelectorAll('.slot-opt:not(.slot-opt-full)').forEach(function(btn, i) {
-            btn.classList.toggle('selected', i < selectedCount);
+
+        // Update state semua tombol termasuk tombol Full
+        var allBtns = wrap.querySelectorAll('.slot-opt');
+        allBtns.forEach(function(btn, i) {
+            var isFull = btn.classList.contains('slot-opt-full');
+            if (isFull) {
+                // Tombol Full: selected hanya jika semua slot dipilih
+                btn.classList.toggle('selected', selectedCount === availableSlots.length);
+            } else {
+                // Tombol slot biasa: selected jika index-nya di bawah selectedCount
+                btn.classList.toggle('selected', i < selectedCount);
+            }
         });
+
         var lastSlot = availableSlots[selectedCount - 1];
         var endTime  = lastSlot.end_time ? lastSlot.end_time.slice(0,5) : '';
         document.getElementById('b-slot').textContent = '\uD83D\uDD50 ' + sname
@@ -148,9 +252,11 @@ function openBooking(rid, rname, sid, sname, stime, dayEn, dayId, date, bookedSl
         btn.className = 'slot-opt' + (i === 0 ? ' selected' : '');
         var endT = slot.end_time ? slot.end_time.slice(0,5) : '';
         if (i === 0) {
-            btn.innerHTML = '<strong>' + slot.name + '</strong><br><span style="font-size:10px">' + startTime + (endT ? '\u2013' + endT : '') + '</span>';
+            btn.innerHTML = '<span class="slot-opt-label">' + slot.name + '</span>'
+                + '<span class="slot-opt-time">' + startTime + (endT ? '&ndash;' + endT : '') + '</span>';
         } else {
-            btn.innerHTML = '<strong>+ ' + slot.name + '</strong><br><span style="font-size:10px">s/d ' + endT + '</span>';
+            btn.innerHTML = '<span class="slot-opt-label">+' + slot.name + '</span>'
+                + '<span class="slot-opt-time">s/d ' + endT + '</span>';
         }
         btn.onclick = function() { selectedCount = i + 1; updateExtraSlots(); };
         wrap.appendChild(btn);
@@ -160,15 +266,13 @@ function openBooking(rid, rname, sid, sname, stime, dayEn, dayId, date, bookedSl
         var btnAll = document.createElement('button');
         btnAll.type = 'button';
         btnAll.className = 'slot-opt slot-opt-full';
-        btnAll.style.cssText = 'background:linear-gradient(135deg,#1A2517,#2a3826);color:#ACC8A2;border-color:#3d5438;min-width:90px';
         var lastT   = availableSlots[availableSlots.length - 1];
         var lastEnd = lastT.end_time ? lastT.end_time.slice(0,5) : '';
-        btnAll.innerHTML = '<strong>Full (' + availableSlots.length + ')</strong><br><span style="font-size:10px">' + startTime + (lastEnd ? '\u2013' + lastEnd : '') + '</span>';
+        btnAll.innerHTML = '<span class="slot-opt-label">&#9889; Full (' + availableSlots.length + ' slot)</span>'
+            + '<span class="slot-opt-time">' + startTime + (lastEnd ? '&ndash;' + lastEnd : '') + '</span>';
         btnAll.onclick = function() {
             selectedCount = availableSlots.length;
             updateExtraSlots();
-            wrap.querySelectorAll('.slot-opt').forEach(function(b) { b.classList.remove('selected'); });
-            btnAll.classList.add('selected');
         };
         wrap.appendChild(btnAll);
     }

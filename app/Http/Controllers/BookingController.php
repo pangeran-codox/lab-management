@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ScheduleUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -104,6 +105,11 @@ class BookingController extends Controller
             return back()->with('error', 'Gagal menyetujui booking. Silakan coba lagi.');
         }
 
+        broadcast(new ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => $booking->booking_date->toDateString()
+        ]));
+
         return back()->with('success', 'Booking "' . $booking->title . '" berhasil disetujui.');
     }
 
@@ -131,6 +137,11 @@ class BookingController extends Controller
             Log::error('approveGroup failed: ' . $e->getMessage());
             return back()->with('error', 'Gagal menyetujui booking. Silakan coba lagi.');
         }
+
+        broadcast(new ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $request->resource_id,
+            'booking_date' => $request->booking_date
+        ]));
 
         return back()->with('success', "{$count} slot booking berhasil disetujui sekaligus.");
     }
@@ -168,6 +179,11 @@ class BookingController extends Controller
             $this->approval->reject($booking, $request->notes);
         }
 
+        broadcast(new ScheduleUpdated($type, 'updated', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => Carbon::parse($booking->booking_date)->toDateString()
+        ]));
+
         return back()->with('success', 'Booking "' . $booking->title . '" telah ditolak.');
     }
 
@@ -190,6 +206,11 @@ class BookingController extends Controller
             return back()->with('error', 'Gagal menolak booking. Silakan coba lagi.');
         }
 
+        broadcast(new ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $request->resource_id,
+            'booking_date' => $request->booking_date
+        ]));
+
         return back()->with('success', "{$count} slot booking berhasil ditolak sekaligus.");
     }
 
@@ -204,6 +225,11 @@ class BookingController extends Controller
         }
 
         $title = $this->approval->destroy($booking);
+
+        broadcast(new ScheduleUpdated('regular', 'deleted', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => $booking->booking_date->toDateString()
+        ]));
 
         return back()->with('success', 'Booking "' . $title . '" berhasil dihapus.');
     }
@@ -221,6 +247,11 @@ class BookingController extends Controller
         }
 
         $title = $this->sunday->destroy($booking);
+
+        broadcast(new ScheduleUpdated('sunday', 'deleted', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => Carbon::parse($booking->booking_date)->toDateString()
+        ]));
 
         return back()->with('success', 'Booking Minggu "' . $title . '" berhasil dihapus.');
     }
@@ -247,6 +278,11 @@ class BookingController extends Controller
             Log::error('approveSunday failed: ' . $e->getMessage());
             return back()->with('error', 'Gagal menyetujui booking. Silakan coba lagi.');
         }
+
+        broadcast(new ScheduleUpdated('sunday', 'updated', [
+            'resource_id'  => $booking->resource_id,
+            'booking_date' => Carbon::parse($booking->booking_date)->toDateString()
+        ]));
 
         return back()->with('success', 'Booking Minggu "' . $booking->title . '" berhasil disetujui.');
     }

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -15,7 +16,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'username', 'email', 'password_hash',
-        'full_name', 'phone', 'role', 'organization_id', 'is_active', 'metadata',
+        'full_name', 'phone', 'role', 'organization_id', 'is_active', 'metadata', 'weekly_quota',
     ];
 
     protected $casts = [
@@ -42,6 +43,16 @@ class User extends Authenticatable
         return $this->belongsToMany(Resource::class, 'resource_user');
     }
 
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'user_id');
+    }
+
+    public function sundayBookings()
+    {
+        return $this->hasMany(SundayBooking::class, 'user_id');
+    }
+
     public function hasFullAccess(): bool
     {
         return in_array($this->role, ['admin', 'super_admin']);
@@ -50,6 +61,55 @@ class User extends Authenticatable
     public function isTeknisi(): bool
     {
         return $this->role === 'teknisi';
+    }
+
+    /**
+     * Cek apakah user adalah guru
+     */
+    public function isGuru(): bool
+    {
+        return $this->role === 'guru';
+    }
+
+    /**
+     * Hitung kuota terpakai minggu ini (untuk user guru)
+     */
+    public function getUsedQuotaThisWeek(): int
+    {
+        if (!$this->isGuru()) {
+            return 0;
+        }
+
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+
+        // Hitung booking biasa dan sunday booking yang status pending/approved
+        $bookingsCount = $this->bookings()
+            ->whereBetween('booking_date', [$startOfWeek, $endOfWeek])
+            ->whereIn('status', ['pending', 'approved'])
+            ->count();
+
+        $sundayBookingsCount = $this->sundayBookings()
+            ->whereBetween('booking_date', [$startOfWeek, $endOfWeek])
+            ->whereIn('status', ['pending', 'approved'])
+            ->count();
+
+        return $bookingsCount + $sundayBookingsCount;
+    }
+
+    /**
+     * Cek apakah masih ada kuota tersisa (untuk user guru)
+     */
+    public function hasRemainingQuota(int $additionalSlots = 1): bool
+    {
+        if (!$this->isGuru()) {
+            return true; // Bukan guru, tidak ada limit
+        }
+
+        $used = $this->getUsedQuotaThisWeek();
+        $quota = $this->weekly_quota ?? 5; // Default 5 jika tidak diset
+
+        return ($used + $additionalSlots) <= $quota;
     }
 
     // Helper: Get metadata resource IDs (cached)

@@ -11,6 +11,11 @@ class Organization extends Model
 
     protected $table = 'organizations';
 
+    public function getSlugAttribute()
+    {
+        return strtolower(str_replace([' ', '.', ',', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', ';', ':', "'", '"', ',', '<', '>', '?', '/', '\\', '|', '`', '~'], '_', $this->name));
+    }
+
     protected $fillable = [
         'name', 'type', 'parent_id', 'address', 'phone', 'email', 'is_active',
     ];

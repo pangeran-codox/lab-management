@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ScheduleUpdated;
 use Illuminate\Http\Request;
 use App\Models\Resource;
 use App\Models\Schedule;
@@ -10,6 +11,7 @@ use App\Models\Organization;
 use App\Models\LabClass;
 use App\Models\Teacher;
 use App\Services\Booking\BookingAccessService;
+use Illuminate\Support\Facades\Cache;
 
 class ScheduleAdminController extends Controller
 {
@@ -42,25 +44,37 @@ class ScheduleAdminController extends Controller
         $scheduleGrid = $allSchedules->where('status', 'active')
             ->groupBy(fn($s) => $s->resource_id . '_' . $s->day_of_week . '_' . $s->time_slot_id);
 
-        // ─── DATA PENDUKUNG ──────────────────────────────────
-        $resources = Resource::where('status', 'active')
-            ->when($allowed, fn($q) => $q->whereIn('id', $allowed))
-            ->orderBy('name')
-            ->get();
+        // ─── DATA PENDUKUNG — di-cache karena jarang berubah ──────────
+        $resourceCacheKey = $allowed
+            ? 'schedule_admin_resources_' . md5(implode(',', $allowed))
+            : 'schedule_admin_resources_all';
 
-        $timeSlots = TimeSlot::where('is_active', 1)
-            ->orderBy('slot_order')
-            ->get();
-        
+        $resources = Cache::remember($resourceCacheKey, 300, fn() =>
+            Resource::where('status', 'active')
+                ->when($allowed, fn($q) => $q->whereIn('id', $allowed))
+                ->orderBy('name')
+                ->get()
+        );
+
+        $timeSlots = Cache::remember('schedule_admin_timeslots', 3600, fn() =>
+            TimeSlot::where('is_active', 1)
+                ->orderBy('slot_order')
+                ->get()
+        );
+
         $timeSlotsForm = $timeSlots->where('is_break', false);
 
-        $organizations = Organization::where('is_active', 1)
-            ->orderBy('name')
-            ->get();
+        $organizations = Cache::remember('schedule_admin_organizations', 3600, fn() =>
+            Organization::where('is_active', 1)
+                ->orderBy('name')
+                ->get()
+        );
 
-        $teachers = Teacher::where('is_active', 1)
-            ->orderBy('name')
-            ->get(['id', 'name', 'phone']);
+        $teachers = Cache::remember('schedule_admin_teachers', 300, fn() =>
+            Teacher::where('is_active', 1)
+                ->orderBy('name')
+                ->get(['id', 'name', 'phone'])
+        );
 
         return view('schedule.admin', compact(
             'scheduleGrid', 'resources', 'timeSlots', 'timeSlotsForm',
@@ -106,6 +120,13 @@ class ScheduleAdminController extends Controller
             'user_id'      => auth()->id(),
         ]);
 
+        $this->forgetScheduleCache();
+        
+        broadcast(new ScheduleUpdated('regular', 'created', [
+            'resource_id'  => $request->resource_id,
+            'day_of_week'  => $request->day_of_week
+        ]));
+
         return back()->with('success', 'Jadwal berhasil ditambahkan.');
     }
 
@@ -129,6 +150,13 @@ class ScheduleAdminController extends Controller
             'status'       => $request->status,
         ]);
 
+        $this->forgetScheduleCache();
+        
+        broadcast(new ScheduleUpdated('regular', 'updated', [
+            'resource_id'  => $schedule->resource_id,
+            'day_of_week'  => $schedule->day_of_week
+        ]));
+
         return back()->with('success', 'Jadwal berhasil diperbarui.');
     }
 
@@ -137,8 +165,31 @@ class ScheduleAdminController extends Controller
         if (!$this->accessService->checkResourceAccess($schedule->resource_id)) {
             return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
         }
-        $schedule->delete(); // ← ganti ini
+        $schedule->delete();
+        $this->forgetScheduleCache();
+        
+        broadcast(new ScheduleUpdated('regular', 'deleted', [
+            'resource_id'  => $schedule->resource_id,
+            'day_of_week'  => $schedule->day_of_week
+        ]));
+
         return back()->with('success', 'Jadwal berhasil dihapus.');
+    }
+
+    /**
+     * Hapus semua cache yang berkaitan dengan jadwal.
+     * Dipanggil setelah store/update/destroy.
+     */
+    private function forgetScheduleCache(): void
+    {
+        // Cache jadwal di ScheduleQueryService (berdasarkan hash resource IDs)
+        // Karena hash-nya dinamis, forget key statis yang bisa di-predict
+        Cache::forget('schedule_admin_timeslots');
+        Cache::forget('schedule_admin_organizations');
+        Cache::forget('schedule_admin_teachers');
+        // Jadwal aktif di ScheduleQueryService di-cache dengan hash resourceIds.
+        // Cara paling aman: forget semua rekap bulan ini juga.
+        Cache::forget('rekap_monthly_' . now()->month . '_' . now()->year);
     }
 
     public function getClassesByOrg(Request $request)

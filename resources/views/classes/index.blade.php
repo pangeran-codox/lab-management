@@ -12,6 +12,22 @@
 
 @vite(['resources/js/kelas.js'])
 
+@if(session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show toast after page loaded
+            setTimeout(() => {
+                const el = document.getElementById('kls-toast');
+                if (el) {
+                    el.textContent = '{{ session('success') }}';
+                    el.classList.add('kls-toast--show');
+                    setTimeout(() => el.classList.remove('kls-toast--show'), 2400);
+                }
+            }, 100);
+        });
+    </script>
+@endif
+
 <div class="kls-wrap">
 
     {{-- ── PAGE HEADER ──────────────────────────────────────── --}}
@@ -40,7 +56,7 @@
         <select id="kls-school-filter" class="kls-filter">
             <option value="">Semua Sekolah</option>
             @foreach ($organizations as $org)
-                <option value="{{ $org->id }}">{{ $org->name }}</option>
+                <option value="{{ $org->id }}" {{ (isset($orgId) && $orgId == $org->id) ? 'selected' : '' }}>{{ $org->name }}</option>
             @endforeach
         </select>
     </div>
@@ -68,7 +84,7 @@
         </div>
 
         <div class="kls-add-body" id="kls-add-body">
-            <form method="POST" action="{{ route('class.store') }}">
+            <form method="POST" action="{{ route('class.store') }}{{ isset($orgId) && $orgId ? '?org_id=' . $orgId : '' }}">
                 @csrf
 
                 <div class="kls-form-grid">
@@ -83,7 +99,7 @@
                         >
                             <option value="">Pilih Sekolah</option>
                             @foreach ($organizations as $org)
-                                <option value="{{ $org->id }}" {{ old('organization_id') == $org->id ? 'selected' : '' }}>
+                                <option value="{{ $org->id }}" {{ (old('organization_id') == $org->id || (isset($orgId) && $orgId == $org->id)) ? 'selected' : '' }}>
                                     {{ $org->name }}
                                 </option>
                             @endforeach
@@ -242,7 +258,7 @@
                         <div class="kls-class-name">{{ $cls->name }}</div>
 
                         <div id="kls-edit-form-{{ $cls->id }}" class="kls-edit-form">
-                            <form method="POST" action="{{ route('class.update', $cls) }}" style="display:contents">
+                            <form method="POST" action="{{ route('class.update', $cls) }}{{ isset($orgId) && $orgId ? '?org_id=' . $orgId : '' }}" style="display:contents">
                                 @csrf @method('PATCH')
 
                                 <select name="organization_id" class="kls-input-sm" required style="width:150px">
@@ -299,10 +315,10 @@
                                 </button>
 
                                 <form
-                                    method="POST"
-                                    action="{{ route('class.reset-pin', $cls) }}"
-                                    data-confirm-reset="Reset PIN kelas {{ $cls->name }}? PIN lama tidak bisa dipakai lagi."
-                                >
+                    method="POST"
+                    action="{{ route('class.reset-pin', $cls) }}{{ isset($orgId) && $orgId ? '?org_id=' . $orgId : '' }}"
+                    data-confirm-reset="Reset PIN kelas {{ $cls->name }}? PIN lama tidak bisa dipakai lagi."
+                >
                                     @csrf @method('PATCH')
                                     <button type="submit" class="kls-btn--reset">↺ Reset</button>
                                 </form>
@@ -310,7 +326,7 @@
                         @else
                             <div class="kls-pin-wrap">
                                 <span class="kls-pin-none">Belum ada PIN</span>
-                                <form method="POST" action="{{ route('class.reset-pin', $cls) }}">
+                                <form method="POST" action="{{ route('class.reset-pin', $cls) }}{{ isset($orgId) && $orgId ? '?org_id=' . $orgId : '' }}">
                                     @csrf @method('PATCH')
                                     <button type="submit" class="kls-btn--reset">⚿ Generate</button>
                                 </form>
@@ -335,7 +351,7 @@
 
                             <form
                                 method="POST"
-                                action="{{ route('class.destroy', $cls) }}"
+                                action="{{ route('class.destroy', $cls) }}{{ isset($orgId) && $orgId ? '?org_id=' . $orgId : '' }}"
                                 data-confirm="Hapus kelas {{ $cls->name }}? Tindakan ini tidak dapat dibatalkan."
                             >
                                 @csrf @method('DELETE')

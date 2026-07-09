@@ -126,6 +126,27 @@
 }
 .info-box svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
 
+/* ── Upload Area ── */
+.upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 12px; padding: 28px 20px;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--bg);
+}
+.upload-area:hover, .upload-area.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,232,122,0.04);
+}
+.upload-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--border); color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+}
+.upload-icon svg { width: 22px; height: 22px; }
+.upload-text { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.upload-hint { font-size: 11px; color: var(--muted); }
+
 @media (max-width: 600px) {
     .form-wrap { max-width: 100%; }
     .form-row { grid-template-columns: 1fr !important; }
@@ -151,7 +172,7 @@
                 Notifikasi WhatsApp akan dikirim otomatis setelah transaksi disimpan.
             </div>
 
-            <form method="POST" action="{{ route('finance.transactions.store') }}" id="trxForm">
+            <form method="POST" action="{{ route('finance.transactions.store') }}" id="trxForm" enctype="multipart/form-data">
                 @csrf
 
                 {{-- Type Toggle --}}
@@ -289,6 +310,42 @@
                     </div>
                 </div>
 
+                {{-- Foto / Lampiran --}}
+                <div class="form-group">
+                    <label class="form-label">
+                        Foto Nota / Barang
+                        <span style="font-weight:400;color:var(--muted)">(opsional)</span>
+                    </label>
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('attachment').click()">
+                        <div class="upload-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="upload-text">Klik atau seret foto ke sini</div>
+                        <div class="upload-hint">JPG, PNG, WEBP — maks. 5 MB</div>
+                    </div>
+                    <input type="file" name="attachment" id="attachment"
+                           accept="image/jpeg,image/png,image/webp,image/gif"
+                           style="display:none" onchange="previewAttachment(this)">
+                    <div id="attachPreview" style="display:none;margin-top:10px">
+                        <div style="position:relative;display:inline-block">
+                            <img id="previewImg" src="" alt="Preview"
+                                 style="max-width:200px;max-height:160px;border-radius:10px;
+                                        border:2px solid var(--border);object-fit:cover">
+                            <button type="button" onclick="clearAttachment()"
+                                    style="position:absolute;top:-8px;right:-8px;
+                                           width:22px;height:22px;border-radius:50%;
+                                           background:var(--red);color:white;border:none;
+                                           cursor:pointer;font-size:12px;display:flex;
+                                           align-items:center;justify-content:center">×</button>
+                        </div>
+                        <div id="previewName" style="font-size:11px;color:var(--muted);margin-top:5px"></div>
+                    </div>
+                    @error('attachment')<p class="invalid-feedback">{{ $message }}</p>@enderror
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="submitBtn">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -315,6 +372,70 @@ function setDesc(text) {
     document.getElementById('description').value = text;
     document.getElementById('description').focus();
 }
+
+// ── Attachment preview ──
+function previewAttachment(input) {
+    const file = input.files[0];
+    const wrap = document.getElementById('attachPreview');
+    const img  = document.getElementById('previewImg');
+    const name = document.getElementById('previewName');
+
+    if (!file) {
+        wrap.style.display = 'none';
+        return;
+    }
+
+    // Validasi ukuran maksimal 5MB
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Ukuran file maksimal 5 MB');
+        input.value = '';
+        wrap.style.display = 'none';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        img.src = e.target.result;
+        name.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+        wrap.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearAttachment() {
+    const input = document.getElementById('attachment');
+    input.value = '';
+    document.getElementById('attachPreview').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+}
+
+// ── Drag & drop support ──
+const uploadArea  = document.getElementById('uploadArea');
+const attachInput = document.getElementById('attachment');
+
+['dragover', 'dragenter'].forEach(evt => {
+    uploadArea.addEventListener(evt, function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+});
+
+['dragleave', 'dragend'].forEach(evt => {
+    uploadArea.addEventListener(evt, function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+    });
+});
+
+uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadArea.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length) {
+        attachInput.files = files;
+        previewAttachment(attachInput);
+    }
+});
 
 // Submit loading state
 document.getElementById('trxForm').addEventListener('submit', function() {

@@ -121,73 +121,30 @@ a { text-decoration: none; }
 .heat-4         { background: #003d24; }
 .heat-sun-cell  { background: #fee2e2; }
 
-/* ─── DONUT CARD ─────────────────────── */
-.donut-card {
-    background: #fff;
-    border-radius: 12px;
-    border: 1px solid #cce4f0;
-    padding: 16px 18px;
-    margin: 18px 0;
-}
+/* ─── DONUT CONTENT (dalam insight-card) ─────────────────────── */
 .donut-content {
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    gap: 24px;
+    display: flex;
     align-items: center;
-    margin-top: 12px;
-    position: relative;
+    gap: 14px;
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
-/* 🔴🔴🔴🔴 FIX: Chart.js WRAPPER! */
-.donut-content > div:not(.donut-legend) {
-    display: contents !important;
-}
-/* 🔴🔴🔴 SUPER FIX: Donut Canvas Size! */
 .donut-canvas {
     display: block !important;
-    width: 180px !important;
-    max-width: 180px !important;
-    height: 180px !important;
-    max-height: 180px !important;
-    min-width: 180px !important;
-    min-height: 180px !important;
-}
-/* 🔴 SAFELY HIDE Chart.js LEGEND WITHOUT HIDING OURS! */
-.donut-content ul,
-.donut-content [class*="chartjs"] {
-    display: none !important;
-    position: absolute !important;
-    left: -9999px !important;
-    top: -9999px !important;
+    width: 140px !important;
+    height: 140px !important;
+    min-width: 140px !important;
+    min-height: 140px !important;
+    flex-shrink: 0;
 }
 .donut-legend {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
-    max-height: 200px !important;
-    overflow-y: auto !important;
-}
-.donut-legend-item {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    font-size: 13px !important;
-    padding: 4px 0 !important;
-}
-.donut-legend-color {
-    width: 16px !important;
-    height: 16px !important;
-    border-radius: 4px !important;
-    flex-shrink: 0 !important;
-}
-.donut-legend-name {
-    flex: 1 !important;
-    color: #0d2416 !important;
-    font-weight: 500 !important;
-}
-.donut-legend-count {
-    color: #6b8fa3 !important;
-    font-weight: 600 !important;
-    white-space: nowrap !important;
+    flex: 1;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 160px;
+    overflow-y: auto;
 }
 
 /* ─── HEATMAP LEGEND ─────────────────── */
@@ -276,8 +233,10 @@ a { text-decoration: none; }
 
 /* ─── INSIGHT ROW ────────────────────── */
 .insight-row {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 0; border-bottom: 1px solid #ddeef7;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border-bottom: 1px solid #ddeef7;
 }
 .insight-card {
     padding: 16px 22px;
@@ -365,7 +324,6 @@ a { text-decoration: none; }
 @media (max-width: 768px) {
     .insight-row { grid-template-columns: 1fr; }
     .insight-card { border-right: none; border-bottom: 1px solid #ddeef7; }
-    .insight-card:last-child { border-bottom: none; }
     .ohm-header, .ohm-row { grid-template-columns: 80px repeat(7,1fr); }
     .ohm-lab { font-size: 10px; }
     
@@ -418,3 +376,4 @@ a { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+

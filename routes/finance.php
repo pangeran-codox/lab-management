@@ -4,6 +4,7 @@ use App\Http\Controllers\Finance\AuthController;
 use App\Http\Controllers\Finance\DashboardController;
 use App\Http\Controllers\Finance\TransactionController;
 use App\Http\Controllers\Finance\BudgetController;
+use App\Http\Controllers\Finance\LaporanController;
 use App\Http\Controllers\Finance\WaSettingController;
 use App\Http\Controllers\Finance\UserController;
 
@@ -22,6 +23,7 @@ Route::post('logout', [AuthController::class, 'logout'])
 Route::middleware('finance.auth')->group(function () {
     Route::get('/',         [DashboardController::class, 'index'])->name('finance.dashboard');
     Route::get('dashboard', [DashboardController::class, 'index'])->name('finance.dashboard.index');
+    Route::get('laporan',   [LaporanController::class,   'index'])->name('finance.laporan.index');
 
     Route::resource('transactions', TransactionController::class)
          ->only(['index', 'create', 'store', 'show', 'destroy'])

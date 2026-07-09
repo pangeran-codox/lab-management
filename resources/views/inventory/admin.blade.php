@@ -5,6 +5,9 @@
     @vite('resources/css/inventoryadmin.css')
 @endpush
 @push('scripts')
+    <script>
+        window.IA_CONFIG = { initialLabId: {{ $resources->isNotEmpty() ? $resources->first()->id : 'null' }} };
+    </script>
     @vite('resources/js/inventoryadmin.js')
 @endpush
 
@@ -43,6 +46,20 @@
     </div>
 </div>
 
+{{-- Tabs Lab --}}
+<div class="tab-bar">
+    @foreach($resources as $i => $lab)
+        @php $cnt = $items->where('resource_id', $lab->id)->count(); @endphp
+        <button class="tab-btn {{ $loop->first ? 'active' : '' }}"
+                onclick="switchLab({{ $lab->id }}, this)">
+            {{ $lab->name }}
+            @if($cnt > 0)
+                <span class="tab-count">{{ $cnt }}</span>
+            @endif
+        </button>
+    @endforeach
+</div>
+
 {{-- Filters --}}
 <form method="GET" action="{{ route('inventory.admin') }}" class="ia-toolbar">
     <div class="ia-search-box">
@@ -53,12 +70,6 @@
             class="ia-search-inp">
         <button type="button" class="ia-search-clear" id="inv-search-clear" aria-label="Hapus">×</button>
     </div>
-    <select name="resource_id" class="ia-select">
-        <option value="">Semua Lab</option>
-        @foreach($resources as $r)
-        <option value="{{ $r->id }}" {{ request('resource_id')==$r->id?'selected':'' }}>{{ $r->name }}</option>
-        @endforeach
-    </select>
     <select name="category" class="ia-select">
         <option value="">Semua Kategori</option>
         @foreach($categories as $k=>$v)
@@ -72,7 +83,7 @@
         @endforeach
     </select>
     <button type="submit" class="ia-btn ia-btn-filter">Filter</button>
-    @if(request()->hasAny(['search','resource_id','category','condition']))
+    @if(request()->hasAny(['search','category','condition']))
     <a href="{{ route('inventory.admin') }}" class="ia-btn-reset">× Reset</a>
     @endif
 </form>
@@ -106,83 +117,89 @@
 
     {{-- Tabel kiri --}}
     <div class="ia-table-box">
-        <div class="ia-table-head">
-            <span class="ia-table-title">Daftar Inventaris</span>
-            <span class="ia-table-count">{{ $items->count() }} item</span>
-        </div>
+        @foreach($resources as $lab)
+        @php
+            $labItems = $items->where('resource_id', $lab->id)->values();
+            $isFirst = $loop->first;
+        @endphp
+        <div class="lab-panel" data-lab-id="{{ $lab->id }}" style="display:{{ $isFirst ? 'block' : 'none' }}">
+            <div class="ia-table-head">
+                <span class="ia-table-title">Daftar Inventaris - {{ $lab->name }}</span>
+                <span class="ia-table-count">{{ $labItems->count() }} item</span>
+            </div>
 
-        @if($items->isEmpty())
-        <div class="ia-detail-empty" style="padding:48px 24px">
-            <span class="ia-detail-empty-ic">📦</span>
-            <p>Belum ada data inventaris</p>
+            @if($labItems->isEmpty())
+            <div class="ia-detail-empty" style="padding:48px 24px">
+                <span class="ia-detail-empty-ic">📦</span>
+                <p>Belum ada data inventaris untuk lab ini</p>
+            </div>
+            @else
+            <div class="ia-table-wrap">
+                <table class="ia-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-col="name">
+                                <span class="ia-th-inner">Nama Barang <span class="ia-sort-icon">⇅</span></span>
+                            </th>
+                            <th>Kategori</th>
+                            <th class="sortable" data-col="brand">
+                                <span class="ia-th-inner">Merk <span class="ia-sort-icon">⇅</span></span>
+                            </th>
+                            <th class="tc sortable" data-col="qty">
+                                <span class="ia-th-inner">Total <span class="ia-sort-icon">⇅</span></span>
+                            </th>
+                            <th class="tc sortable" data-col="good">
+                                <span class="ia-th-inner">Baik <span class="ia-sort-icon">⇅</span></span>
+                            </th>
+                            <th class="tc sortable" data-col="broken">
+                                <span class="ia-th-inner">Rusak <span class="ia-sort-icon">⇅</span></span>
+                            </th>
+                            <th class="tc">Kondisi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($labItems as $item)
+                        <tr class="ia-row"
+                            onclick="if(window.iaSelectRow){window.iaSelectRow(this)}else{console.error('iaSelectRow not loaded yet')}"
+                            data-id="{{ $item->id }}"
+                            data-name="{{ e($item->item_name) }}"
+                            data-lab="{{ e($item->resource->name ?? '') }}"
+                            data-category="{{ $item->category }}"
+                            data-condition="{{ $item->condition }}"
+                            data-brand="{{ e($item->brand ?? '') }}"
+                            data-model="{{ e($item->model ?? '') }}"
+                            data-serial="{{ e($item->serial_number ?? '') }}"
+                            data-specs="{{ e($item->specifications ?? '') }}"
+                            data-qty="{{ $item->quantity }}"
+                            data-good="{{ $item->quantity_good }}"
+                            data-broken="{{ $item->quantity_broken }}"
+                            data-backup="{{ $item->quantity_backup }}"
+                            data-notes="{{ e($item->notes ?? '') }}"
+                        >
+                            <td>
+                                <div class="ia-name">{{ $item->item_name }}</div>
+                                @if($item->specifications)
+                                <div class="ia-spec" title="{{ $item->specifications }}">{{ $item->specifications }}</div>
+                                @endif
+                            </td>
+                            <td><span class="ia-badge cat-{{ $item->category }}">{{ $categories[$item->category] ?? $item->category }}</span></td>
+                            <td>
+                                <div class="ia-brand">{{ $item->brand ?? '–' }}</div>
+                                @if($item->model)<div class="ia-model">{{ $item->model }}</div>@endif
+                            </td>
+                            <td class="tc"><span class="ia-num ia-nt">{{ $item->quantity }}</span></td>
+                            <td class="tc"><span class="ia-num ia-ng">{{ $item->quantity_good }}</span></td>
+                            <td class="tc"><span class="ia-num ia-nb {{ $item->quantity_broken>0?'bad':'' }}">{{ $item->quantity_broken }}</span></td>
+                            <td class="tc"><span class="ia-badge cond-{{ $item->condition }}">{{ $conditions[$item->condition] ?? $item->condition }}</span></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
         </div>
-        @else
-        <div class="ia-table-wrap">
-            <table class="ia-table">
-                <thead>
-                    <tr>
-                        <th class="sortable" data-col="name">
-                            <span class="ia-th-inner">Nama Barang <span class="ia-sort-icon">⇅</span></span>
-                        </th>
-                        <th class="sortable" data-col="lab">
-                            <span class="ia-th-inner">Lab <span class="ia-sort-icon">⇅</span></span>
-                        </th>
-                        <th>Kategori</th>
-                        <th class="sortable" data-col="brand">
-                            <span class="ia-th-inner">Merk <span class="ia-sort-icon">⇅</span></span>
-                        </th>
-                        <th class="tc sortable" data-col="qty">
-                            <span class="ia-th-inner">Total <span class="ia-sort-icon">⇅</span></span>
-                        </th>
-                        <th class="tc sortable" data-col="good">
-                            <span class="ia-th-inner">Baik <span class="ia-sort-icon">⇅</span></span>
-                        </th>
-                        <th class="tc sortable" data-col="broken">
-                            <span class="ia-th-inner">Rusak <span class="ia-sort-icon">⇅</span></span>
-                        </th>
-                        <th class="tc">Kondisi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($items as $item)
-                    <tr class="ia-row"
-                        data-id="{{ $item->id }}"
-                        data-name="{{ e($item->item_name) }}"
-                        data-lab="{{ e($item->resource->name ?? '') }}"
-                        data-category="{{ $item->category }}"
-                        data-condition="{{ $item->condition }}"
-                        data-brand="{{ e($item->brand ?? '') }}"
-                        data-model="{{ e($item->model ?? '') }}"
-                        data-serial="{{ e($item->serial_number ?? '') }}"
-                        data-specs="{{ e($item->specifications ?? '') }}"
-                        data-qty="{{ $item->quantity }}"
-                        data-good="{{ $item->quantity_good }}"
-                        data-broken="{{ $item->quantity_broken }}"
-                        data-backup="{{ $item->quantity_backup }}"
-                        data-notes="{{ e($item->notes ?? '') }}"
-                    >
-                        <td>
-                            <div class="ia-name">{{ $item->item_name }}</div>
-                            @if($item->specifications)
-                            <div class="ia-spec" title="{{ $item->specifications }}">{{ $item->specifications }}</div>
-                            @endif
-                        </td>
-                        <td><span class="ia-lab">{{ $item->resource->name ?? '–' }}</span></td>
-                        <td><span class="ia-badge cat-{{ $item->category }}">{{ $categories[$item->category] ?? $item->category }}</span></td>
-                        <td>
-                            <div class="ia-brand">{{ $item->brand ?? '–' }}</div>
-                            @if($item->model)<div class="ia-model">{{ $item->model }}</div>@endif
-                        </td>
-                        <td class="tc"><span class="ia-num ia-nt">{{ $item->quantity }}</span></td>
-                        <td class="tc"><span class="ia-num ia-ng">{{ $item->quantity_good }}</span></td>
-                        <td class="tc"><span class="ia-num ia-nb {{ $item->quantity_broken>0?'bad':'' }}">{{ $item->quantity_broken }}</span></td>
-                        <td class="tc"><span class="ia-badge cond-{{ $item->condition }}">{{ $conditions[$item->condition] ?? $item->condition }}</span></td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @endif
+        @endforeach
+
     </div>
 
     {{-- ══ DETAIL CARD kanan ══ --}}

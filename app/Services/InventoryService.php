@@ -4,11 +4,19 @@ namespace App\Services;
 
 use App\Models\LabInventory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 
 class InventoryService
 {
-    public function getFilteredItems(Request $request, ?array $allowedResources): Collection
+    /**
+     * Kembalikan semua item sebagai Collection.
+     * Inventaris admin menggunakan tab per-lab sehingga semua item
+     * harus tersedia di client sekaligus — pagination tidak kompatibel
+     * dengan sistem tab.
+     *
+     * Untuk mencegah overload, limit ke 500 item (lebih dari cukup
+     * untuk inventaris lab).
+     */
+    public function getFilteredItems(Request $request, ?array $allowedResources): \Illuminate\Support\Collection
     {
         $query = LabInventory::with('resource')->whereNull('deleted_at');
 
@@ -26,17 +34,18 @@ class InventoryService
             $query->where('condition', $request->condition);
         }
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('item_name', 'like', '%'.$request->search.'%')
-                  ->orWhere('brand', 'like', '%'.$request->search.'%')
-                  ->orWhere('model', 'like', '%'.$request->search.'%')
-                  ->orWhere('specifications', 'like', '%'.$request->search.'%');
+            $query->where(function ($q) use ($request) {
+                $q->where('item_name',       'like', '%' . $request->search . '%')
+                  ->orWhere('brand',         'like', '%' . $request->search . '%')
+                  ->orWhere('model',         'like', '%' . $request->search . '%')
+                  ->orWhere('specifications','like', '%' . $request->search . '%');
             });
         }
 
         return $query->orderBy('resource_id')
                      ->orderBy('category')
                      ->orderBy('item_name')
+                     ->limit(500)
                      ->get();
     }
 
@@ -56,9 +65,9 @@ class InventoryService
         ')->first();
 
         return [
-            'total_items'  => (int) ($results->total_items ?? 0),
-            'total_units'  => (int) ($results->total_units ?? 0),
-            'total_good'   => (int) ($results->total_good ?? 0),
+            'total_items'  => (int) ($results->total_items  ?? 0),
+            'total_units'  => (int) ($results->total_units  ?? 0),
+            'total_good'   => (int) ($results->total_good   ?? 0),
             'total_broken' => (int) ($results->total_broken ?? 0),
         ];
     }

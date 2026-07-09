@@ -5,6 +5,16 @@ FROM node:20-alpine AS node-builder
 
 WORKDIR /app
 
+# Terima build args untuk Vite (di-bake ke JS bundle saat build)
+ARG VITE_REVERB_APP_KEY
+ARG VITE_REVERB_HOST
+ARG VITE_REVERB_PORT
+ARG VITE_REVERB_SCHEME
+ENV VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY
+ENV VITE_REVERB_HOST=$VITE_REVERB_HOST
+ENV VITE_REVERB_PORT=$VITE_REVERB_PORT
+ENV VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME
+
 COPY package.json package-lock.json* ./
 RUN npm ci --frozen-lockfile
 
@@ -119,13 +129,14 @@ RUN mkdir -p storage/logs storage/framework/{cache,sessions,views,testing} boots
     && chown -R laravel:laravel storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Laravel production optimizations
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && php artisan event:cache
+# Copy entrypoint script (untuk handle migration dan cache di container)
+COPY --chown=laravel:laravel docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 USER laravel
 
 EXPOSE 9000
+
+# Entrypoint: jalankan artisan cache SETELAH .env di-inject
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]

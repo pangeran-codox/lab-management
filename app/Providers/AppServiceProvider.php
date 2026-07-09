@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 use Spatie\Prometheus\Facades\Prometheus;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +21,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS saat di belakang reverse proxy (Nginx Proxy Manager)
+        // Tanpa ini Laravel generate URL http:// meski sudah pakai SSL di NPM
+        if (env('FORCE_HTTPS', false)) {
+            URL::forceScheme('https');
+        }
+
         $this->registerPrometheusCollectors();
     }
 

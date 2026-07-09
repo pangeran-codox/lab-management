@@ -55,6 +55,14 @@ class BookingSubmissionService
             $labClass = LabClass::findOrFail($request->class_id);
             $teacher  = $this->upsertTeacher($teacherName, $teacherPhone);
 
+            // VALIDASI KUOTA
+            $totalSlotsToBook = count($allSlotIds) - count(array_intersect($allSlotIds, $takenSlotIds));
+            if (!$teacher->hasRemainingQuota($totalSlotsToBook)) {
+                $usedQuota = $teacher->getUsedQuotaThisWeek();
+                $quota = $teacher->weekly_quota ?? 5;
+                throw new \Exception("Kuota mingguan Anda sudah habis! Anda telah menggunakan {$usedQuota}/{$quota} slot.");
+            }
+
             $bookingData = [
                 'session_id'        => $sessionId,
                 'resource_id'       => $request->resource_id,
@@ -145,6 +153,13 @@ class BookingSubmissionService
             $labClass = LabClass::findOrFail($request->class_id);
             $teacher  = $this->upsertTeacher($teacherName, $teacherPhone);
 
+            // VALIDASI KUOTA UNTUK BOOKING MINGGU
+            if (!$teacher->hasRemainingQuota(1)) {
+                $usedQuota = $teacher->getUsedQuotaThisWeek();
+                $quota = $teacher->weekly_quota ?? 5;
+                throw new \Exception("Kuota mingguan Anda sudah habis! Anda telah menggunakan {$usedQuota}/{$quota} slot.");
+            }
+
             Cache::forget('active_teachers');
 
             return SundayBooking::create([
@@ -197,20 +212,60 @@ class BookingSubmissionService
 
     private function upsertTeacher(string $name, string $phone): Teacher
     {
-        $teacher = Teacher::firstOrCreate(
-            ['name' => $name],
-            [
+        // First try to find by phone if provided
+        if ($phone) {
+            $teacher = Teacher::where('phone', $phone)->first();
+            if ($teacher) {
+                // Jika nama beda jauh, tolak
+                if (strtolower(trim($teacher->name)) !== strtolower(trim($name))) {
+                    throw new \RuntimeException(
+                        "Nomor HP '{$phone}' sudah terdaftar untuk guru lain ({$teacher->name}). " .
+                        "Silakan gunakan nama yang sama atau gunakan nomor HP lain."
+                    );
+                }
+                return $teacher;
+            }
+        }
+
+        // Then try to find by name
+        $teacher = Teacher::where('name', $name)->first();
+        if ($teacher) {
+            // Update phone if needed
+            if ($teacher->phone !== $phone && $phone) {
+                try {
+                    $teacher->update(['phone' => $phone]);
+                } catch (\Exception $e) {
+                    // If phone already exists, throw error
+                    throw new \RuntimeException(
+                        "Nomor HP '{$phone}' sudah terdaftar untuk guru lain. " .
+                        "Silakan gunakan nomor HP lain."
+                    );
+                }
+            }
+            return $teacher;
+        }
+
+        // Otherwise create new teacher
+        try {
+            return Teacher::create([
+                'name'      => $name,
                 'phone'     => $phone,
                 'token'     => Teacher::generateUniqueToken(),
                 'is_active' => true,
-            ]
-        );
-
-        if ($teacher->phone !== $phone && $phone) {
-            $teacher->update(['phone' => $phone]);
+            ]);
+        } catch (\Exception $e) {
+            // If create fails due to duplicate phone
+            if ($phone && strpos($e->getMessage(), 'uk_teachers_phone') !== false) {
+                $existing = Teacher::where('phone', $phone)->first();
+                if ($existing) {
+                    throw new \RuntimeException(
+                        "Nomor HP '{$phone}' sudah terdaftar untuk guru lain ({$existing->name}). " .
+                        "Silakan gunakan nama yang sama atau gunakan nomor HP lain."
+                    );
+                }
+            }
+            throw $e;
         }
-
-        return $teacher;
     }
 
     private function resolveSlotIds(Request $request): array

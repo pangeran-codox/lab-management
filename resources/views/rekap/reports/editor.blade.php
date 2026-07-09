@@ -333,7 +333,7 @@
             color: var(--p);
         }
 
-        /* ── Editable Styles ────────────────────────── */
+        /* ── Editable Styles — hanya untuk elemen kop & TTD ── */
         [contenteditable="true"]:hover { 
             background: #fffde7; 
             outline: 2px dashed #f59e0b; 
@@ -345,6 +345,15 @@
             outline: 2px solid var(--p); 
             border-radius: 4px;
         }
+
+        /* ── Hint label pada elemen yang bisa diedit ── */
+        [contenteditable="true"]::after {
+            content: ' ✏️';
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity .15s;
+        }
+        [contenteditable="true"]:hover::after { opacity: 1; }
 
         /* ── Print Styles ───────────────────────────── */
         @media print {
@@ -376,7 +385,7 @@
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Kembali
         </a>
-        <div class="toolbar-title" style="flex: 1;">📝 Editor Laporan Rekap Penggunaan (Klik teks untuk mengedit sebelum cetak)</div>
+        <div class="toolbar-title" style="flex: 1;">📝 Editor Laporan — <span style="font-size:12px;opacity:.7">Hanya bagian kop surat dan tanda tangan yang dapat diedit</span></div>
         <button class="btn-print" onclick="window.print()">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Cetak Laporan / PDF
@@ -400,13 +409,13 @@
         </div>
 
         {{-- JUDUL --}}
-        <div class="report-title" contenteditable="true">Laporan Rekap Penggunaan Laboratorium</div>
+        <div class="report-title">Laporan Rekap Penggunaan Laboratorium</div>
 
         {{-- INFO --}}
         <table class="info-table">
             <tr>
                 <td style="width: 120px;">Lembaga</td>
-                <td>: <strong contenteditable="true">{{ 
+                <td>: <strong>{{ 
                     (count($labData) === 1 && isset($labData[0]['resource']->organization->name)) 
                         ? $labData[0]['resource']->organization->name 
                         : 'Semua Lembaga' 
@@ -414,11 +423,11 @@
             </tr>
             <tr>
                 <td style="width: 120px;">Unit Kerja</td>
-                <td>: <strong contenteditable="true">{{ $labName }}</strong></td>
+                <td>: <strong>{{ $labName }}</strong></td>
             </tr>
             <tr>
                 <td>Periode</td>
-                <td>: <span contenteditable="true">{{ $monthName }} {{ $year }}</span></td>
+                <td>: <span>{{ $monthName }} {{ $year }}</span></td>
             </tr>
         </table>
 
@@ -426,19 +435,19 @@
         <div class="section-title">Ringkasan Penggunaan</div>
         <div class="summary-grid">
             <div class="summary-card">
-                <div class="summary-val" contenteditable="true">{{ number_format($summary['total_capacity']) }}</div>
+                <div class="summary-val">{{ number_format($summary['total_capacity']) }}</div>
                 <div class="summary-key">Total Kapasitas</div>
             </div>
             <div class="summary-card">
-                <div class="summary-val" contenteditable="true">{{ number_format($summary['total_scheduled']) }}</div>
+                <div class="summary-val">{{ number_format($summary['total_scheduled']) }}</div>
                 <div class="summary-key">Jadwal Tetap</div>
             </div>
             <div class="summary-card">
-                <div class="summary-val" contenteditable="true">{{ number_format($summary['total_booking']) }}</div>
+                <div class="summary-val">{{ number_format($summary['total_booking']) }}</div>
                 <div class="summary-key">Booking</div>
             </div>
             <div class="summary-card">
-                <div class="summary-val" contenteditable="true">{{ $summary['total_pct'] }}%</div>
+                <div class="summary-val">{{ $summary['total_pct'] }}%</div>
                 <div class="summary-key">Tingkat Penggunaan</div>
             </div>
         </div>
@@ -451,21 +460,32 @@
                 <tr>
                     <th class="tc">No</th>
                     <th>Lembaga</th>
-                    <th class="tc">Total Kapasitas</th>
-                    <th class="tc">Digunakan</th>
-                    <th class="tc">Persentase</th>
+                    <th class="tc">Jadwal Tetap</th>
+                    <th class="tc">Booking</th>
+                    <th class="tc">Total Sesi</th>
+                    <th>Pengajar Terbanyak</th>
                 </tr>
             </thead>
             <tbody>
                 @php $idx = 1; @endphp
                 @foreach($lembagaUsage as $lembagaName => $data)
+                @php
+                    $topTeacher = array_key_first($data['teacherUsage'] ?? []);
+                    $topCount   = $topTeacher ? $data['teacherUsage'][$topTeacher] : 0;
+                @endphp
                 <tr>
-                    <td class="tc" contenteditable="true">{{ $idx++ }}</td>
-                    <td contenteditable="true">{{ $lembagaName }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($data['totalCapacity']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($data['totalUsed']) }}</td>
-                    <td class="tc" contenteditable="true">
-                        {{ $data['totalCapacity'] > 0 ? number_format(($data['totalUsed'] / $data['totalCapacity']) * 100, 2) : 0 }}%
+                    <td class="tc">{{ $idx++ }}</td>
+                    <td><strong>{{ $lembagaName }}</strong></td>
+                    <td class="tc">{{ number_format($data['scheduledSlots']) }}×</td>
+                    <td class="tc">{{ number_format($data['bookingSlots']) }}×</td>
+                    <td class="tc" style="font-weight:700;color:#003d24">
+                        {{ number_format($data['sessionCount']) }} sesi
+                    </td>
+                    <td>
+                        @if($topTeacher)
+                            {{ $topTeacher }} ({{ $topCount }} sesi)
+                        @else –
+                        @endif
                     </td>
                 </tr>
                 @endforeach
@@ -489,28 +509,28 @@
             </thead>
             <tbody>
                 <tr>
-                    <td class="tc" contenteditable="true">1</td>
-                    <td contenteditable="true">Jadwal Tetap</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalCapacity']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['scheduledSlots']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalCapacity'] - $lab['scheduledSlots']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format(($lab['scheduledSlots'] / $lab['totalCapacity']) * 100, 1) }}%</td>
+                    <td class="tc">1</td>
+                    <td>Jadwal Tetap</td>
+                    <td class="tc">{{ number_format($lab['totalCapacity']) }}</td>
+                    <td class="tc">{{ number_format($lab['scheduledSlots']) }}</td>
+                    <td class="tc">{{ number_format($lab['totalCapacity'] - $lab['scheduledSlots']) }}</td>
+                    <td class="tc">{{ number_format(($lab['scheduledSlots'] / $lab['totalCapacity']) * 100, 1) }}%</td>
                 </tr>
                 <tr>
-                    <td class="tc" contenteditable="true">2</td>
-                    <td contenteditable="true">Booking</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalCapacity']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['bookingSlots']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalCapacity'] - $lab['bookingSlots']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format(($lab['bookingSlots'] / $lab['totalCapacity']) * 100, 1) }}%</td>
+                    <td class="tc">2</td>
+                    <td>Booking</td>
+                    <td class="tc">{{ number_format($lab['totalCapacity']) }}</td>
+                    <td class="tc">{{ number_format($lab['bookingSlots']) }}</td>
+                    <td class="tc">{{ number_format($lab['totalCapacity'] - $lab['bookingSlots']) }}</td>
+                    <td class="tc">{{ number_format(($lab['bookingSlots'] / $lab['totalCapacity']) * 100, 1) }}%</td>
                 </tr>
                 <tr>
-                    <td class="tc" contenteditable="true">3</td>
-                    <td contenteditable="true">Total</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalCapacity']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalUsed']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['totalFree']) }}</td>
-                    <td class="tc" contenteditable="true">{{ number_format($lab['percentage'], 1) }}%</td>
+                    <td class="tc">3</td>
+                    <td>Total</td>
+                    <td class="tc">{{ number_format($lab['totalCapacity']) }}</td>
+                    <td class="tc">{{ number_format($lab['totalUsed']) }}</td>
+                    <td class="tc">{{ number_format($lab['totalFree']) }}</td>
+                    <td class="tc">{{ number_format($lab['percentage'], 1) }}%</td>
                 </tr>
             </tbody>
         </table>
@@ -532,13 +552,11 @@
                 @php $idx = 1; @endphp
                 @foreach($lab['teacherUsage'] as $name => $count)
                 <tr>
-                    <td class="tc" contenteditable="true">{{ $idx++ }}</td>
-                    <td contenteditable="true">{{ $name }}</td>
-                    <td contenteditable="true">{{ $lab['resource']->organization->name ?? '-' }}</td>
-                    <td class="tc" contenteditable="true">{{ $count }}</td>
-                    <td class="tc" contenteditable="true">
-                        {{ $lab['totalUsed'] > 0 ? number_format(($count / $lab['totalUsed']) * 100, 2) : 0 }}%
-                    </td>
+                    <td class="tc">{{ $idx++ }}</td>
+                    <td>{{ $name }}</td>
+                    <td>{{ $lab['resource']->organization->name ?? '-' }}</td>
+                    <td class="tc">{{ $count }}</td>
+                    <td class="tc">{{ $lab['totalUsed'] > 0 ? number_format(($count / $lab['totalUsed']) * 100, 2) : 0 }}%</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -562,12 +580,12 @@
             <tbody>
                 @foreach($lab['scheduleDetails'] as $idx => $sch)
                 <tr>
-                    <td class="tc" contenteditable="true">{{ $idx + 1 }}</td>
-                    <td contenteditable="true">{{ $sch->day_name ?? $sch->day_of_week }}</td>
-                    <td contenteditable="true">{{ $sch->timeSlot?->name ?? '-' }}</td>
-                    <td contenteditable="true">{{ $sch->labClass?->name ?? '-' }}</td>
-                    <td contenteditable="true">{{ $sch->teacher_name ?? '-' }}</td>
-                    <td class="tc" contenteditable="true">{{ $sch->occurrences }}</td>
+                    <td class="tc">{{ $idx + 1 }}</td>
+                    <td>{{ $sch->day_name_id ?? $sch->day_of_week }}</td>
+                    <td>{{ $sch->timeSlot?->name ?? '-' }}</td>
+                    <td>{{ $sch->labClass?->name ?? '-' }}</td>
+                    <td>{{ $sch->teacher_name ?? '-' }}</td>
+                    <td class="tc">{{ $sch->occurrences }}×</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -592,13 +610,13 @@
             <tbody>
                 @foreach($lab['bookingDetails'] as $idx => $book)
                 <tr>
-                    <td class="tc" contenteditable="true">{{ $idx + 1 }}</td>
-                    <td contenteditable="true">{{ \Carbon\Carbon::parse($book->booking_date)->translatedFormat('d M Y') }}</td>
-                    <td contenteditable="true">{{ $book->timeSlot?->name ?? '-' }}</td>
-                    <td contenteditable="true">{{ $book->teacher_name ?? '-' }}</td>
-                    <td contenteditable="true">{{ $book->class_name ?? '-' }}</td>
-                    <td contenteditable="true">{{ $book->title ?? '-' }}</td>
-                    <td class="tc" contenteditable="true">{{ $book->participant_count ?? '-' }}</td>
+                    <td class="tc">{{ $idx + 1 }}</td>
+                    <td>{{ \Carbon\Carbon::parse($book->booking_date)->translatedFormat('d M Y') }}</td>
+                    <td>{{ $book->timeSlot?->name ?? '-' }}</td>
+                    <td>{{ $book->teacher_name ?? '-' }}</td>
+                    <td>{{ $book->class_name ?? '-' }}</td>
+                    <td>{{ $book->title ?? '-' }}</td>
+                    <td class="tc">{{ $book->participant_count ?? '-' }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -606,11 +624,11 @@
         @endif
         @endforeach
 
-        {{-- TANDA TANGAN --}}
+        {{-- TANDA TANGAN — hanya bagian ini + kop yang bisa diedit --}}
         <div class="footer">
             <div class="ttd-box">
-                <div contenteditable="true">Jember, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
-                <div contenteditable="true" style="margin-top: 5px;">Mengetahui,</div>
+                <div>Jember, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
+                <div style="margin-top: 5px;" contenteditable="true">Mengetahui,</div>
                 <div class="ttd-space"></div>
                 <div class="ttd-name" contenteditable="true">{{ auth()->user()->full_name ?? '(Nama Pengelola)' }}</div>
                 <div contenteditable="true">NIP/NIY. ...........................</div>

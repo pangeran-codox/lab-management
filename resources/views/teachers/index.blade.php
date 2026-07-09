@@ -87,6 +87,12 @@
                         <input name="phone" type="text" class="mg-input" placeholder="08xxxxxxxxxx" value="{{ old('phone') }}">
                     </div>
                 </div>
+                <div class="mg-field-row">
+                    <div class="mg-field">
+                        <label class="mg-label">Kuota Mingguan <span class="mg-required">*</span></label>
+                        <input name="weekly_quota" type="number" class="mg-input" value="{{ old('weekly_quota', 5) }}" min="1">
+                    </div>
+                </div>
                 <div class="mg-add-footer">
                     <button type="submit" class="mg-btn-submit">
                         <i class="ti ti-check"></i>
@@ -121,6 +127,7 @@
                         <th>Token</th>
                         <th>Guru</th>
                         <th>No. HP</th>
+                        <th>Kuota Mingguan</th>
                         <th class="text-center">Jadwal</th>
                         <th class="text-center">Booking</th>
                         <th class="text-center">Tugas</th>
@@ -146,22 +153,19 @@
                             <div class="mg-guru-cell">
                                 <div class="mg-avatar mg-avatar--{{ $color }}">{{ $initials }}</div>
                                 <div>
-                                    <div class="mg-guru-name" id="name-display-{{ $t->id }}">{{ $t->name }}</div>
-                                    {{-- Edit inline form --}}
-                                    <div class="mg-edit-form" id="edit-form-{{ $t->id }}">
-                                        <form method="POST" action="{{ route('teacher.update', $t) }}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
-                                            @csrf @method('PATCH')
-                                            <input type="text" name="name" class="mg-input-sm" value="{{ $t->name }}" placeholder="Nama" required style="width:130px">
-                                            <input type="text" name="phone" class="mg-input-sm" value="{{ $t->phone }}" placeholder="No HP" style="width:110px">
-                                            <input type="hidden" name="is_active" value="{{ $t->is_active ? 1 : 0 }}">
-                                            <button type="submit" class="mg-btn-xs mg-btn-xs--save">Simpan</button>
-                                            <button type="button" class="mg-btn-xs mg-btn-xs--cancel" onclick="cancelEdit({{ $t->id }})">Batal</button>
-                                        </form>
-                                    </div>
+                                    <div class="mg-guru-name">{{ $t->name }}</div>
+                                    @if($t->phone)
+                                        <div class="mg-phone" style="margin-top: 2px;">{{ $t->phone }}</div>
+                                    @endif
                                 </div>
                             </div>
                         </td>
                         <td class="mg-phone">{{ $t->phone ?? '—' }}</td>
+                        <td class="mg-count">
+                            <span class="mg-badge mg-badge--active">
+                                {{ $t->weekly_quota ?? 5 }} slot/minggu
+                            </span>
+                        </td>
                         <td class="text-center mg-count">{{ $t->schedules_count }}</td>
                         <td class="text-center mg-count">{{ $t->bookings_count }}</td>
                         <td class="text-center mg-count">{{ $t->assignments_count }}</td>
@@ -180,7 +184,7 @@
                         </td>
                         <td>
                             <div class="mg-actions">
-                                <button class="mg-btn-action" onclick="toggleEdit({{ $t->id }})">
+                                <button class="mg-btn-action" onclick="openEditModal({{ $t->id }})">
                                     <i class="ti ti-edit"></i>
                                     Edit
                                 </button>
@@ -211,6 +215,7 @@
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="name" value="{{ $t->name }}">
                                     <input type="hidden" name="phone" value="{{ $t->phone }}">
+                                    <input type="hidden" name="weekly_quota" value="{{ $t->weekly_quota }}">
                                     <input type="hidden" name="is_active" value="1">
                                     <button type="submit" class="mg-btn-activate">Aktifkan</button>
                                 </form>
@@ -220,7 +225,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="mg-empty">
+                        <td colspan="9" class="mg-empty">
                             <i class="ti ti-mood-empty"></i>
                             <div>Belum ada data guru</div>
                         </td>
@@ -242,6 +247,89 @@
 
 </div>
 
+{{-- Edit Modal --}}
+<div class="mg-modal-overlay" id="edit-modal" onclick="if(event.target === this) closeEditModal()">
+    <div class="mg-modal">
+        <div class="mg-modal-header">
+            <div class="mg-modal-title">Edit Guru</div>
+            <button class="mg-modal-close" onclick="closeEditModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <form method="POST" id="edit-form">
+            @csrf
+            @method('PATCH')
+            <div class="mg-modal-body">
+                <div class="mg-field-row">
+                    <div class="mg-field">
+                        <label class="mg-label">Nama Lengkap <span class="mg-required">*</span></label>
+                        <input type="text" name="name" id="edit-name" class="mg-input" required>
+                    </div>
+                    <div class="mg-field">
+                        <label class="mg-label">Nomor HP</label>
+                        <input type="text" name="phone" id="edit-phone" class="mg-input">
+                    </div>
+                </div>
+                <div class="mg-field-row">
+                    <div class="mg-field">
+                        <label class="mg-label">Kuota Mingguan <span class="mg-required">*</span></label>
+                        <input type="number" name="weekly_quota" id="edit-weekly-quota" class="mg-input" min="1" required>
+                    </div>
+                    <div class="mg-field">
+                        <label class="mg-label">Status</label>
+                        <select name="is_active" id="edit-is-active" class="mg-input">
+                            <option value="1">Aktif</option>
+                            <option value="0">Nonaktif</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="mg-modal-footer">
+                <button type="button" class="mg-btn-cancel" onclick="closeEditModal()">Batal</button>
+                <button type="submit" class="mg-btn-submit">
+                    <i class="ti ti-check"></i>
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @vite(['resources/js/teacher.js'])
+
+<script>
+    const teachersData = @json($teachers);
+    console.log('teachersData:', teachersData);
+
+    window.openEditModal = function(teacherId) {
+        console.log('Opening modal for teacher ID:', teacherId);
+        const teacher = teachersData.find(t => t.id == teacherId);
+        console.log('Found teacher:', teacher);
+        if (!teacher) return;
+
+        const form = document.getElementById('edit-form');
+        form.action = `/teacher/${teacherId}`;
+
+        document.getElementById('edit-name').value = teacher.name;
+        document.getElementById('edit-phone').value = teacher.phone || '';
+        document.getElementById('edit-weekly-quota').value = teacher.weekly_quota || 5;
+        document.getElementById('edit-is-active').value = teacher.is_active ? '1' : '0';
+
+        document.getElementById('edit-modal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeEditModal = function() {
+        document.getElementById('edit-modal').classList.remove('open');
+        document.body.style.overflow = '';
+    };
+
+    // Close modal on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeEditModal();
+        }
+    });
+</script>
 
 </x-app-layout>

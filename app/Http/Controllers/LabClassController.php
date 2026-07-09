@@ -8,11 +8,18 @@ use Illuminate\Http\Request;
 
 class LabClassController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $classes = LabClass::with('organization')->orderBy('grade_level')->orderBy('name')->get();
+        $orgId = $request->query('org_id') ?? session('org_id');
+        $classesQuery = LabClass::with('organization')->orderBy('grade_level')->orderBy('name');
+        
+        if ($orgId) {
+            $classesQuery->where('organization_id', $orgId);
+        }
+        
+        $classes = $classesQuery->get();
         $organizations = Organization::orderBy('name')->get();
-        return view('classes.index', compact('classes', 'organizations'));
+        return view('classes.index', compact('classes', 'organizations', 'orgId'));
     }
 
     public function store(Request $request)
@@ -26,9 +33,12 @@ class LabClassController extends Controller
             'academic_year' => 'required|string|max:20',
         ]);
 
-        LabClass::create($validated);
-
-        return back()->with('success', 'Kelas berhasil ditambahkan.');
+        $validated['pin'] = LabClass::generateUniquePin();
+        $class = LabClass::create($validated);
+        
+        $orgId = $request->query('org_id');
+        return redirect()->back()->with('success', "Kelas berhasil ditambahkan. PIN: {$class->pin}")
+            ->with('org_id', $orgId);
     }
 
     public function update(Request $request, LabClass $class)
@@ -44,12 +54,28 @@ class LabClassController extends Controller
 
         $class->update($validated);
 
-        return back()->with('success', 'Kelas berhasil diperbarui.');
+        $orgId = $request->query('org_id');
+        return redirect()->back()->with('success', 'Kelas berhasil diperbarui.')
+            ->with('org_id', $orgId);
     }
 
-    public function destroy(LabClass $class)
+    public function destroy(Request $request, LabClass $class)
     {
         $class->delete();
-        return back()->with('success', 'Kelas berhasil dihapus.');
+        $orgId = $request->query('org_id');
+        return redirect()->back()->with('success', 'Kelas berhasil dihapus.')
+            ->with('org_id', $orgId);
+    }
+
+    public function resetPin(Request $request, LabClass $class)
+    {
+        // Generate PIN 6 digit baru yang unik
+        $newPin = LabClass::generateUniquePin();
+
+        $class->update(['pin' => $newPin]);
+
+        $orgId = $request->query('org_id');
+        return redirect()->back()->with('success', "PIN kelas {$class->name} berhasil direset menjadi {$newPin}.")
+            ->with('org_id', $orgId);
     }
 }

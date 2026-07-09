@@ -144,8 +144,12 @@ class ScheduleController extends Controller
                 ->with('success', "Booking berhasil diajukan ({$slotInfo})! Admin akan segera menghubungi via WhatsApp jika disetujui.")
                 ->with('week', $request->get('week'));
 
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
+            // Tampilkan pesan error yang jelas untuk kasus duplikat
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
+        } catch (\Exception $e) {
+            Log::error('Booking error: ' . $e->getMessage(), ['exception' => $e]);
+            return back()->withErrors(['error' => 'Terjadi kesalahan saat memproses booking. Silakan coba lagi nanti.'])->withInput();
         }
     }
 
@@ -179,8 +183,12 @@ class ScheduleController extends Controller
                 ->with('success', 'Booking Minggu berhasil diajukan! Admin akan segera menghubungi via WhatsApp jika disetujui.')
                 ->with('week', $request->get('week'));
 
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
+            // Tampilkan pesan error yang jelas untuk kasus duplikat
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
+        } catch (\Exception $e) {
+            Log::error('Sunday booking error: ' . $e->getMessage(), ['exception' => $e]);
+            return back()->withErrors(['error' => 'Terjadi kesalahan saat memproses booking. Silakan coba lagi nanti.'])->withInput();
         }
     }
 }
