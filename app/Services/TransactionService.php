@@ -7,6 +7,7 @@ use App\Models\Finance\Account;
 use App\Models\Finance\Budget;
 use App\Models\Finance\BudgetPeriod;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class TransactionService
 {
@@ -81,6 +82,11 @@ class TransactionService
                                        ->sum('amount');
                     $budget->update(['used_amount' => $used]);
                 }
+            }
+
+            // Hapus file lampiran fisik (jika ada)
+            if ($trx->attachment) {
+                Storage::disk('public')->delete($trx->attachment);
             }
 
             return $trx->delete();

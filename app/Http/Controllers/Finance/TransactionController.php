@@ -68,7 +68,14 @@ class TransactionController extends Controller
             'description'      => 'required|string|max:500',
             'notes'            => 'nullable|string',
             'reference'        => 'nullable|string|max:100',
+            'attachment'       => 'nullable|image|mimes:jpeg,png,webp,gif|max:5120', // 5MB
         ]);
+
+        // Upload foto nota/barang jika ada
+        if ($request->hasFile('attachment')) {
+            $validated['attachment'] = $request->file('attachment')
+                ->store('finance/attachments', 'public');
+        }
 
         $validated['created_by']      = auth('finance')->id();
         $validated['created_by_name'] = auth('finance')->user()->name;

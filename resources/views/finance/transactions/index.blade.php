@@ -122,6 +122,38 @@
 
 .empty-row td { text-align: center; padding: 48px !important; color: var(--muted); font-size: 13px; }
 
+/* ── Attachment thumb/link ── */
+.attach-thumb {
+    width: 34px; height: 34px; border-radius: 8px;
+    object-fit: cover; border: 1.5px solid var(--border);
+    cursor: zoom-in; transition: transform 0.15s, box-shadow 0.15s;
+    display: block;
+}
+.attach-thumb:hover { transform: scale(1.08); box-shadow: var(--shadow-sm); }
+.attach-none { font-size: 11px; color: var(--muted); }
+.attach-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: var(--g1);
+    text-decoration: none; padding: 4px 9px; border-radius: 20px;
+    background: rgba(7,31,20,0.06); border: 1px solid var(--border);
+    transition: all 0.15s;
+}
+.attach-chip:hover { background: var(--g1); color: white; border-color: var(--g1); }
+.attach-chip svg { width: 11px; height: 11px; }
+
+/* ── Lightbox ── */
+.lightbox-overlay {
+    display: none; position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,0.75);
+    align-items: center; justify-content: center; padding: 24px;
+    cursor: zoom-out;
+}
+.lightbox-overlay.open { display: flex; }
+.lightbox-overlay img {
+    max-width: 90vw; max-height: 90vh; border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
 /* ── MOBILE CARD LIST ── */
 .trx-card-list { display: none; }
 
@@ -358,6 +390,7 @@
                     <th>Tipe</th>
                     <th>Jumlah</th>
                     <th>Dicatat</th>
+                    <th>Lampiran</th>
                     <th></th>
                 </tr>
             </thead>
@@ -388,6 +421,17 @@
                         </td>
                         <td style="color:var(--muted);font-size:12px;">{{ $trx->created_by_name ?? '-' }}</td>
                         <td>
+                            @if($trx->attachment)
+                                <img src="{{ asset('storage/' . $trx->attachment) }}"
+                                     alt="Lampiran {{ $trx->code }}"
+                                     class="attach-thumb"
+                                     onclick="openLightbox('{{ asset('storage/' . $trx->attachment) }}')"
+                                     onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'attach-none',textContent:'Rusak'}))">
+                            @else
+                                <span class="attach-none">—</span>
+                            @endif
+                        </td>
+                        <td>
                             <form method="POST" action="{{ route('finance.transactions.destroy', $trx) }}"
                                   onsubmit="return confirm('Hapus transaksi {{ $trx->code }}?')">
                                 @csrf @method('DELETE')
@@ -399,7 +443,7 @@
                     </tr>
                 @empty
                     <tr class="empty-row">
-                        <td colspan="8">
+                        <td colspan="9">
                             <div style="font-size:32px;margin-bottom:10px;">🧾</div>
                             Belum ada transaksi pada periode ini.<br>
                             <a href="{{ route('finance.transactions.create') }}" style="color:var(--accent2);font-weight:700;text-decoration:none;">
@@ -442,6 +486,14 @@
             <div class="trx-card-foot">
                 <span class="trx-card-code">{{ $trx->code }}</span>
                 <div class="trx-card-actions">
+                    @if($trx->attachment)
+                        <a href="javascript:void(0)"
+                           onclick="openLightbox('{{ asset('storage/' . $trx->attachment) }}')"
+                           class="attach-chip">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Foto
+                        </a>
+                    @endif
                     <span style="font-size:11px;color:var(--muted);">{{ $trx->created_by_name ?? '-' }}</span>
                     <form method="POST" action="{{ route('finance.transactions.destroy', $trx) }}"
                           onsubmit="return confirm('Hapus {{ $trx->code }}?')">
@@ -472,6 +524,11 @@
     @endif
 </div>
 
+{{-- ════════════════ LIGHTBOX (preview lampiran) ════════════════ --}}
+<div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="Preview lampiran">
+</div>
+
 @endsection
 
 @push('scripts')
@@ -482,5 +539,19 @@ function toggleFilter() {
     btn.classList.toggle('open');
     col.classList.toggle('open');
 }
+
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightboxOverlay').classList.add('open');
+}
+
+function closeLightbox() {
+    document.getElementById('lightboxOverlay').classList.remove('open');
+    document.getElementById('lightboxImg').src = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLightbox();
+});
 </script>
 @endpush
