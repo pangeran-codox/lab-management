@@ -92,13 +92,22 @@ class UsageReportController extends Controller
         }
 
         return view('rekap.reports.editor', [
-            'labData' => $labData,
-            'summary' => $data['summary'],
-            'monthName' => $this->getMonthName($month),
-            'year' => $year,
-            'labName' => $resourceId ? Resource::find($resourceId)->name : 'Semua Laboratorium',
+            'labData'        => $labData,
+            'summary'        => $data['summary'],
+            'monthName'      => $this->getMonthName($month),
+            'year'           => $year,
+            'labName'        => $resourceId ? Resource::find($resourceId)->name : 'Semua Laboratorium',
             'totalSlotPerDay' => $data['totalSlotPerDay'],
-            'lembagaUsage' => $data['lembagaUsage'],
+            'lembagaUsage'   => $data['lembagaUsage'],
+            'logo'           => \App\Models\Setting::get(\App\Models\Setting::SITE_LOGO),
+            'siteName'       => \App\Models\Setting::get(\App\Models\Setting::SITE_NAME, config('app.name')),
+            'siteAddress'    => \App\Models\Setting::get(\App\Models\Setting::SITE_ADDRESS, ''),
+            'sitePhone'      => \App\Models\Setting::get(\App\Models\Setting::SITE_PHONE, ''),
+            'siteHeadName'   => \App\Models\Setting::get(\App\Models\Setting::SITE_HEAD_NAME, ''),
+            'reportFooter'   => \App\Models\Setting::get(\App\Models\Setting::REPORT_FOOTER, ''),
+            'kopNameSize'    => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_NAME_SIZE, 20),
+            'kopAddressSize' => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_ADDRESS_SIZE, 13),
+            'kopPhoneSize'   => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_PHONE_SIZE, 12),
         ]);
     }
     

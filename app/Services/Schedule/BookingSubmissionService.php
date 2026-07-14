@@ -11,6 +11,8 @@ use App\Models\Schedule;
 use App\Models\SundayBooking;
 use App\Models\Teacher;
 use App\Models\TimeSlot;
+use App\Models\User;
+use App\Services\WhatsAppService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -21,6 +23,9 @@ use Illuminate\Support\Str;
 
 class BookingSubmissionService
 {
+    public function __construct(
+        private WhatsAppService $waService
+    ) {}
     public function submitRegularBooking(Request $request): array
     {
         $dayEn        = Carbon::parse($request->booking_date)->format('l');
@@ -103,6 +108,7 @@ class BookingSubmissionService
         if (count($result['bookedSlots']) > 0) {
             $first = $result['bookedSlots'][0];
             $labClass = LabClass::where('name', $first->class_name)->first();
+            $lab = Resource::find($request->resource_id);
 
             broadcast(new ScheduleUpdated('regular', 'created', [
                 'resource_id'  => $first->resource_id,
@@ -113,14 +119,13 @@ class BookingSubmissionService
             // Notifikasi Admin Real-time
             broadcast(new BookingCreated($first));
 
-            $this->sendBookingNotification(
+            // Kirim notifikasi ke teknisi untuk booking pending (hanya dari Laravel)
+            $this->notifyTeknisiBookingPending(
                 $request->resource_id,
                 $request->booking_date,
                 $teacherName,
-                $teacherPhone,
-                $labClass ?? new LabClass(['name' => $first->class_name]),
+                $lab?->name ?? 'Lab',
                 $result['bookedSlots'],
-                $sessionId,
                 $request->subject_name,
                 $request->title,
                 $request->participant_count
@@ -189,16 +194,19 @@ class BookingSubmissionService
         broadcast(new BookingCreated($booking));
 
         $labClass = LabClass::where('name', $booking->class_name)->first(); // Re-fetch for notification
-        $this->sendSundayBookingNotification(
+        $lab = Resource::find($request->resource_id);
+
+        // Kirim notifikasi ke teknisi untuk Sunday booking pending (hanya dari Laravel)
+        $this->notifyTeknisiBookingPending(
             $request->resource_id,
             $request->booking_date,
             $teacherName,
-            $teacherPhone,
-            $booking,
-            $labClass ?? new LabClass(['name' => $booking->class_name]),
+            $lab?->name ?? 'Lab',
+            [$booking],
             $request->subject_name,
             $request->title,
-            $request->participant_count
+            $request->participant_count,
+            true
         );
     }
 
@@ -367,5 +375,90 @@ class BookingSubmissionService
         } catch (\Exception $e) {
             Log::warning('WA Sunday booking notification failed: ' . $e->getMessage());
         }
+    }
+
+    private function notifyTeknisiBookingPending(
+        int $resourceId,
+        string $bookingDate,
+        string $teacherName,
+        string $labName,
+        array $bookings,
+        string $subjectName,
+        string $title,
+        int $participantCount,
+        bool $isSunday = false
+    ): void {
+        try {
+            // Cari semua teknisi yang ditugaskan ke lab ini
+            $teknisiList = User::where('role', 'teknisi')
+                ->whereHas('resources', fn($q) => $q->where('resource_id', $resourceId))
+                ->whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->get();
+
+            if ($teknisiList->isEmpty()) {
+                Log::info('Tidak ada teknisi yang ditugaskan ke lab #' . $resourceId);
+                return;
+            }
+
+            // Bangun pesan
+            $message = $this->buildTeknisiPendingMessage(
+                $bookingDate,
+                $teacherName,
+                $labName,
+                $bookings,
+                $subjectName,
+                $title,
+                $participantCount,
+                $isSunday
+            );
+
+            // Kirim ke setiap teknisi
+            foreach ($teknisiList as $teknisi) {
+                $this->waService->send($teknisi->phone, $message);
+                Log::info('Notifikasi booking pending dikirim ke teknisi ' . $teknisi->full_name . ' (' . $teknisi->phone . ')');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Gagal mengirim notifikasi teknisi booking pending: ' . $e->getMessage(), [
+                'resource_id' => $resourceId,
+            ]);
+        }
+    }
+
+    private function buildTeknisiPendingMessage(
+        string $bookingDate,
+        string $teacherName,
+        string $labName,
+        array $bookings,
+        string $subjectName,
+        string $title,
+        int $participantCount,
+        bool $isSunday
+    ): string {
+        $slotInfo = '';
+        if (!$isSunday) {
+            $slotIds = array_map(fn($b) => $b->time_slot_id, $bookings);
+            $timeSlots = TimeSlot::whereIn('id', $slotIds)->orderBy('slot_order')->get();
+            $slotNames = $timeSlots->map(fn($ts) => $ts->name)->join(', ');
+            $slotTimes = $timeSlots->map(fn($ts) => substr($ts->start_time, 0, 5) . '-' . substr($ts->end_time, 0, 5))->join(', ');
+            $slotInfo = "⏰ Waktu: {$slotNames} ({$slotTimes})";
+        } else {
+            $slotInfo = "⏰ Waktu: Hari Minggu (07:00-12:45)";
+        }
+
+        return implode("\n", [
+            '🔔 *BOOKING LAB BARU MENUNGGU PERSETUJUAN*',
+            '━━━━━━━━━━━━━━━━━━━━',
+            "🏢 Lab: {$labName}",
+            "👨‍🏫 Guru: {$teacherName}",
+            "📅 Tanggal: " . Carbon::parse($bookingDate)->translatedFormat('l, d F Y'),
+            $slotInfo,
+            "📝 Kegiatan: {$title}",
+            "📚 Mapel: {$subjectName}",
+            "👥 Peserta: {$participantCount} orang",
+            '━━━━━━━━━━━━━━━━━━━━',
+            'Silakan periksa dan approve/reject booking ini!',
+        ]);
     }
 }

@@ -219,6 +219,55 @@ th.sort-desc .ia-sort-icon { opacity:1; color:var(--g8); }
 .ia-btn-maintenance  { background:#003d24; color:#fff; display:inline-flex; align-items:center; gap:8px; padding:8px 15px; border-radius:10px; font-weight:700; font-size:13px; text-decoration:none; transition:all var(--ia-t); }
 .ia-btn-maintenance:hover { opacity:0.9; transform:translateY(-1px); }
 
+/* ── Export Dropdown ─────────────────────────────── */
+.export-dropdown-wrap {
+    position: relative;
+    display: inline-flex;
+    z-index: 9999;
+}
+.export-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18) !important;
+    z-index: 99999 !important;
+    min-width: 220px !important;
+    overflow: hidden !important;
+    display: none !important;
+}
+.export-dropdown-menu.show {
+    display: block !important;
+    animation: dropdownIn .2s cubic-bezier(.16,1,.3,1) !important;
+}
+@keyframes dropdownIn {
+    from { opacity:0; transform: translateY(-10px) scale(.95); }
+    to { opacity:1; transform: translateY(0) scale(1); }
+}
+.export-dropdown-item {
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    padding: 14px 20px !important;
+    border: none !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    font-family: 'DM Sans', system-ui, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #1f2937 !important;
+    transition: all .15s ease !important;
+}
+.export-dropdown-item:hover {
+    background: #ecfdf5 !important;
+    color: #065f46 !important;
+}
+.export-dropdown-item:active {
+    background: #d1fae5 !important;
+}
+
 /* ── Actions Bar ─────────────────────────────────── */
 .ia-actions-bar {
     display: flex;

@@ -20,6 +20,8 @@ use App\Http\Controllers\InventoryMaintenanceController;
 use App\Http\Controllers\InventoryReportController;
 use App\Http\Controllers\UsageReportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\MikroTikSettingController;
 
 // ═══ PUBLIK ═══
 Route::get('/', [ScheduleController::class, 'index'])->name('home');
@@ -67,6 +69,9 @@ Route::any('/fonnte-webhook', function(\Illuminate\Http\Request $request) {
         ->post(env('BOT_URL', 'http://170.1.0.9:5000') . '/api/webhook/fonnte', $request->all());
     return response()->json($response->json());
 })->middleware('throttle:60,1');
+
+// Simpan ukuran font kop laporan — publik karena diakses dari halaman editor tanpa login
+Route::post('/settings/kop-size', [SettingController::class, 'saveKopSize'])->name('settings.kop-size')->middleware('throttle:10,1');
 
 // Lab control (publik, akses via link token)
 Route::prefix('lab-control')->name('lab.')->group(function () {
@@ -164,4 +169,29 @@ Route::get('/api/jadwal-penting/blocked-slots', [ImportantScheduleController::cl
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // Pengaturan Sistem
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings/upload-logo',   [SettingController::class, 'uploadLogo'])->name('settings.upload-logo');
+    Route::delete('/settings/delete-logo', [SettingController::class, 'deleteLogo'])->name('settings.delete-logo');
+    Route::post('/settings/identitas',     [SettingController::class, 'saveIdentitas'])->name('settings.identitas');
+    Route::post('/settings/wa',            [SettingController::class, 'saveWa'])->name('settings.wa');
+    Route::post('/settings/booking',       [SettingController::class, 'saveBooking'])->name('settings.booking');
+    Route::post('/settings/lab-control',   [SettingController::class, 'saveLabControl'])->name('settings.lab-control');
+    Route::post('/settings/laporan',       [SettingController::class, 'saveLaporan'])->name('settings.laporan');
+    Route::prefix('settings/mikrotik')->name('mikrotik.')->group(function () {
+        Route::get('/',                                  [MikroTikSettingController::class, 'index'])->name('settings.index');
+        // Devices
+        Route::post('/devices',                          [MikroTikSettingController::class, 'storeDevice'])->name('device.store');
+        Route::patch('/devices/{device}',                [MikroTikSettingController::class, 'updateDevice'])->name('device.update');
+        Route::delete('/devices/{device}',               [MikroTikSettingController::class, 'destroyDevice'])->name('device.destroy');
+        Route::post('/devices/{device}/test',            [MikroTikSettingController::class, 'testConnection'])->name('test');
+        // Labs
+        Route::post('/devices/{device}/labs',            [MikroTikSettingController::class, 'storeLab'])->name('lab.store');
+        Route::patch('/labs/{lab}',                      [MikroTikSettingController::class, 'updateLab'])->name('lab.update');
+        Route::delete('/labs/{lab}',                     [MikroTikSettingController::class, 'destroyLab'])->name('lab.destroy');
+        // Teknisi
+        Route::post('/labs/{lab}/teknisi',               [MikroTikSettingController::class, 'assignTeknisi'])->name('lab.teknisi.assign');
+        Route::delete('/labs/{lab}/teknisi',             [MikroTikSettingController::class, 'unassignTeknisi'])->name('lab.teknisi.unassign');
+    });
 });

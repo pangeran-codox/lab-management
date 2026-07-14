@@ -7,6 +7,7 @@ use App\Services\Schedule\ScheduleAvailabilityService;
 use App\Services\Schedule\ScheduleQueryService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ScheduleController extends Controller
 {
@@ -113,11 +114,17 @@ class ScheduleController extends Controller
 
     public function storeBooking(Request $request)
     {
+        // Cek apakah booking publik sedang ditutup
+        if (!\App\Models\Setting::isEnabled(\App\Models\Setting::BOOKING_OPEN)) {
+            return back()->withErrors(['error' => 'Booking sedang ditutup sementara. Silakan hubungi admin.'])->withInput();
+        }
+
         if ($request->filled('booking_date') && Carbon::parse($request->booking_date)->isSunday()) {
             return back()->withErrors(['error' => 'Booking hari Minggu menggunakan form khusus.'])->withInput();
         }
 
-        $maxDate = now()->addWeek()->toDateString();
+        $maxDays = (int) \App\Models\Setting::get(\App\Models\Setting::BOOKING_MAX_DAYS, 30);
+        $maxDate = now()->addDays($maxDays)->toDateString();
         $request->validate([
             'resource_id'       => 'required|exists:resources,id',
             'time_slot_id'      => 'required|exists:time_slots,id',
@@ -141,15 +148,16 @@ class ScheduleController extends Controller
             }
 
             return redirect()->back()
-                ->with('success', "Booking berhasil diajukan ({$slotInfo})! Admin akan segera menghubungi via WhatsApp jika disetujui.")
+                ->with('success', "Booking berhasil diajukan ({$slotInfo})! Teknisi akan segera memprosesnya.")
                 ->with('week', $request->get('week'));
 
         } catch (\RuntimeException $e) {
             // Tampilkan pesan error yang jelas untuk kasus duplikat
+            Log::error('Runtime Booking error: ' . $e->getMessage(), ['exception' => $e]);
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         } catch (\Exception $e) {
-            Log::error('Booking error: ' . $e->getMessage(), ['exception' => $e]);
-            return back()->withErrors(['error' => 'Terjadi kesalahan saat memproses booking. Silakan coba lagi nanti.'])->withInput();
+            Log::error('General Booking error: ' . $e->getMessage(), ['exception' => $e, 'trace' => $e->getTraceAsString()]);
+            return back()->withErrors(['error' => 'Terjadi kesalahan saat memproses booking: ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -159,7 +167,13 @@ class ScheduleController extends Controller
 
     public function storeSundayBooking(Request $request)
     {
-        $maxDate = now()->addWeek()->toDateString();
+        // Cek apakah booking publik sedang ditutup
+        if (!\App\Models\Setting::isEnabled(\App\Models\Setting::BOOKING_OPEN)) {
+            return back()->withErrors(['error' => 'Booking sedang ditutup sementara. Silakan hubungi admin.'])->withInput();
+        }
+
+        $maxDays = (int) \App\Models\Setting::get(\App\Models\Setting::BOOKING_MAX_DAYS, 30);
+        $maxDate = now()->addDays($maxDays)->toDateString();
         $request->validate([
             'resource_id'       => 'required|exists:resources,id',
             'organization_id'   => 'required|exists:organizations,id',
@@ -180,15 +194,16 @@ class ScheduleController extends Controller
         try {
             $this->submission->submitSundayBooking($request);
             return redirect()->back()
-                ->with('success', 'Booking Minggu berhasil diajukan! Admin akan segera menghubungi via WhatsApp jika disetujui.')
+                ->with('success', 'Booking Minggu berhasil diajukan! Teknisi akan segera memprosesnya.')
                 ->with('week', $request->get('week'));
 
         } catch (\RuntimeException $e) {
             // Tampilkan pesan error yang jelas untuk kasus duplikat
+            Log::error('Runtime Sunday Booking error: ' . $e->getMessage(), ['exception' => $e]);
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         } catch (\Exception $e) {
-            Log::error('Sunday booking error: ' . $e->getMessage(), ['exception' => $e]);
-            return back()->withErrors(['error' => 'Terjadi kesalahan saat memproses booking. Silakan coba lagi nanti.'])->withInput();
+            Log::error('General Sunday Booking error: ' . $e->getMessage(), ['exception' => $e, 'trace' => $e->getTraceAsString()]);
+            return back()->withErrors(['error' => 'Terjadi kesalahan saat memproses booking: ' . $e->getMessage()])->withInput();
         }
     }
 }

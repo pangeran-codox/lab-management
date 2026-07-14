@@ -8,6 +8,11 @@ class Kernel extends ConsoleKernel
     {
         // Generate token lab control H-5 menit sebelum jadwal rutin
         $schedule->call(function () {
+            // Cek toggle auto-generate dari Settings
+            if (!\App\Models\Setting::isEnabled(\App\Models\Setting::LAB_SESSION_AUTO)) {
+                return;
+            }
+
             $today  = now()->format('l');
             $target = now()->addMinutes(5);
             $todate = now()->toDateString();

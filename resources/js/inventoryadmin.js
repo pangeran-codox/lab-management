@@ -16,6 +16,7 @@ function switchLab(id, btn) {
     document.querySelectorAll('.lab-panel').forEach(p => {
         p.style.display = p.dataset.labId == id ? 'block' : 'none';
     });
+    updatePdfLink();
 }
 window.switchLab = switchLab;
 const IA_CAT = {
@@ -265,36 +266,88 @@ function closeMaintenance() {
 }
 
 /* ════════════════════════════════════════
+   UPDATE PDF LINK
+═══════════════════════════════════════════ */
+function updatePdfLink() {
+    const pdfLink = document.getElementById('ia-export-pdf-link');
+    if (!pdfLink) return;
+    
+    const url = new URL(pdfLink.href);
+    if (currentLab) {
+        url.searchParams.set('resource_id', currentLab);
+    } else {
+        url.searchParams.delete('resource_id');
+    }
+    pdfLink.href = url.toString();
+}
+
+/* ════════════════════════════════════════
    EXPORT EXCEL (SheetJS lazy load)
 ═══════════════════════════════════════════ */
+let isExporting = false;
 function exportToExcel() {
+    if (isExporting) return;
+    isExporting = true;
+    
     const btn = document.getElementById('ia-btn-export-excel');
     const originalHTML = btn.innerHTML;
+
+    const finishExport = () => {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        isExporting = false;
+    };
 
     if (typeof XLSX === 'undefined') {
         btn.innerHTML = '<span>⏳</span> Memuat...';
         btn.disabled = true;
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        script.onload = () => { btn.innerHTML = originalHTML; btn.disabled = false; doExport(); };
+        script.onload = () => { 
+            doExport();
+            finishExport();
+        };
+        script.onerror = () => {
+            finishExport();
+            iaToast('Gagal memuat library export', 'err');
+        };
         document.head.appendChild(script);
     } else {
         doExport();
+        finishExport();
     }
 
     function doExport() {
         const rows = [['No', 'Nama Barang', 'Lab', 'Kategori', 'Merk', 'Model', 'Total', 'Baik', 'Rusak', 'Cadangan', 'Kondisi']];
-        document.querySelectorAll('.ia-table tbody tr.ia-row').forEach((tr, i) => {
-            if (tr.style.display === 'none') return;
+        
+        // Hanya export lab yang aktif, gunakan currentLab untuk pencarian!
+        const activePanel = Array.from(document.querySelectorAll('.lab-panel')).find(p => p.dataset.labId == currentLab);
+        
+        let trs = [];
+        if (activePanel) {
+            trs = activePanel.querySelectorAll('.ia-table tbody tr.ia-row');
+        }
+
+        let i = 0;
+        trs.forEach((tr) => {
             const d = tr.dataset;
-            rows.push([i+1, d.name, d.lab, d.category, d.brand, d.model,
-                parseInt(d.qty), parseInt(d.good), parseInt(d.broken), parseInt(d.backup), d.condition]);
+            i++;
+            rows.push([i, d.name, d.lab, IA_CAT[d.category] || d.category, d.brand, d.model,
+                parseInt(d.qty), parseInt(d.good), parseInt(d.broken), parseInt(d.backup), IA_COND[d.condition] || d.condition]);
         });
+        
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(rows);
         ws['!cols'] = [5,25,15,12,15,15,8,8,8,10,10].map(w => ({ wch: w }));
         XLSX.utils.book_append_sheet(wb, ws, 'Inventaris');
-        XLSX.writeFile(wb, `Laporan_Inventaris_${new Date().toISOString().slice(0,10)}.xlsx`);
+        
+        const dateStr = new Date().toISOString().slice(0,10);
+        let labName = '';
+        const activeBtn = document.querySelector('.tab-btn.active');
+        if (activeBtn) {
+            labName = activeBtn.textContent.trim().replace(/\s+/g, '_').replace(/[^\w\-_]/g, '');
+        }
+        XLSX.writeFile(wb, `Laporan_Inventaris_${labName}_${dateStr}.xlsx`);
     }
 }
 
@@ -484,6 +537,8 @@ function init() {
     if (window.IA_CONFIG?.initialLabId) {
         currentLab = window.IA_CONFIG.initialLabId;
     }
+    // Initial PDF link
+    updatePdfLink();
 
     // Klik baris ditangani via onclick="window.iaSelectRow(this)" di blade
     // — lebih reliable daripada event delegation yang bisa tersela Alpine.js
@@ -551,10 +606,17 @@ function init() {
 }
 
 // Jalankan init — jika DOM sudah ready langsung, jika belum tunggu event
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
+// Pastikan init hanya berjalan satu kali
+let hasInitialized = false;
+function safeInit() {
+    if (hasInitialized) return;
+    hasInitialized = true;
     init();
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', safeInit);
+} else {
+    safeInit();
 }
 
 // Expose fungsi ke window agar bisa dipanggil dari onclick di HTML

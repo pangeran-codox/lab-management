@@ -34,7 +34,7 @@
     "isEntry": true
   },
   "resources/css/inventoryadmin.css": {
-    "file": "assets/inventoryadmin-PiSnhn2r.css",
+    "file": "assets/inventoryadmin-Byjt9n3i.css",
     "src": "resources/css/inventoryadmin.css",
     "isEntry": true
   },
@@ -74,7 +74,7 @@
     "isEntry": true
   },
   "resources/css/teacher.css": {
-    "file": "assets/teacher-D5vX7rCJ.css",
+    "file": "assets/teacher-BgUClxsv.css",
     "src": "resources/css/teacher.css",
     "isEntry": true
   },
@@ -84,7 +84,7 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CWa72sNU.js",
+    "file": "assets/app-Chs-CxoZ.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
@@ -117,7 +117,7 @@
     "isEntry": true
   },
   "resources/js/inventoryadmin.js": {
-    "file": "assets/inventoryadmin-Beal6zMq.js",
+    "file": "assets/inventoryadmin-DZeMArgy.js",
     "name": "inventoryadmin",
     "src": "resources/js/inventoryadmin.js",
     "isEntry": true

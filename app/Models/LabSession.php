@@ -20,7 +20,10 @@ class LabSession extends Model
         'is_active'        => 'boolean',
     ];
 
-    // Lab key mapping
+    // ──────────────────────────────────────────────────────────────────
+    // Lab key mapping — LEGACY const dipertahankan sebagai fallback.
+    // Kode baru sebaiknya pakai MikroTikDevice::getLabMapCached().
+    // ──────────────────────────────────────────────────────────────────
     const LAB_MAP = [
         'lab7'   => ['name' => 'Lab Komputer 7',   'resource_id' => 1],
         'lab8'   => ['name' => 'Lab Komputer 8',   'resource_id' => 2],
@@ -31,6 +34,21 @@ class LabSession extends Model
         'lab4'   => ['name' => 'Lab Komputer 4',   'resource_id' => 7],
         'labfo'  => ['name' => 'Lab Fiber Optic',  'resource_id' => 8],
     ];
+
+    /**
+     * Ambil lab map dari DB (via MikroTikDevice).
+     * Fallback ke LAB_MAP const jika tabel belum ada / kosong.
+     */
+    public static function getLabMap(): array
+    {
+        try {
+            $map = \App\Models\MikroTikDevice::getLabMapCached();
+            if (!empty($map)) return $map;
+        } catch (\Exception $e) {
+            // Tabel belum di-migrate, gunakan const
+        }
+        return self::LAB_MAP;
+    }
 
     public function resource()
     {
@@ -47,12 +65,15 @@ class LabSession extends Model
         return $token;
     }
 
-    // Cek apakah token masih valid
+    // Cek apakah token masih valid (termasuk toleransi grace period dari Settings)
     public function isValid(): bool
     {
+        $grace = (int) \App\Models\Setting::get(\App\Models\Setting::LAB_TOKEN_GRACE, 10);
+        $effectiveEnd = $this->session_end->copy()->addMinutes($grace);
+
         return $this->is_active
             && $this->invalidated_at === null
-            && now()->between($this->session_start, $this->session_end);
+            && now()->between($this->session_start, $effectiveEnd);
     }
 
     // Cek apakah token sudah expired
@@ -82,7 +103,8 @@ class LabSession extends Model
     // Get lab name
     public function getLabNameAttribute(): string
     {
-        return self::LAB_MAP[$this->lab_key]['name'] ?? $this->lab_key;
+        $map = self::getLabMap();
+        return $map[$this->lab_key]['name'] ?? $this->lab_key;
     }
 
     // Scope aktif

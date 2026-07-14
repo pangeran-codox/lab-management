@@ -295,8 +295,6 @@
     </div>
 </div>
 
-@vite(['resources/js/teacher.js'])
-
 <script>
     const teachersData = @json($teachers);
     console.log('teachersData:', teachersData);
@@ -308,7 +306,7 @@
         if (!teacher) return;
 
         const form = document.getElementById('edit-form');
-        form.action = `/teacher/${teacherId}`;
+        form.action = `/guru/${teacherId}`;
 
         document.getElementById('edit-name').value = teacher.name;
         document.getElementById('edit-phone').value = teacher.phone || '';
@@ -331,5 +329,6 @@
         }
     });
 </script>
+@vite(['resources/js/teacher.js'])
 
 </x-app-layout>

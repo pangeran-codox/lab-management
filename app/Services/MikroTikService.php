@@ -1,90 +1,108 @@
 <?php
 namespace App\Services;
 
+use App\Models\MikroTikDevice;
 use Illuminate\Support\Facades\Http;
 
 class MikroTikService
 {
-    private string $botUrl;
-
-    const LAB_CONFIG = [
-        'lab7' => [
-            'name'        => 'Lab Komputer 7',
-            'nat_comment' => 'lab 7',
-            'interface'   => 'lab 7',
-            'dhcp_server' => 'dhcp2',
-            'network'     => '192.168.70.0/24',
-            'vlan_id'     => 77,
-            'resource_id' => 1,
-            'bot_lab_id'  => 1,
-        ],
-        'lab8' => [
-            'name'        => 'Lab Komputer 8',
-            'nat_comment' => 'lab 8',
-            'interface'   => 'lab 8',
-            'dhcp_server' => 'dhcp3',
-            'network'     => '192.168.80.0/24',
-            'vlan_id'     => 88,
-            'resource_id' => 2,
-            'bot_lab_id'  => 2,
-        ],
-    ];
-
-    public function __construct()
+    /**
+     * Ambil config lab dari DB (cached).
+     * Format: [ 'lab7' => [ 'name', 'bot_lab_id', 'bot_url', ... ], ... ]
+     */
+    private function labConfig(): array
     {
-        $this->botUrl = config('mikrotik.bot_url', 'http://170.1.0.46:5000');
+        return MikroTikDevice::getLabMapCached();
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Enable Internet
+    // ──────────────────────────────────────────────────────────────────
 
     public function enableLab(string $labKey): array
     {
-        $config = self::LAB_CONFIG[$labKey] ?? null;
-        if (!$config) return ['success' => false, 'error' => 'Kontrol internet tidak tersedia untuk lab ini.', 'unsupported' => true];
+        $config = $this->labConfig()[$labKey] ?? null;
+        if (!$config) {
+            return ['success' => false, 'error' => 'Kontrol internet tidak tersedia untuk lab ini.', 'unsupported' => true];
+        }
 
-        $response = Http::timeout(10)->post("{$this->botUrl}/api/lab/internet", [
-            'lab_id' => $config['bot_lab_id'],
-            'action' => 'on',
-        ]);
+        try {
+            $response = Http::timeout(10)
+                ->withHeaders($this->botHeaders($config))
+                ->post("{$config['bot_url']}/api/lab/internet", [
+                    'lab_id' => $config['bot_lab_id'],
+                    'action' => 'on',
+                ]);
 
-        $data = $response->json();
-        return [
-            'success' => $data['success'] ?? false,
-            'lab'     => $config['name'],
-            'action'  => 'enabled',
-            'message' => $data['message'] ?? '',
-        ];
+            $data = $response->json();
+            return [
+                'success' => $data['success'] ?? false,
+                'lab'     => $config['name'],
+                'action'  => 'enabled',
+                'message' => $data['message'] ?? '',
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Disable Internet
+    // ──────────────────────────────────────────────────────────────────
 
     public function disableLab(string $labKey): array
     {
-        $config = self::LAB_CONFIG[$labKey] ?? null;
-        if (!$config) return ['success' => false, 'error' => 'Kontrol internet tidak tersedia untuk lab ini.', 'unsupported' => true];
+        $config = $this->labConfig()[$labKey] ?? null;
+        if (!$config) {
+            return ['success' => false, 'error' => 'Kontrol internet tidak tersedia untuk lab ini.', 'unsupported' => true];
+        }
 
-        $response = Http::timeout(10)->post("{$this->botUrl}/api/lab/internet", [
-            'lab_id' => $config['bot_lab_id'],
-            'action' => 'off',
-        ]);
+        try {
+            $response = Http::timeout(10)
+                ->withHeaders($this->botHeaders($config))
+                ->post("{$config['bot_url']}/api/lab/internet", [
+                    'lab_id' => $config['bot_lab_id'],
+                    'action' => 'off',
+                ]);
 
-        $data = $response->json();
-        return [
-            'success' => $data['success'] ?? false,
-            'lab'     => $config['name'],
-            'action'  => 'disabled',
-            'message' => $data['message'] ?? '',
-        ];
+            $data = $response->json();
+            return [
+                'success' => $data['success'] ?? false,
+                'lab'     => $config['name'],
+                'action'  => 'disabled',
+                'message' => $data['message'] ?? '',
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Status
+    // ──────────────────────────────────────────────────────────────────
 
     public function getLabStatus(string $labKey): array
     {
-        $config = self::LAB_CONFIG[$labKey] ?? null;
-        if (!$config) return ['success' => false, 'error' => 'Kontrol internet tidak tersedia untuk lab ini.', 'unsupported' => true, 'internet' => null];
+        $config = $this->labConfig()[$labKey] ?? null;
+        if (!$config) {
+            return [
+                'success'     => false,
+                'error'       => 'Kontrol internet tidak tersedia untuk lab ini.',
+                'unsupported' => true,
+                'internet'    => null,
+            ];
+        }
 
         try {
-            // Get status dari bot
-            $statusResp = Http::timeout(10)->get("{$this->botUrl}/api/lab/status/{$config['bot_lab_id']}");
-            $statusData = $statusResp->json();
+            $headers = $this->botHeaders($config);
+            $botUrl  = $config['bot_url'];
 
-            // Get devices dari bot
-            $devicesResp = Http::timeout(10)->get("{$this->botUrl}/api/lab/devices/{$config['bot_lab_id']}");
+            $statusResp  = Http::timeout(10)->withHeaders($headers)
+                ->get("{$botUrl}/api/lab/status/{$config['bot_lab_id']}");
+            $devicesResp = Http::timeout(10)->withHeaders($headers)
+                ->get("{$botUrl}/api/lab/devices/{$config['bot_lab_id']}");
+
+            $statusData  = $statusResp->json();
             $devicesData = $devicesResp->json();
 
             $natEnabled  = ($statusData['status'] ?? '') === 'online';
@@ -99,7 +117,7 @@ class MikroTikService
                 'status'       => $natEnabled ? 'online' : 'offline',
                 'active_users' => $activeUsers,
                 'devices'      => $devices,
-                'network'      => $config['network'],
+                'network'      => $config['network'] ?? '',
             ];
         } catch (\Exception $e) {
             return [
@@ -115,10 +133,21 @@ class MikroTikService
         }
     }
 
+    // ──────────────────────────────────────────────────────────────────
+    // Misc
+    // ──────────────────────────────────────────────────────────────────
+
     public function listNATRules(): array
     {
+        // Ambil dari device pertama yang aktif
+        $map = $this->labConfig();
+        if (empty($map)) return [];
+
+        $first = reset($map);
         try {
-            $response = Http::timeout(10)->get("{$this->botUrl}/api/nat/rules");
+            $response = Http::timeout(10)
+                ->withHeaders($this->botHeaders($first))
+                ->get("{$first['bot_url']}/api/nat/rules");
             return $response->json()['rules'] ?? [];
         } catch (\Exception $e) {
             return [];
@@ -128,5 +157,17 @@ class MikroTikService
     public function debugNATRules(): array
     {
         return $this->listNATRules();
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Helper: susun header Authorization untuk bot
+    // ──────────────────────────────────────────────────────────────────
+
+    private function botHeaders(array $config): array
+    {
+        if (!empty($config['bot_token'])) {
+            return ['Authorization' => 'Bearer ' . $config['bot_token']];
+        }
+        return [];
     }
 }

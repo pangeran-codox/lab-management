@@ -17,11 +17,14 @@ class LabControlController extends Controller
     {
         $token = strtoupper(trim($token));
 
+        // Ambil grace period dari Settings (default 10 menit)
+        $grace = (int) \App\Models\Setting::get(\App\Models\Setting::LAB_TOKEN_GRACE, 10);
+
         $session = LabSession::where('token', $token)
             ->where('is_active', true)
             ->whereNull('invalidated_at')
-            ->where('session_end', '>', now())
             ->where('session_start', '<=', now()->addMinutes(5))
+            ->where('session_end', '>', now()->subMinutes($grace))
             ->first();
 
         if (!$session) {
@@ -31,7 +34,7 @@ class LabControlController extends Controller
         }
 
         $session->markAsUsed();
-        $labName = LabSession::LAB_MAP[$session->lab_key]['name'] ?? $session->lab_key;
+        $labName = LabSession::getLabMap()[$session->lab_key]['name'] ?? $session->lab_key;
 
         return view('lab-control.control', compact('session', 'labName', 'token'));
     }
@@ -87,8 +90,11 @@ class LabControlController extends Controller
 
     public function generateToken(Request $request)
     {
+        $labMap    = \App\Models\LabSession::getLabMap();
+        $labKeys   = array_keys($labMap);
+
         $request->validate([
-            'lab_key'       => 'required|in:lab7,lab8',
+            'lab_key'       => ['required', \Illuminate\Validation\Rule::in($labKeys)],
             'teacher_name'  => 'required|string|max:100',
             'teacher_phone' => 'nullable|string|max:20',
             'duration'      => 'required|integer|min:30|max:480',
@@ -97,7 +103,7 @@ class LabControlController extends Controller
         $session = LabSession::create([
             'token'         => LabSession::generateToken(),
             'lab_key'       => $request->lab_key,
-            'resource_id'   => LabSession::LAB_MAP[$request->lab_key]['resource_id'],
+            'resource_id'   => $labMap[$request->lab_key]['resource_id'],
             'source_type'   => 'manual',
             'teacher_name'  => $request->teacher_name,
             'teacher_phone' => $request->teacher_phone,
@@ -118,10 +124,12 @@ class LabControlController extends Controller
 
     private function findSession(string $token): ?LabSession
     {
+        $grace = (int) \App\Models\Setting::get(\App\Models\Setting::LAB_TOKEN_GRACE, 10);
+
         return LabSession::where('token', strtoupper(trim($token)))
             ->where('is_active', true)
             ->whereNull('invalidated_at')
-            ->where('session_end', '>', now())
+            ->where('session_end', '>', now()->subMinutes($grace))
             ->first();
     }
 }

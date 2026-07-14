@@ -4,7 +4,9 @@ namespace App\Services\Booking;
 
 use App\Events\ScheduleUpdated;
 use App\Models\Booking;
+use App\Models\User;
 use App\Services\LabControlService;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,8 @@ class BookingApprovalService
     public function __construct(
         private BookingAccessService  $access,
         private LabControlService     $labControl,
-        private ConflictCheckerService $conflict, // ← TAMBAH
+        private ConflictCheckerService $conflict,
+        private WhatsAppService $waService
     ) {}
 
     // ══════════════════════════════════════════════════════════════════
@@ -129,8 +132,8 @@ class BookingApprovalService
         });
 
         // Generate session di luar transaction
-        // Load relasi timeSlot yang dibutuhkan generateFromBooking agar tidak trigger lazy load
-        $bookings->load('timeSlot');
+        // Load relasi timeSlot dan resource yang dibutuhkan
+        $bookings->load('timeSlot', 'resource');
 
         $session = null;
         foreach ($bookings as $booking) {
@@ -143,7 +146,10 @@ class BookingApprovalService
 
         if ($session) {
             try {
-                $this->labControl->sendWebhook($session->fresh());
+                // Kirim notifikasi WA booking jika toggle aktif (hanya sekali untuk grup, ke guru)
+                if (\App\Models\Setting::isEnabled(\App\Models\Setting::WA_NOTIFY_BOOKING)) {
+                    $this->labControl->sendWebhook($session->fresh());
+                }
             } catch (\Exception $e) {
                 Log::warning('sendWebhook failed: ' . $e->getMessage());
             }
@@ -241,10 +247,15 @@ class BookingApprovalService
     {
         try {
             // Load relasi yang dibutuhkan agar tidak trigger lazy load / fresh()
-            $booking->loadMissing('timeSlot');
+            $booking->loadMissing('timeSlot', 'resource');
             $session = $this->labControl->generateFromBooking($booking);
+
+            // sendWebhook sudah mengecek toggle WA_NOTIFY_LAB secara internal
             if ($session) {
-                $this->labControl->sendWebhook($session->fresh());
+                // Kirim notifikasi WA booking jika toggle aktif (ke guru)
+                if (\App\Models\Setting::isEnabled(\App\Models\Setting::WA_NOTIFY_BOOKING)) {
+                    $this->labControl->sendWebhook($session->fresh());
+                }
             }
         } catch (\Exception $e) {
             Log::warning('Session generation failed for booking #' . $booking->id . ': ' . $e->getMessage());

@@ -130,11 +130,12 @@
                 border-radius: 12px;
             }
 
-            .kop { flex-direction: column; text-align: center; gap: 16px; }
-            .kop-logo { margin-right: 0; }
-            .kop-h1 { font-size: 18px; }
-            .kop-h2 { font-size: 15px; }
-            .kop-p { font-size: 11px; }
+            .kop { flex-direction: row; gap: 16px; }
+            .kop-logo { width: 70px; height: 70px; }
+            .kop-text { text-align: center; }
+            .kop-h1 { font-size: 16px; }
+            .kop-h2 { font-size: 13px; }
+            .kop-p { font-size: 10px; }
 
             .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
@@ -149,27 +150,32 @@
 
         /* ── Kop Surat ──────────────────────────────── */
         .kop { 
-            display: flex; 
+            display: flex;
+            flex-direction: row;
             align-items: center; 
             border-bottom: 3px solid var(--p); 
             padding-bottom: 18px; 
-            margin-bottom: 32px; 
+            margin-bottom: 32px;
+            gap: 20px;
         }
         .kop-logo { 
-            width: 90px; 
-            height: 90px; 
-            margin-right: 24px; 
+            width: 80px; 
+            height: 80px;
+            flex-shrink: 0;
             display: flex; 
             align-items: center; 
             justify-content: center;
-            background: linear-gradient(135deg, var(--p) 0%, var(--p-light) 100%);
-            border-radius: 20px;
-            color: white;
-            box-shadow: 0 4px 14px rgba(0, 61, 36, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .kop-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
         .kop-text { flex: 1; text-align: center; }
         .kop-h1 { 
-            font-size: 24px; 
+            font-size: 20px; 
             font-weight: 800; 
             margin: 0; 
             text-transform: uppercase; 
@@ -177,9 +183,9 @@
             color: var(--p);
         }
         .kop-h2 { 
-            font-size: 18px; 
-            font-weight: 700; 
-            margin: 8px 0 4px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            margin: 4px 0 2px; 
             color: var(--p-light); 
         }
         .kop-p { 
@@ -374,7 +380,10 @@
                 background: none; 
             }
             .summary-card { box-shadow: none; border: 1px solid #e2e8f0; }
-            @page { size: A4; margin: 15mm; }
+            @page { size: A4; margin: 10mm; }
+            @page :first { margin-top: 10mm; }
+            /* Hilangkan header/footer bawaan browser saat print */
+            html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
@@ -386,6 +395,20 @@
             Kembali
         </a>
         <div class="toolbar-title" style="flex: 1;">📝 Editor Laporan — <span style="font-size:12px;opacity:.7">Hanya bagian kop surat dan tanda tangan yang dapat diedit</span></div>
+
+        {{-- Font size controls --}}
+        <div style="display:flex;align-items:center;gap:6px;margin-right:12px;background:rgba(255,255,255,.1);padding:6px 10px;border-radius:8px">
+            <span style="font-size:11px;color:rgba(255,255,255,.7);white-space:nowrap">Ukuran Kop:</span>
+            <button onclick="changeSize('kop-name', -1)"    style="background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:5px;cursor:pointer;font-size:13px;font-weight:700">−</button>
+            <span id="kop-name-size-label"    style="font-size:12px;color:#fff;min-width:28px;text-align:center">{{ $kopNameSize }}px</span>
+            <button onclick="changeSize('kop-name', +1)"    style="background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:5px;cursor:pointer;font-size:13px;font-weight:700">+</button>
+            <span style="color:rgba(255,255,255,.3);margin:0 2px">|</span>
+            <button onclick="changeSize('kop-address', -1)" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:5px;cursor:pointer;font-size:11px">−a</button>
+            <span id="kop-address-size-label" style="font-size:12px;color:#fff;min-width:28px;text-align:center">{{ $kopAddressSize }}px</span>
+            <button onclick="changeSize('kop-address', +1)" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:5px;cursor:pointer;font-size:11px">+a</button>
+            <button id="btn-save-size" onclick="saveKopSize()" style="background:#16a34a;border:none;color:#fff;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;margin-left:4px">💾 Simpan</button>
+        </div>
+
         <button class="btn-print" onclick="window.print()">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Cetak Laporan / PDF
@@ -395,16 +418,27 @@
     <div class="page">
         {{-- KOP SURAT --}}
         <div class="kop">
-            <div class="kop-logo" style="display: flex; align-items: center; justify-content: center; background: var(--p); border-radius: 12px; color: white;">
-                <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 2 0 00-3.86.517l-.318.158a6 2 0 01-3.86.517L6.05 15.21a2 2 0 00-1.183.308l-1.063.671a1 1 0 00.441 1.811l1.157.058a6 2 0 01.872.11l2.13.426a6 2 0 003.86-.517l.318-.158a6 2 0 013.86-.517l2.387.477a2 2 0 001.022.547l.53.265a1 1 0 001.498-.894l-.193-2.321z"/>
-                    <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
+            <div class="kop-logo" style="display: flex; align-items: center; justify-content: center; background: var(--p); border-radius: 12px; color: white; overflow: hidden;">
+                @if(isset($logo) && $logo)
+                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">
+                @else
+                    <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 2 0 00-3.86.517l-.318.158a6 2 0 01-3.86.517L6.05 15.21a2 2 0 00-1.183.308l-1.063.671a1 1 0 00.441 1.811l1.157.058a6 2 0 01.872.11l2.13.426a6 2 0 003.86-.517l.318-.158a6 2 0 013.86-.517l2.387.477a2 2 0 001.022.547l.53.265a1 1 0 001.498-.894l-.193-2.321z"/>
+                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                @endif
             </div>
             <div class="kop-text">
-                <div class="kop-h1" contenteditable="true">Yayasan Pondok Pesantren Nuris Jember</div>
-                <div class="kop-h2" contenteditable="true">Sistem Manajemen Laboratorium Terpadu</div>
-                <div class="kop-p" contenteditable="true">Jl. Pangandaran No. 48, Antirogo, Kec. Sumbersari, Kabupaten Jember, Jawa Timur 68125</div>
+                <div class="kop-h1" id="kop-name" contenteditable="true"
+                    style="font-size:{{ $kopNameSize }}px">{{ $siteName ?? '' }}</div>
+                @if(!empty($siteAddress))
+                <div class="kop-h2" id="kop-address" contenteditable="true"
+                    style="font-size:{{ $kopAddressSize }}px">{{ $siteAddress }}</div>
+                @endif
+                @if(!empty($sitePhone))
+                <div class="kop-p" id="kop-phone" contenteditable="true"
+                    style="font-size:{{ $kopPhoneSize }}px">Telp. {{ $sitePhone }}</div>
+                @endif
             </div>
         </div>
 
@@ -630,11 +664,65 @@
                 <div>Jember, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
                 <div style="margin-top: 5px;" contenteditable="true">Mengetahui,</div>
                 <div class="ttd-space"></div>
-                <div class="ttd-name" contenteditable="true">{{ auth()->user()->full_name ?? '(Nama Pengelola)' }}</div>
+                <div class="ttd-name" contenteditable="true">{{ (isset($siteHeadName) && $siteHeadName) ? $siteHeadName : (auth()->user()->full_name ?? '(Nama Pengelola)') }}</div>
                 <div contenteditable="true">NIP/NIY. ...........................</div>
             </div>
         </div>
+
+        @if(isset($reportFooter) && $reportFooter)
+        <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:center">
+            <pre style="font-family:inherit;font-size:11px;color:#64748b;margin:0;white-space:pre-wrap" contenteditable="true">{{ $reportFooter }}</pre>
+        </div>
+        @endif
     </div>
+
+<script>
+const sizes = {
+    'kop-name':    {{ $kopNameSize }},
+    'kop-address': {{ $kopAddressSize }},
+    'kop-phone':   {{ $kopPhoneSize }},
+};
+
+const MIN = { 'kop-name': 10, 'kop-address': 8, 'kop-phone': 8 };
+const MAX = { 'kop-name': 48, 'kop-address': 32, 'kop-phone': 32 };
+
+function changeSize(id, delta) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    sizes[id] = Math.min(MAX[id], Math.max(MIN[id], sizes[id] + delta));
+    el.style.fontSize = sizes[id] + 'px';
+    const label = document.getElementById(id + '-size-label');
+    if (label) label.textContent = sizes[id] + 'px';
+}
+
+function saveKopSize() {
+    const btn = document.getElementById('btn-save-size');
+    btn.textContent = '⏳ Menyimpan...';
+    btn.disabled = true;
+
+    fetch('{{ route("settings.kop-size") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+        },
+        body: JSON.stringify({
+            kop_name_size:    sizes['kop-name'],
+            kop_address_size: sizes['kop-address'],
+            kop_phone_size:   sizes['kop-phone'],
+        }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.textContent = data.success ? '✅ Tersimpan' : '❌ Gagal';
+        setTimeout(() => { btn.textContent = '💾 Simpan'; btn.disabled = false; }, 2000);
+    })
+    .catch(() => {
+        btn.textContent = '❌ Gagal';
+        setTimeout(() => { btn.textContent = '💾 Simpan'; btn.disabled = false; }, 2000);
+    });
+}
+</script>
 
 </body>
 </html>
