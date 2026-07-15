@@ -358,6 +358,7 @@
     </div>
 </div>
 
+@stack('modals')
 @livewireScripts
 @stack('scripts')     {{-- ← tambah ini --}}
 

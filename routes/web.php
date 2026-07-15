@@ -164,6 +164,10 @@ Route::get('/api/jadwal-penting/blocked-slots', [ImportantScheduleController::cl
     // Lab control admin
     Route::post('/lab-control-admin/generate', [LabControlController::class, 'generateToken'])->name('lab.generate');
 
+    // Pengelolaan Absen Jadwal
+    Route::post('/schedule-absences', [\App\Http\Controllers\ScheduleAbsenceController::class, 'store'])->name('schedule-absences.store');
+    Route::delete('/schedule-absences/{absence}', [\App\Http\Controllers\ScheduleAbsenceController::class, 'destroy'])->name('schedule-absences.destroy');
+
     // Pengelolaan Pengguna
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');

@@ -32,4 +32,9 @@ class Schedule extends Model
     {
         return $this->belongsTo(LabClass::class, 'class_id');
     }
+
+    public function absences()
+    {
+        return $this->hasMany(ScheduleAbsence::class);
+    }
 }

@@ -403,6 +403,8 @@
                                         <th>Kelas</th>
                                         <th>Mata Pelajaran</th>
                                         <th style="text-align:center">Frekuensi</th>
+                                        <th style="text-align:center">Absen</th>
+                                        <th style="text-align:center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -427,6 +429,32 @@
                                         <td style="color:#6b7280">{{ $sd->subject_name ?? '-' }}</td>
                                         <td style="text-align:center">
                                             <span class="badge badge-freq">{{ $sd->occurrences }}×/bln</span>
+                                            @if($sd->absen_count > 0)
+                                            <span class="badge" style="background:#fee2e2;color:#dc2626;margin-left:4px">-{{ $sd->absen_count }}</span>
+                                            @endif
+                                        </td>
+                                        <td style="text-align:center">
+                                            @if($sd->absences->isNotEmpty())
+                                            <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+                                                @foreach($sd->absences as $absen)
+                                                <span class="badge" style="background:#fee2e2;color:#dc2626;font-size:10px">
+                                                    {{ $absen->absent_date->translatedFormat('d M') }}
+                                                    <form method="POST" action="{{ route('schedule-absences.destroy', $absen) }}" style="display:inline;margin-left:4px" onsubmit="return confirm('Hapus absen ini?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:10px;padding:0;margin:0;line-height:1">&times;</button>
+                                                    </form>
+                                                </span>
+                                                @endforeach
+                                            </div>
+                                            @else
+                                            <span style="color:#9ca3af;font-size:11px">–</span>
+                                            @endif
+                                        </td>
+                                        <td style="text-align:center">
+                                            <button onclick="openAddAbsenceModal({{ $sd->id }}, '{{ addslashes($sd->teacher_name) }}', '{{ $sd->day_of_week }}', {{ $month }}, {{ $year }})" class="btn-primary" style="padding:4px 10px;font-size:11px">
+                                                + Tambah Absen
+                                            </button>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -509,7 +537,103 @@
         </div>
     </div>
 
+    @push('modals')
+    {{-- Modal Tambah Absen --}}
+    <div id="add-absence-modal" class="modal-overlay" onclick="if(event.target===this)closeAddAbsenceModal()" hidden>
+        <div class="modal-box">
+            <div class="modal-hdr">
+                <div class="modal-hdr-row">
+                    <div>
+                        <p class="modal-eyebrow">Absen Jadwal</p>
+                        <h2 class="modal-title">Tambah Absen</h2>
+                    </div>
+                    <button class="modal-close" type="button" onclick="closeAddAbsenceModal()" aria-label="Tutup">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <form id="add-absence-form" method="POST" action="{{ route('schedule-absences.store') }}" class="modal-body">
+                @csrf
+                <input type="hidden" name="schedule_id" id="absence-schedule-id">
+                <div>
+                    <label class="field-label" for="absence-teacher">Guru</label>
+                    <input id="absence-teacher" type="text" class="inp" readonly style="background:#f3f4f6">
+                </div>
+                <div style="margin-top:12px">
+                    <label class="field-label" for="absence-date">Tanggal Absen *</label>
+                    <input id="absence-date" name="absent_date" type="date" class="inp" required>
+                </div>
+                <div style="margin-top:12px">
+                    <label class="field-label" for="absence-reason">Alasan</label>
+                    <textarea id="absence-reason" name="reason" class="inp" rows="2" placeholder="Opsional: alasan guru tidak masuk"></textarea>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" onclick="closeAddAbsenceModal()" class="btn btn-ghost">Batal</button>
+                <button type="submit" form="add-absence-form" class="btn btn-primary">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+    @endpush
+
     @push('scripts')
+    <script>
+        const dayMap = {
+            'Sunday': 0,
+            'Monday': 1,
+            'Tuesday': 2,
+            'Wednesday': 3,
+            'Thursday': 4,
+            'Friday': 5,
+            'Saturday': 6
+        };
+
+        function openAddAbsenceModal(scheduleId, teacherName, dayOfWeek, month, year) {
+            document.getElementById('absence-schedule-id').value = scheduleId;
+            document.getElementById('absence-teacher').value = teacherName;
+            
+            const targetDay = dayMap[dayOfWeek];
+            const dateInput = document.getElementById('absence-date');
+            dateInput.dataset.targetDay = targetDay;
+            
+            // Set default date to first occurrence of the day in the month
+            const firstDay = new Date(year, month - 1, 1);
+            const diff = targetDay - firstDay.getDay();
+            const firstOccurrence = new Date(firstDay);
+            firstOccurrence.setDate(firstDay.getDate() + (diff >= 0 ? diff : diff + 7));
+            
+            dateInput.value = firstOccurrence.toISOString().split('T')[0];
+            document.getElementById('add-absence-modal').hidden = false;
+        }
+
+        function closeAddAbsenceModal() {
+            document.getElementById('add-absence-modal').hidden = true;
+            document.getElementById('add-absence-form').reset();
+        }
+
+        // Validasi tanggal agar hanya sesuai dengan hari jadwal
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('absence-date');
+            if (dateInput) {
+                dateInput.addEventListener('change', function() {
+                    const targetDay = parseInt(this.dataset.targetDay);
+                    const selectedDate = new Date(this.value);
+                    if (selectedDate.getDay() !== targetDay) {
+                        const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                        alert('Silakan pilih tanggal yang sesuai dengan hari ' + dayNames[targetDay]);
+                        this.value = '';
+                    }
+                });
+            }
+        });
+    </script>
     <script>
         // Track the currently active resource ID
         var activeResourceId = {{ $labData[0]['resource']->id ?? 'null' }};
@@ -525,7 +649,6 @@
         };
 
         function switchTab(idx, resourceId) {
-            console.log('🔄 Switching to tab:', idx, 'Resource ID:', resourceId);
             document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('on'); });
             document.querySelectorAll('.tab').forEach(function(t)   { t.classList.remove('on'); });
             document.getElementById('panel-' + idx).classList.add('on');

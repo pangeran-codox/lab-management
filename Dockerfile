@@ -5,12 +5,10 @@ FROM node:20-alpine AS node-builder
 
 WORKDIR /app
 
-# Terima build args untuk Vite (di-bake ke JS bundle saat build)
-ARG VITE_REVERB_APP_KEY
+# ARG non-sensitif tetap seperti biasa (host/port/scheme bukan data rahasia)
 ARG VITE_REVERB_HOST
 ARG VITE_REVERB_PORT
 ARG VITE_REVERB_SCHEME
-ENV VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY
 ENV VITE_REVERB_HOST=$VITE_REVERB_HOST
 ENV VITE_REVERB_PORT=$VITE_REVERB_PORT
 ENV VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME
@@ -19,7 +17,14 @@ COPY package.json package-lock.json* ./
 RUN npm ci --frozen-lockfile
 
 COPY . .
-RUN npm run build
+
+# VITE_REVERB_APP_KEY di-mount sebagai BuildKit secret, BUKAN ARG/ENV.
+# Nilainya cuma tersedia selama command RUN ini jalan, lalu hilang total
+# (tidak ke-cache permanen di layer image manapun) — makanya tidak ada
+# lagi warning "SecretsUsedInArgOrEnv".
+RUN --mount=type=secret,id=vite_reverb_app_key \
+    export VITE_REVERB_APP_KEY=$(cat /run/secrets/vite_reverb_app_key) && \
+    npm run build
 
 # ================================
 # Stage 2: PHP - App

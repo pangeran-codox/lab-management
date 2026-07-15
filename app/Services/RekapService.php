@@ -49,7 +49,7 @@ class RekapService
             $schedules = $allSchedules->get($resource->id, collect());
             $bookings  = $allBookings->get($resource->id, collect());
 
-            $mappedSchedules = $this->mapScheduleDetails($schedules, $dayOccurrences);
+            $mappedSchedules = $this->mapScheduleDetails($schedules, $dayOccurrences, $month, $year);
             $scheduledSlots  = $mappedSchedules->sum('occurrences');
             $bookingSlots    = $bookings->count();
             
@@ -235,11 +235,26 @@ class RekapService
         return $occurrences;
     }
 
-    private function mapScheduleDetails(Collection $schedules, array $dayOccurrences): Collection
+    private function mapScheduleDetails(Collection $schedules, array $dayOccurrences, int $month, int $year): Collection
     {
-        return $schedules->map(function ($sch) use ($dayOccurrences) {
-            $sch->occurrences = $dayOccurrences[$sch->day_of_week] ?? 0;
+        // Ambil semua absen untuk semua schedule di bulan ini
+        $scheduleIds = $schedules->pluck('id');
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+        $absences = \App\Models\ScheduleAbsence::whereIn('schedule_id', $scheduleIds)
+            ->whereBetween('absent_date', [$startDate, $endDate])
+            ->get()
+            ->groupBy('schedule_id');
+
+        return $schedules->map(function ($sch) use ($dayOccurrences, $absences, $month, $year) {
+            // Hitung jumlah hari absen di bulan ini
+            $scheduleAbsences = $absences->get($sch->id, collect());
+            $absenCount = $scheduleAbsences->count();
+
+            $sch->occurrences = max(0, ($dayOccurrences[$sch->day_of_week] ?? 0) - $absenCount);
             $sch->day_name_id = $this->dayNameId[$sch->day_of_week] ?? $sch->day_of_week;
+            $sch->absen_count = $absenCount;
+            $sch->absences = $scheduleAbsences;
             return $sch;
         })->filter(fn($s) => $s->occurrences > 0)
           ->sortBy(fn($s) => $this->dayMap[$s->day_of_week] ?? 9);
