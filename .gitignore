@@ -14,3 +14,4 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+secrets/vite_reverb_app_key.txt

@@ -166,11 +166,8 @@ class BookingController extends Controller
             return back()->with('error', 'Booking ini sudah diproses sebelumnya.');
         }
 
-        $request->validate([
-            'notes' => 'required|string|min:5|max:500',
-        ], [
-            'notes.required' => 'Alasan penolakan wajib diisi.',
-            'notes.min'      => 'Alasan minimal 5 karakter.',
+       $request->validate([
+            'notes' => 'nullable|string|max:500',
         ]);
 
         if ($type === 'sunday') {

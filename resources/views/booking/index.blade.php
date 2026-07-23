@@ -778,9 +778,9 @@
             <form id="reject-form" method="POST">
                 @csrf @method('PATCH')
                 <input type="hidden" name="type" id="reject-type" value="regular">
-                <label class="field-label field-label-red">Alasan Penolakan *</label>
-                <textarea name="notes" rows="3" required class="inp-textarea"
-                    placeholder="Contoh: Slot sudah terpakai untuk kegiatan lain..."></textarea>
+                <label class="field-label field-label-red">Alasan Penolakan <span style="font-weight:400;color:var(--muted)">(opsional)</span></label>
+                <textarea name="notes" rows="3" maxlength="500" class="inp-textarea"
+                    placeholder="Contoh: Slot sudah terpakai untuk kegiatan lain... (boleh dikosongkan)"></textarea>
                 <div class="modal-footer" style="padding:16px 0 0;border:none">
                     <button type="button" onclick="closeReject()" class="btn-cancel">Batal</button>
                     <button type="submit" id="reject-submit-btn" class="btn-reject-submit">✗ Tolak Booking</button>

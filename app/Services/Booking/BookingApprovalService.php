@@ -175,7 +175,7 @@ class BookingApprovalService
     // REJECT
     // ══════════════════════════════════════════════════════════════════
 
-    public function reject(Booking $booking, string $notes): void
+    public function reject(Booking $booking, ?string $notes=null): void
     {
         $booking->update([
             'status' => 'rejected',
@@ -201,7 +201,7 @@ class BookingApprovalService
             'teacher_name' => 'required|string',
             'resource_id'  => 'required|integer|exists:resources,id',
             'booking_date' => 'required|date',
-            'notes'        => 'required|string|min:5|max:500',
+            'notes'        => 'nullable|string|max:500',
         ]);
 
         $allowed = $this->access->getAllowedResources();
