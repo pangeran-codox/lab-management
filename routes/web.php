@@ -23,6 +23,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\MikroTikSettingController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\FileManagerController;
 
 // ═══ PUBLIK ═══
 Route::get('/', [ScheduleController::class, 'index'])->name('home');
@@ -181,6 +182,13 @@ Route::get('/api/jadwal-penting/blocked-slots', [ImportantScheduleController::cl
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // Kelola File & Backup
+    Route::get('/file-manager', [FileManagerController::class, 'index'])->name('file-manager.index');
+    Route::get('/file-manager/journal/{photo}/download', [FileManagerController::class, 'downloadJournalPhoto'])->name('file-manager.journal.download');
+    Route::delete('/file-manager/journal/{photo}', [FileManagerController::class, 'destroyJournalPhoto'])->name('file-manager.journal.destroy');
+    Route::delete('/file-manager/submission/{submission}', [FileManagerController::class, 'destroySubmission'])->name('file-manager.submission.destroy');
+    Route::delete('/file-manager/attachment/{assignment}', [FileManagerController::class, 'destroyAttachment'])->name('file-manager.attachment.destroy');
 
     // Pengaturan Sistem
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
