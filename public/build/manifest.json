@@ -4,7 +4,7 @@
     "name": "chart"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Bm-f2xmS.css",
+    "file": "assets/app-DBeCDKqL.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -14,7 +14,7 @@
     "isEntry": true
   },
   "resources/css/booking.css": {
-    "file": "assets/booking-K1nFyhG1.css",
+    "file": "assets/booking-BSrrzzRS.css",
     "src": "resources/css/booking.css",
     "isEntry": true
   },
@@ -41,6 +41,11 @@
   "resources/css/jadwal.css": {
     "file": "assets/jadwal-BDhnTPLx.css",
     "src": "resources/css/jadwal.css",
+    "isEntry": true
+  },
+  "resources/css/journal.css": {
+    "file": "assets/journal-DQDVkgB2.css",
+    "src": "resources/css/journal.css",
     "isEntry": true
   },
   "resources/css/kelas.css": {
@@ -90,7 +95,7 @@
     "isEntry": true
   },
   "resources/js/booking.js": {
-    "file": "assets/booking-C-h-BE10.js",
+    "file": "assets/booking-CVVbXUKA.js",
     "name": "booking",
     "src": "resources/js/booking.js",
     "isEntry": true
@@ -126,6 +131,12 @@
     "file": "assets/jadwal-DSNqVltb.js",
     "name": "jadwal",
     "src": "resources/js/jadwal.js",
+    "isEntry": true
+  },
+  "resources/js/journal.js": {
+    "file": "assets/journal-BolzyYjX.js",
+    "name": "journal",
+    "src": "resources/js/journal.js",
     "isEntry": true
   },
   "resources/js/kelas.js": {

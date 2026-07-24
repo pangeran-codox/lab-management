@@ -134,10 +134,10 @@ class AssignmentPublicController extends Controller
 
         $request->validate([
             'student_name' => 'required|string|max:100',
-            'file'         => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar|max:10240',
+            'file'         => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar|max:5120',
         ], [
             'file.mimes' => 'File harus berformat PDF, Word, PowerPoint, Excel, ZIP, atau RAR.',
-            'file.max'   => 'Ukuran file maksimal 10MB.',
+            'file.max'   => 'Ukuran file maksimal 5MB.',
         ]);
 
         $file = $request->file('file');

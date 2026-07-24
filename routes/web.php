@@ -22,6 +22,7 @@ use App\Http\Controllers\UsageReportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\MikroTikSettingController;
+use App\Http\Controllers\JournalController;
 
 // ═══ PUBLIK ═══
 Route::get('/', [ScheduleController::class, 'index'])->name('home');
@@ -39,6 +40,10 @@ Route::get('/inventaris', [InventoryPublicController::class, 'index'])->name('in
 Route::get('/inventaris/export/pdf', [InventoryPublicController::class, 'exportPdf'])->name('inventory.public.pdf');
 Route::get('/rekap', [RekapPublicController::class, 'index'])->name('rekap.public');
 Route::get('/rekap/export/pdf', [RekapPublicController::class, 'exportPdf'])->name('rekap.public.pdf');
+
+// Jurnal Lab (public: bisa dilihat dan diisi tanpa login)
+Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');
+Route::post('/journal', [JournalController::class, 'store'])->name('journal.store');
 
 // ─── Tugas publik (dengan PIN) ────────────────────────────────────
 Route::get('/tugas', [AssignmentPublicController::class, 'index'])->name('assignment.public');
@@ -99,6 +104,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/booking/sunday/{id}/approve', [BookingController::class, 'approveSunday'])->name('booking.approve.sunday');
     Route::delete('/booking/sunday/{id}', [BookingController::class, 'destroySunday'])->name('booking.destroy.sunday');
     Route::get('/booking', [BookingController::class, 'index'])->name('booking.index');
+    Route::get('/booking/weekly-grid', [BookingController::class, 'weeklyGrid'])->name('booking.weekly-grid');
     Route::get('/booking/{booking}', [BookingController::class, 'show'])->name('booking.show');
     Route::patch('/booking/{booking}/approve', [BookingController::class, 'approve'])->name('booking.approve');
     Route::post('/booking/approve-group', [BookingController::class, 'approveGroup'])->name('booking.approve.group');
@@ -167,6 +173,8 @@ Route::get('/api/jadwal-penting/blocked-slots', [ImportantScheduleController::cl
     // Pengelolaan Absen Jadwal
     Route::post('/schedule-absences', [\App\Http\Controllers\ScheduleAbsenceController::class, 'store'])->name('schedule-absences.store');
     Route::delete('/schedule-absences/{absence}', [\App\Http\Controllers\ScheduleAbsenceController::class, 'destroy'])->name('schedule-absences.destroy');
+
+
 
     // Pengelolaan Pengguna
     Route::get('/users', [UserController::class, 'index'])->name('users.index');

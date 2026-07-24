@@ -36,14 +36,45 @@ class BookingController extends Controller
         $resources = $this->access->getAccessibleResources();
         $stats = $this->query->getStats();
 
-        // ─── WEEKLY GRID OPTIMIZATION ──────────────────────────
-        $weekDate = $request->get('week');
-        $weekStart = $weekDate ? Carbon::parse($weekDate)->startOfWeek(Carbon::SUNDAY) : now()->startOfWeek(Carbon::SUNDAY);
+        $weeklyData = $this->buildWeeklyData($request, $resources);
+
+        return view('booking.index', array_merge(
+            compact('bookings', 'sundayBookings', 'resources', 'stats'),
+            $weeklyData
+        ));
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // WEEKLY GRID (AJAX partial — X-Requested-With: XMLHttpRequest)
+    // ══════════════════════════════════════════════════════════════════
+
+    public function weeklyGrid(Request $request)
+    {
+        $resources = $this->access->getAccessibleResources();
+        $weeklyData = $this->buildWeeklyData($request, $resources);
+
+        return response()->view(
+            'booking.partials.weekly-table',
+            array_merge(compact('resources'), $weeklyData)
+        );
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // WEEKLY DATA BUILDER (shared between index + weeklyGrid)
+    // ══════════════════════════════════════════════════════════════════
+
+    private function buildWeeklyData(Request $request, $resources): array
+    {
+        $weekParam = $request->get('week');
+        $weekStart = $weekParam
+            ? Carbon::parse($weekParam)->startOfWeek(Carbon::SUNDAY)
+            : now()->startOfWeek(Carbon::SUNDAY);
         $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SATURDAY);
 
-        $resourceIds = $resources->pluck('id');
+        $prevWeek = $weekStart->copy()->subWeek()->format('Y-m-d');
+        $nextWeek = $weekStart->copy()->addWeek()->format('Y-m-d');
 
-        // Gunakan BookingQueryService untuk weekly bookings
+        $resourceIds   = $resources->pluck('id');
         $weeklyBookings = $this->query->getWeeklyBookings($weekStart, $weekEnd, $resourceIds);
 
         $bookingGrid = $weeklyBookings->groupBy(function ($b) {
@@ -63,10 +94,10 @@ class BookingController extends Controller
             ];
         }
 
-        return view('booking.index', compact(
-            'bookings', 'sundayBookings', 'resources', 'stats',
-            'weekStart', 'weekEnd', 'weekDays', 'timeSlots', 'bookingGrid', 'weeklyBookings'
-        ));
+        return compact(
+            'weekStart', 'weekEnd', 'prevWeek', 'nextWeek',
+            'weekDays', 'timeSlots', 'bookingGrid', 'weeklyBookings'
+        );
     }
 
     // ══════════════════════════════════════════════════════════════════

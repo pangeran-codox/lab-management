@@ -117,6 +117,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <a href="{{ route('journal.index') }}" class="nav-login-btn">Jurnal Lab</a>
                 <a href="{{ route('assignment.public') }}" class="nav-login-btn">Tugas</a>
                 <a href="{{ route('assignment.admin') }}" class="nav-login-btn">Panel Guru</a>
                 <a href="{{ route('login') }}" class="nav-login-btn">Login Admin →</a>

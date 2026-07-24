@@ -1,107 +1,216 @@
 /**
  * booking.js — Lab Management · Booking Admin
- * Weekly table + CRUD modals
+ * Weekly table AJAX navigation + CRUD modals + WebSocket realtime update
+ *
+ * Dependencies:
+ *   window.Echo             — setup di bootstrap.js (Laravel Echo + Reverb)
+ *   window.BOOKING_ROUTE_BASE  — base URL /booking
+ *   window.BOOKING_WEEKLY_URL  — route /booking/weekly-grid
  */
 
-/* ─── HELPERS ───────────────────────────────── */
+/* ─── HELPERS ───────────────────────────────────────────────── */
 const $id = id => document.getElementById(id);
 function bodyLock()   { document.body.style.overflow = 'hidden'; }
 function bodyUnlock() { document.body.style.overflow = ''; }
 
-/* ─── WEEK NAVIGATION ───────────────────────── */
-function getWeekInput() {
-    return $id('week-picker');
+/* ─── WEEKLY GRID: STATE ────────────────────────────────────── */
+// Minggu aktif saat ini (format: "YYYY-MM-DD" = hari pertama minggu / Sunday)
+// Dibaca dari data attribute di #bk-weekly-wrap yang di-render server
+function getCurrentWeekStart() {
+    const wrap = $id('bk-weekly-wrap');
+    return wrap ? wrap.dataset.weekStart : null;
 }
 
-function currentWeekValue() {
-    const inp = getWeekInput();
-    return inp ? inp.value : null;
+function getPrevWeek() {
+    const wrap = $id('bk-weekly-wrap');
+    return wrap ? wrap.dataset.prevWeek : null;
 }
 
-function navigateWeek(offset) {
-    const inp = getWeekInput();
-    if (!inp || !inp.value) return;
-
-    // Parse format "2026-W24" → Date object (Monday of that week)
-    const date = parseWeekValue(inp.value);
-    if (!date) return;
-
-    // Geser 7 hari
-    date.setDate(date.getDate() + offset * 7);
-
-    // Set back ke input format YYYY-Www
-    inp.value = formatWeekValue(date);
-    submitWeekForm();
+function getNextWeek() {
+    const wrap = $id('bk-weekly-wrap');
+    return wrap ? wrap.dataset.nextWeek : null;
 }
 
-function goToday() {
-    const inp = getWeekInput();
-    if (!inp) return;
-    inp.value = formatWeekValue(new Date());
-    submitWeekForm();
-}
+/* ─── WEEKLY GRID: FETCH & SWAP ─────────────────────────────── */
+let _weekFetchController = null; // AbortController untuk cancel request sebelumnya
 
 /**
- * Parse "2026-W24" → Date (Monday of that ISO week)
+ * Fetch partial HTML weekly-table untuk tanggal tertentu,
+ * lalu swap isi #bk-weekly-container tanpa reload halaman.
+ *
+ * @param {string} weekDate  Format "YYYY-MM-DD" (tanggal apapun dalam minggu target)
+ * @param {boolean} pushState  Apakah URL browser di-update (default: true)
  */
-function parseWeekValue(weekStr) {
-    // weekStr = "2026-W24"
-    const match = weekStr.match(/^(\d{4})-W(\d{2})$/);
-    if (!match) return null;
+async function bkLoadWeek(weekDate, pushState = true) {
+    const container = $id('bk-weekly-container');
+    if (!container) return;
 
-    const year = parseInt(match[1]);
-    const week = parseInt(match[2]);
+    // Batalkan request sebelumnya jika masih in-flight
+    if (_weekFetchController) {
+        _weekFetchController.abort();
+    }
+    _weekFetchController = new AbortController();
 
-    // Jan 4 selalu di week 1 ISO
-    const jan4  = new Date(year, 0, 4);
-    const day   = jan4.getDay() || 7;          // 1=Mon … 7=Sun
-    const monday = new Date(jan4);
-    monday.setDate(jan4.getDate() - (day - 1) + (week - 1) * 7);
-    return monday;
+    // Tampilkan skeleton
+    const skeleton = $id('bk-skeleton');
+    if (skeleton) skeleton.style.display = 'block';
+
+    // Sembunyikan semua panel saat loading
+    container.querySelectorAll('.bk-panel').forEach(p => p.style.opacity = '0.4');
+
+    try {
+        const url = new URL(window.BOOKING_WEEKLY_URL || '/booking/weekly-grid', window.location.origin);
+        url.searchParams.set('week', weekDate);
+
+        const resp = await fetch(url.toString(), {
+            signal: _weekFetchController.signal,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const html = await resp.text();
+
+        // Swap konten
+        container.innerHTML = html;
+
+        // Update URL browser agar bisa di-bookmark / refresh
+        if (pushState) {
+            const pageUrl = new URL(window.location.href);
+            pageUrl.searchParams.set('week', weekDate);
+            history.pushState({ week: weekDate }, '', pageUrl.toString());
+        }
+
+        // Restore tab yang aktif (ambil dari tab yang masih ter-klik sebelumnya)
+        const activeTab = document.querySelector('.bk-tab-btn.active');
+        if (activeTab) {
+            const tabId = activeTab.id.replace('bk-tab-', '');
+            bkRestoreTab(tabId);
+        }
+
+    } catch (err) {
+        if (err.name === 'AbortError') return; // Request di-cancel, normal
+        console.error('[booking] loadWeek error:', err);
+        // Kembalikan opacity panel kalau error
+        container.querySelectorAll('.bk-panel').forEach(p => p.style.opacity = '');
+    } finally {
+        if (skeleton) skeleton.style.display = 'none';
+    }
 }
+
+/** Restore panel yang ditampilkan setelah swap HTML */
+function bkRestoreTab(id) {
+    document.querySelectorAll('.bk-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.bk-tab-btn').forEach(b => b.classList.remove('active'));
+
+    const tab = $id('bk-tab-' + id);
+    if (tab) tab.classList.add('active');
+
+    const panel = $id('bk-panel-' + id);
+    if (panel) {
+        panel.style.display   = '';
+        panel.style.opacity   = '';
+        panel.style.animation = 'none';
+        void panel.offsetWidth;
+        panel.style.animation = '';
+    }
+}
+
+/* ─── WEEK NAVIGATION ───────────────────────────────────────── */
 
 /**
- * Format Date → "2026-W24" (ISO week)
+ * Navigasi ke tanggal tertentu (string "YYYY-MM-DD")
+ * Dipanggil dari tombol prev/next di weekly-header partial
  */
-function formatWeekValue(date) {
-    const d    = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    // Set to Thursday of this week (ISO week belongs to year of its Thursday)
-    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-    const year = d.getFullYear();
-    const jan1 = new Date(year, 0, 1);
-    const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
-    return `${year}-W${String(week).padStart(2, '0')}`;
+function bkNavigateWeek(weekDate) {
+    if (!weekDate) return;
+    bkLoadWeek(weekDate);
 }
 
-function submitWeekForm() {
-    const form = $id('week-form');
-    if (form) form.submit();
+/** Navigasi ke minggu ini */
+function bkGoToday() {
+    // Hitung hari Minggu (start of week) dari hari ini
+    const now  = new Date();
+    const day  = now.getDay(); // 0=Sun … 6=Sat
+    const diff = now.getDate() - day;
+    const sun  = new Date(now.setDate(diff));
+    const iso  = sun.toISOString().slice(0, 10);
+    bkLoadWeek(iso);
 }
 
+// Tangani tombol back/forward browser
+window.addEventListener('popstate', (e) => {
+    const weekDate = e.state?.week
+        || new URLSearchParams(window.location.search).get('week');
+    if (weekDate) {
+        bkLoadWeek(weekDate, false); // jangan push state lagi
+    }
+});
 
-
-/* ─── TAB SWITCHER ──────────────────────────── */
+/* ─── TAB SWITCHER ──────────────────────────────────────────── */
 function bkSwitchTab(id) {
     document.querySelectorAll('.bk-panel').forEach(p => p.style.display = 'none');
     document.querySelectorAll('.bk-tab-btn').forEach(b => b.classList.remove('active'));
 
     const skeleton = $id('bk-skeleton');
     if (skeleton) skeleton.style.display = 'block';
-    $id('bk-tab-' + id).classList.add('active');
+
+    const tabBtn = $id('bk-tab-' + id);
+    if (tabBtn) tabBtn.classList.add('active');
 
     setTimeout(() => {
         if (skeleton) skeleton.style.display = 'none';
         const panel = $id('bk-panel-' + id);
         if (!panel) return;
-        panel.style.display = '';
+        panel.style.display   = '';
+        panel.style.opacity   = '';
         panel.style.animation = 'none';
         void panel.offsetWidth;
         panel.style.animation = '';
-    }, 220);
+    }, 200);
 }
 
-/* ─── MODAL: ADD BOOKING ─────────────────────── */
+/* ─── WEBSOCKET: REALTIME UPDATE ────────────────────────────── */
+// Debounce reload agar tidak fire berkali-kali jika ada burst event
+let _wsReloadTimer = null;
+
+function bkScheduleReload(delayMs = 800) {
+    clearTimeout(_wsReloadTimer);
+    _wsReloadTimer = setTimeout(() => {
+        const currentWeek = getCurrentWeekStart();
+        if (currentWeek) {
+            bkLoadWeek(currentWeek, false); // reload minggu yang sedang ditampilkan
+        }
+    }, delayMs);
+}
+
+// Subscribe channel 'schedules' — event ini di-broadcast setelah approve/reject/delete booking
+// (lihat BookingController: broadcast(new ScheduleUpdated(...)))
+if (window.Echo) {
+    window.Echo.channel('schedules')
+        .listen('.schedule.updated', (e) => {
+            // Cek apakah event ini relevan dengan minggu yang sedang ditampilkan
+            const currentWeek = getCurrentWeekStart();
+            if (!currentWeek) return;
+
+            // Hitung range minggu saat ini (Sun–Sat)
+            const weekStart = new Date(currentWeek);
+            weekStart.setHours(0, 0, 0, 0);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+
+            const eventDate = e?.data?.booking_date ? new Date(e.data.booking_date) : null;
+
+            // Hanya reload kalau event-nya di minggu yang sedang dibuka
+            // atau kalau tidak ada info tanggal (reload safe)
+            if (!eventDate || (eventDate >= weekStart && eventDate <= weekEnd)) {
+                bkScheduleReload(600);
+            }
+        });
+}
+
+/* ─── MODAL: ADD BOOKING ─────────────────────────────────────── */
 function bkOpenAdd(resourceId, resourceName, slotId, slotName, slotTime, dateStr, dateLabel) {
     $id('bk-add-rid').value  = resourceId;
     $id('bk-add-sid').value  = slotId;
@@ -111,7 +220,7 @@ function bkOpenAdd(resourceId, resourceName, slotId, slotName, slotTime, dateStr
     $id('bk-add-b-date').textContent = dateLabel;
     $id('bk-add-b-slot').textContent = slotName + ' · ' + slotTime;
 
-    // Reset form
+    // Reset form lalu isi ulang hidden fields (reset() akan clear semua)
     $id('bk-add-form').reset();
     $id('bk-add-rid').value  = resourceId;
     $id('bk-add-sid').value  = slotId;
@@ -126,7 +235,7 @@ function bkCloseAdd() {
     bodyUnlock();
 }
 
-/* ─── MODAL: VIEW/EDIT BOOKING ───────────────── */
+/* ─── MODAL: VIEW / APPROVE / REJECT BOOKING ────────────────── */
 function bkOpenView(id, teacher, className, subject, status, slotName, slotTime, dateLabel, labName, title) {
     $id('bk-view-title').textContent   = title || teacher;
     $id('bk-view-teacher').textContent = teacher;
@@ -142,31 +251,29 @@ function bkOpenView(id, teacher, className, subject, status, slotName, slotTime,
     const labels = { approved: '✓ Disetujui', pending: '⏳ Pending', rejected: '✗ Ditolak' };
     badge.textContent = labels[status] || status;
 
-    // Actions - show approve/reject only for pending
-    const approveForm = $id('bk-view-approve-form');
-    const rejectBtn   = $id('bk-view-reject-btn');
-    const detailLink  = $id('bk-view-detail-link');
-
     const base = window.BOOKING_ROUTE_BASE || '/booking';
 
+    // Approve form — hanya tampil untuk pending
+    const approveForm = $id('bk-view-approve-form');
     if (approveForm) {
-        approveForm.action = base + '/' + id + '/approve';
+        approveForm.action       = `${base}/${id}/approve`;
         approveForm.style.display = status === 'pending' ? 'block' : 'none';
     }
+
+    // Reject button — hanya tampil untuk pending
+    const rejectBtn = $id('bk-view-reject-btn');
     if (rejectBtn) {
         rejectBtn.style.display = status === 'pending' ? 'inline-flex' : 'none';
-        rejectBtn.onclick = function() {
-            bkCloseView();
-            openReject(id, title, teacher);
-        };
+        rejectBtn.onclick = () => { bkCloseView(); openReject(id, title, teacher); };
     }
-    if (detailLink) {
-        detailLink.href = base + '/' + id;
-    }
+
+    // Detail link
+    const detailLink = $id('bk-view-detail-link');
+    if (detailLink) detailLink.href = `${base}/${id}`;
 
     // Delete form
     const delForm = $id('bk-view-delete-form');
-    if (delForm) delForm.action = base + '/' + id;
+    if (delForm) delForm.action = `${base}/${id}`;
 
     $id('bk-view-modal').classList.add('open');
     bodyLock();
@@ -177,63 +284,56 @@ function bkCloseView() {
     bodyUnlock();
 }
 
-/* ─── MODAL: REJECT ─────────────────────────── */
+/* ─── MODAL: REJECT (single) ─────────────────────────────────── */
 function openReject(id, title, teacher, type = 'regular') {
-    $id('reject-subtitle').textContent = teacher + ' — ' + title;
+    $id('reject-subtitle').textContent = `${teacher} — ${title}`;
 
     const base = window.BOOKING_ROUTE_BASE || '/booking';
-    $id('reject-form').action = base + '/' + id + '/reject';
+    $id('reject-form').action = `${base}/${id}/reject`;
     $id('reject-type').value  = type;
 
-    // Reset hidden inputs
-    let groupInputs = $id('reject-form').querySelectorAll('[name="teacher_name"],[name="resource_id"],[name="booking_date"]');
-    groupInputs.forEach(el => el.remove());
+    // Hapus hidden inputs group kalau ada dari sesi sebelumnya
+    $id('reject-form')
+        .querySelectorAll('[name="teacher_name"],[name="resource_id"],[name="booking_date"]')
+        .forEach(el => el.remove());
 
-    // Change method to PATCH for single
+    // Pastikan _method = PATCH
     let methodInput = $id('reject-form').querySelector('input[name="_method"]');
     if (!methodInput) {
-        methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
+        methodInput = Object.assign(document.createElement('input'), { type: 'hidden', name: '_method' });
         $id('reject-form').prepend(methodInput);
     }
     methodInput.value = 'PATCH';
 
-    // Update button text
     $id('reject-submit-btn').textContent = '✗ Tolak Booking';
-
     $id('reject-modal').classList.add('open');
     bodyLock();
 }
 
+/* ─── MODAL: REJECT (group) ──────────────────────────────────── */
 function openRejectGroup(teacherName, resourceId, bookingDate, count) {
     $id('reject-subtitle').textContent = `Tolak ${count} slot booking ${teacherName} sekaligus`;
 
     const base = window.BOOKING_ROUTE_BASE || '/booking';
-    $id('reject-form').action = base + '/reject-group';
+    $id('reject-form').action = `${base}/reject-group`;
     $id('reject-type').value  = 'regular';
 
-    // Reset and add group hidden inputs
-    let groupInputs = $id('reject-form').querySelectorAll('[name="teacher_name"],[name="resource_id"],[name="booking_date"],[name="_method"]');
-    groupInputs.forEach(el => el.remove());
+    // Hapus semua hidden inputs lama
+    $id('reject-form')
+        .querySelectorAll('[name="teacher_name"],[name="resource_id"],[name="booking_date"],[name="_method"]')
+        .forEach(el => el.remove());
 
-    // Add group inputs
-    const inputs = [
+    // Tambah hidden inputs untuk group reject
+    [
         { name: 'teacher_name', value: teacherName },
         { name: 'resource_id',  value: resourceId },
-        { name: 'booking_date', value: bookingDate }
-    ];
-    inputs.forEach(({ name, value }) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        $id('reject-form').prepend(input);
+        { name: 'booking_date', value: bookingDate },
+    ].forEach(({ name, value }) => {
+        const inp = Object.assign(document.createElement('input'), { type: 'hidden', name, value });
+        $id('reject-form').prepend(inp);
     });
 
-    // Update button text
     $id('reject-submit-btn').textContent = `✗ Tolak ${count} Slot`;
-
     $id('reject-modal').classList.add('open');
     bodyLock();
 }
@@ -243,16 +343,15 @@ function closeReject() {
     bodyUnlock();
 }
 
-/* ─── KEYBOARD: ESC ─────────────────────────── */
+/* ─── KEYBOARD: ESC ──────────────────────────────────────────── */
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        bkCloseAdd();
-        bkCloseView();
-        closeReject();
-    }
+    if (e.key !== 'Escape') return;
+    bkCloseAdd();
+    bkCloseView();
+    closeReject();
 });
 
-/* ─── AUTO-DISMISS FLASH ────────────────────── */
+/* ─── AUTO-DISMISS FLASH ─────────────────────────────────────── */
 document.querySelectorAll('.flash').forEach(el => {
     setTimeout(() => {
         el.style.transition = 'opacity .4s, transform .4s';
@@ -262,15 +361,14 @@ document.querySelectorAll('.flash').forEach(el => {
     }, 4000);
 });
 
-/* ─── EXPOSE TO GLOBAL ──────────────────────── */
-window.navigateWeek  = navigateWeek;
-window.goToday       = goToday;
-window.submitWeekForm = submitWeekForm;
-window.bkSwitchTab   = bkSwitchTab;
-window.bkOpenAdd     = bkOpenAdd;
-window.bkCloseAdd    = bkCloseAdd;
-window.bkOpenView    = bkOpenView;
-window.bkCloseView   = bkCloseView;
-window.openReject    = openReject;
-window.openRejectGroup = openRejectGroup;
-window.closeReject   = closeReject;
+/* ─── EXPOSE TO GLOBAL (required for inline onclick in Blade) ── */
+window.bkNavigateWeek   = bkNavigateWeek;
+window.bkGoToday        = bkGoToday;
+window.bkSwitchTab      = bkSwitchTab;
+window.bkOpenAdd        = bkOpenAdd;
+window.bkCloseAdd       = bkCloseAdd;
+window.bkOpenView       = bkOpenView;
+window.bkCloseView      = bkCloseView;
+window.openReject       = openReject;
+window.openRejectGroup  = openRejectGroup;
+window.closeReject      = closeReject;

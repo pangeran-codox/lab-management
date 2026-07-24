@@ -63,6 +63,10 @@ export default defineConfig({
                 // ── Users ────────────────────────────────────
                 'resources/css/users.css',
                 'resources/js/users.js',
+
+                // ── Journal ──────────────────────────────────
+                'resources/css/journal.css',
+                'resources/js/journal.js',
             ],
             refresh: true,
         }),
@@ -102,6 +106,14 @@ export default defineConfig({
             host: process.env.VITE_HMR_HOST || 'localhost',
             port: 5173,
             protocol: 'ws',
+        },
+        // Polling diperlukan karena file diedit di Windows host (WSL/Docker bind mount)
+        // — inotify events tidak diteruskan ke container sehingga HMR tidak trigger
+        // tanpa polling. Dibatasi ke resources/ saja agar tidak scan vendor/node_modules.
+        watch: {
+            usePolling: true,
+            interval: 800,
+            ignored: ['**/node_modules/**', '**/vendor/**', '**/public/**', '**/.git/**'],
         },
         cors: {
             origin: '*',

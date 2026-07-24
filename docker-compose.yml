@@ -43,6 +43,8 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    environment:
+      VITE_HMR_HOST: ${VITE_HMR_HOST:-localhost}
     networks:
       - network
 

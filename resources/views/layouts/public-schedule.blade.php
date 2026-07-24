@@ -290,6 +290,8 @@
                class="pub-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
             <a href="{{ route('assignment.public') }}"
                class="pub-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
+            <a href="{{ route('journal.index') }}"
+               class="pub-link {{ request()->routeIs('journal.*') ? 'on' : '' }}">Jurnal Lab</a>
             <a href="{{ route('assignment.admin') }}"
                class="pub-link {{ request()->routeIs('assignment.admin') ? 'on' : '' }}">Panel Guru</a>
         </div>
@@ -325,6 +327,8 @@
            class="pub-nav2-link {{ request()->routeIs('rekap.public') ? 'on' : '' }}">Rekap</a>
         <a href="{{ route('assignment.public') }}"
            class="pub-nav2-link {{ request()->routeIs('assignment.public') ? 'on' : '' }}">Tugas</a>
+        <a href="{{ route('journal.index') }}"
+           class="pub-nav2-link {{ request()->routeIs('journal.*') ? 'on' : '' }}">Jurnal Lab</a>
         <a href="{{ route('assignment.admin') }}"
            class="pub-nav2-link {{ request()->routeIs('assignment.admin') ? 'on' : '' }}">Panel Guru</a>
     </div>
