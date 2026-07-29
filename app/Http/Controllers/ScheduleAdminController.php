@@ -121,7 +121,7 @@ class ScheduleAdminController extends Controller
         ]);
 
         $this->forgetScheduleCache();
-        
+
         broadcast(new ScheduleUpdated('regular', 'created', [
             'resource_id'  => $request->resource_id,
             'day_of_week'  => $request->day_of_week
@@ -151,7 +151,7 @@ class ScheduleAdminController extends Controller
         ]);
 
         $this->forgetScheduleCache();
-        
+
         broadcast(new ScheduleUpdated('regular', 'updated', [
             'resource_id'  => $schedule->resource_id,
             'day_of_week'  => $schedule->day_of_week
@@ -167,13 +167,59 @@ class ScheduleAdminController extends Controller
         }
         $schedule->delete();
         $this->forgetScheduleCache();
-        
+
         broadcast(new ScheduleUpdated('regular', 'deleted', [
             'resource_id'  => $schedule->resource_id,
             'day_of_week'  => $schedule->day_of_week
         ]));
 
         return back()->with('success', 'Jadwal berhasil dihapus.');
+    }
+
+    /**
+     * Export jadwal satu lab dalam bentuk halaman print-preview (kop surat + tabel jadwal).
+     * Konsisten dengan pola export di InventoryPublicController::exportPdf —
+     * mengembalikan view HTML yang dicetak/disimpan sebagai PDF via window.print(),
+     * bukan generate PDF langsung di backend (dompdf).
+     */
+    public function export($resource)
+    {
+        if (!$this->accessService->checkResourceAccess((int) $resource)) {
+            abort(403, 'Anda tidak memiliki akses ke lab ini.');
+        }
+
+        $labResource = Resource::findOrFail($resource);
+
+        $schedules = Schedule::with(['timeSlot', 'labClass'])
+            ->where('resource_id', $labResource->id)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->get();
+
+        $timeSlots = TimeSlot::where('is_active', 1)
+            ->orderBy('slot_order')
+            ->get();
+
+        $scheduleGrid = $schedules->groupBy(
+            fn($s) => $s->day_of_week . '_' . $s->time_slot_id
+        );
+
+        return view('schedule.reports.editor', [
+            'resource'       => $labResource,
+            'timeSlots'      => $timeSlots,
+            'scheduleGrid'   => $scheduleGrid,
+            'days'           => $this->days,
+            'date'           => now()->translatedFormat('d F Y'),
+            'logo'           => \App\Models\Setting::get(\App\Models\Setting::SITE_LOGO),
+            'siteName'       => \App\Models\Setting::get(\App\Models\Setting::SITE_NAME, config('app.name')),
+            'siteAddress'    => \App\Models\Setting::get(\App\Models\Setting::SITE_ADDRESS, ''),
+            'sitePhone'      => \App\Models\Setting::get(\App\Models\Setting::SITE_PHONE, ''),
+            'siteHeadName'   => \App\Models\Setting::get(\App\Models\Setting::SITE_HEAD_NAME, ''),
+            'reportFooter'   => \App\Models\Setting::get(\App\Models\Setting::REPORT_FOOTER, ''),
+            'kopNameSize'    => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_NAME_SIZE, 20),
+            'kopAddressSize' => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_ADDRESS_SIZE, 13),
+            'kopPhoneSize'   => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_PHONE_SIZE, 12),
+        ]);
     }
 
     /**
@@ -191,46 +237,6 @@ class ScheduleAdminController extends Controller
         // Cara paling aman: forget semua rekap bulan ini juga.
         Cache::forget('rekap_monthly_' . now()->month . '_' . now()->year);
     }
-
-    public function export($resource)
-{
-    if (!$this->accessService->checkResourceAccess((int) $resource)) {
-        abort(403, 'Anda tidak memiliki akses ke lab ini.');
-    }
-
-    $labResource = Resource::findOrFail($resource);
-
-    $schedules = Schedule::with(['timeSlot', 'labClass'])
-        ->where('resource_id', $labResource->id)
-        ->where('status', 'active')
-        ->whereNull('deleted_at')
-        ->get();
-
-    $timeSlots = TimeSlot::where('is_active', 1)
-        ->orderBy('slot_order')
-        ->get();
-
-    $scheduleGrid = $schedules->groupBy(
-        fn($s) => $s->day_of_week . '_' . $s->time_slot_id
-    );
-
-    return view('schedule.reports.editor', [
-        'resource'       => $labResource,
-        'timeSlots'      => $timeSlots,
-        'scheduleGrid'   => $scheduleGrid,
-        'days'           => $this->days,
-        'date'           => now()->translatedFormat('d F Y'),
-        'logo'           => \App\Models\Setting::get(\App\Models\Setting::SITE_LOGO),
-        'siteName'       => \App\Models\Setting::get(\App\Models\Setting::SITE_NAME, config('app.name')),
-        'siteAddress'    => \App\Models\Setting::get(\App\Models\Setting::SITE_ADDRESS, ''),
-        'sitePhone'      => \App\Models\Setting::get(\App\Models\Setting::SITE_PHONE, ''),
-        'siteHeadName'   => \App\Models\Setting::get(\App\Models\Setting::SITE_HEAD_NAME, ''),
-        'reportFooter'   => \App\Models\Setting::get(\App\Models\Setting::REPORT_FOOTER, ''),
-        'kopNameSize'    => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_NAME_SIZE, 20),
-        'kopAddressSize' => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_ADDRESS_SIZE, 13),
-        'kopPhoneSize'   => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_PHONE_SIZE, 12),
-    ]);
-}
 
     public function getClassesByOrg(Request $request)
     {
