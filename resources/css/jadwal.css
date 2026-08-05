@@ -457,9 +457,8 @@ body {
 /* ─── TABLE ──────────────────────────────────────────────────── */
 .tbl-scroll {
     overflow-x: auto;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
-    max-height: calc(100vh - 340px);
-    min-height: 200px;
 }
 .tbl-scroll::-webkit-scrollbar { height: 5px; width: 5px; }
 .tbl-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
