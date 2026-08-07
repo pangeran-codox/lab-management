@@ -1,268 +1,378 @@
-# 🖥️ Lab Management System
+# Lab Management System
 
-**Sistem Informasi Manajemen Laboratorium Komputer**
-*Nuris Jember*
+Sistem manajemen laboratorium komputer untuk SMKS Nuris Jember. Mengelola jadwal pemakaian lab, booking, inventaris, jurnal penggunaan, pengumpulan tugas siswa, keuangan, dan kontrol internet via MikroTik — semuanya dalam satu platform.
 
----
-
-## 📋 Tentang Proyek
-
-Lab Management System adalah aplikasi web berbasis Laravel untuk mengelola penggunaan laboratorium komputer di lingkungan sekolah. Sistem ini mencakup jadwal & booking lab (real-time), kontrol internet lab via MikroTik, pengumpulan tugas siswa tanpa login, manajemen inventaris, modul keuangan (finance), serta notifikasi WhatsApp otomatis.
-
----
-
-## ✨ Fitur Utama
-
-### 🗓️ Jadwal & Booking
-- Jadwal tetap mingguan per lab, dengan update real-time via WebSocket (Reverb)
-- Booking lab oleh guru (tanpa login) dengan verifikasi nama & HP
-- Booking khusus hari Minggu (Sunday Booking)
-- Multi-slot booking (pilih beberapa slot sekaligus)
-- Pengecekan konflik jadwal otomatis
-- Approve booking tunggal atau grup (semua slot sekaligus)
-- Notifikasi WA otomatis saat booking disetujui
-
-### 🌐 Kontrol Internet Lab (MikroTik)
-- Token akses unik per sesi (format: `XXXX-XXXX`)
-- Link kontrol dikirim via WhatsApp ke guru
-- Hidupkan/matikan internet lab dari HP tanpa login
-- Monitoring perangkat yang terhubung ke lab
-- Auto-generate token beberapa menit sebelum jadwal rutin
-- Auto-invalidate token setelah sesi berakhir
-
-### 📚 Pengumpulan Tugas
-- Guru buat tugas dengan token/PIN khusus (tanpa login)
-- Upload file lampiran soal untuk didownload siswa
-- Siswa kumpul tugas tanpa perlu login
-- Filter tugas per lembaga & kelas
-- Guru beri nilai & feedback per submission
-
-### 📦 Inventaris & Laporan
-- Manajemen inventaris & log maintenance lab
-- Laporan penggunaan lab, inventaris, dan rekap (export PDF)
-- Halaman publik untuk melihat inventaris & rekap tanpa login
-
-### 💰 Modul Keuangan (Finance)
-- Dashboard, manajemen transaksi, dan budget terpisah dari modul lab
-- Laporan keuangan (Laporan Controller)
-- Autentikasi & manajemen user tersendiri untuk modul finance
-
-### 👥 Manajemen User & Akses
-- Role & permission berbasis `spatie/laravel-permission` (Admin, Operator, Guru)
-- Operator dibatasi akses per lab
-- Database guru (Teacher) dengan autocomplete
-- Manajemen organisasi/sekolah (multi-lembaga)
-
-### 📊 Monitoring & Observability
-- Laravel Horizon — dashboard & monitoring queue worker
-- Laravel Telescope — debugging request, query, job, dan exception
-- Metrics Prometheus (`spatie/laravel-prometheus`) untuk monitoring aplikasi
+![Laravel](https://img.shields.io/badge/Laravel-10.x-red?logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.3-blue?logo=php)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Swarm-blue?logo=docker)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
-## 🛠️ Teknologi
+## Daftar Isi
 
-| Komponen | Teknologi |
-|---|---|
-| Backend | Laravel 10 (PHP 8.1+, image Docker pakai PHP 8.3) |
-| Frontend | Blade + Livewire 3 + Alpine.js + Tailwind CSS |
-| Database | PostgreSQL |
-| Cache / Session / Queue | Redis |
-| Real-time | Laravel Reverb (WebSocket) + Laravel Echo + Pusher JS |
-| Queue Worker | Laravel Horizon |
-| Auth API | Laravel Sanctum |
-| Otorisasi | Spatie Laravel Permission |
-| Observability | Laravel Telescope, Spatie Laravel Prometheus |
-| PDF | barryvdh/laravel-dompdf |
-| Chart | Chart.js |
-| WhatsApp | Baileys (primary) + Fonnte (fallback), via bot Python terpisah |
-| MikroTik | PHP Socket API + Python Flask Proxy |
-| Container | Docker (multi-stage build) + Nginx + PHP-FPM |
-| Deployment | Docker Compose (dev/prod) / Docker Swarm |
+- [Fitur Utama](#fitur-utama)
+- [Tech Stack](#tech-stack)
+- [Prasyarat](#prasyarat)
+- [Instalasi Development](#instalasi-development)
+- [Konfigurasi Environment](#konfigurasi-environment)
+- [Menjalankan Aplikasi](#menjalankan-aplikasi)
+- [Struktur Proyek](#struktur-proyek)
+- [Modul Sistem](#modul-sistem)
+- [Akun Default](#akun-default)
+- [Deployment Production](#deployment-production)
+- [Dokumentasi Lanjutan](#dokumentasi-lanjutan)
 
 ---
 
-## 📁 Struktur Modul Penting
+## Fitur Utama
 
-```
-app/
-├── Http/Controllers/
-│   ├── BookingController.php
-│   ├── ScheduleController.php / ScheduleAdminController.php
-│   ├── LabControlController.php
-│   ├── AssignmentAdminController.php / AssignmentPublicController.php
-│   ├── InventoryAdminController.php / InventoryPublicController.php
-│   ├── Finance/  (DashboardController, TransactionController, BudgetController, ...)
-│   └── ...
-├── Models/
-│   ├── Booking.php, SundayBooking.php, Schedule.php, LabSession.php
-│   ├── Teacher.php, Organization.php, LabClass.php
-│   ├── Assignment.php, AssignmentSubmission.php
-│   ├── LabInventory.php, InventoryMaintenanceLog.php
-│   ├── Finance/  (model modul keuangan)
-│   └── ...
-├── Services/
-│   ├── Booking/  (ConflictCheckerService, BookingApprovalService, ...)
-│   ├── Schedule/ (ScheduleAvailabilityService, BookingSubmissionService, ...)
-│   ├── MikroTikService.php, LabControlService.php
-│   ├── WhatsAppService.php, InventoryService.php
-│   └── DashboardService.php, RekapService.php, TransactionService.php
-├── Jobs/
-└── Events/
-```
+| Modul | Deskripsi |
+|-------|-----------|
+| **Jadwal Lab** | Tampilan mingguan jadwal tetap per lab, update realtime via WebSocket |
+| **Booking** | Guru booking lab untuk kegiatan insidental, approval workflow, notif WA |
+| **Jurnal Lab** | Pencatatan penggunaan harian lab dengan foto, tanpa login |
+| **Tugas Siswa** | Upload tugas dengan PIN kelas, grading oleh guru via token |
+| **Inventaris** | CRUD aset lab, log perbaikan/maintenance, export PDF |
+| **Finance** | Pencatatan pemasukan/pengeluaran keuangan lab, budgeting, laporan |
+| **Kontrol Internet** | Toggle akses internet per lab via MikroTik API |
+| **Notifikasi WA** | Notifikasi booking dan transaksi keuangan via WhatsApp (Baileys) |
+| **File Manager** | Kelola semua file upload (foto jurnal + tugas), hitung kapasitas storage |
+| **Laporan** | Rekap penggunaan lab, inventaris, export PDF |
 
 ---
 
-## ⚙️ Instalasi
+## Tech Stack
 
-Proyek ini bisa dijalankan dengan **Docker** (direkomendasikan, sudah termasuk Nginx, Reverb, dan Vite dev server) atau secara **manual**.
+### Backend
+- **PHP 8.3** + **Laravel 10**
+- **PostgreSQL 16** — dual database (lab_management + finance)
+- **Redis 7** — cache, session, queue
+- **Laravel Horizon** — queue management & monitoring
+- **Laravel Reverb** — WebSocket server (realtime update)
+- **Laravel Telescope** — debugging & monitoring (dev only)
+- **Spatie Laravel Permission** — RBAC roles & permissions
+- **Laravel DomPDF** — generate laporan PDF
 
-### 1. Clone Repository
+### Frontend
+- **Tailwind CSS** — utility-first CSS framework
+- **Alpine.js** — lightweight reactive UI
+- **Livewire 3** — server-driven components
+- **Vite 5** — asset bundler dengan HMR
+- **Laravel Echo + Pusher.js** — WebSocket client
+
+### Infrastructure
+- **Docker** + **Docker Compose** — containerization
+- **Docker Swarm** — production orchestration
+- **Nginx 1.27** — reverse proxy + static file serving
+- **Node.js 20** — Vite dev server
+
+### Integrasi Eksternal
+- **MikroTik** via Bot API Python — kontrol NAT/internet per lab
+- **WhatsApp Baileys** — notifikasi WA
+- **Fonnte** — webhook WhatsApp alternatif
+
+---
+
+## Prasyarat
+
+- Docker Engine 24+ & Docker Compose v2
+- Git
+
+Untuk development lokal tanpa Docker:
+- PHP 8.3+ dengan ekstensi: `pdo_pgsql`, `redis`, `gd`, `zip`, `mbstring`, `intl`
+- Composer 2.7+
+- Node.js 20+ & npm
+- PostgreSQL 16+
+- Redis 7+
+
+---
+
+## Instalasi Development
+
+### 1. Clone repository
+
 ```bash
-git clone https://github.com/rosy746/lab-management.git
+git clone https://github.com/your-org/lab-management.git
 cd lab-management
 ```
 
-### 2. Konfigurasi Environment
+### 2. Salin file environment
+
 ```bash
 cp .env.example .env
 ```
-Sesuaikan minimal variabel berikut di `.env`:
-```env
-APP_URL=http://localhost
-APP_TIMEZONE=Asia/Jakarta
 
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1        # atau "postgres" jika pakai Docker
-DB_DATABASE=lab_management
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
+Edit `.env` sesuai konfigurasi lokal. Lihat [Konfigurasi Environment](#konfigurasi-environment).
 
-REDIS_HOST=127.0.0.1     # atau "redis" jika pakai Docker
-
-REVERB_APP_ID=lab-management
-REVERB_HOST=127.0.0.1
-REVERB_PORT=8080
-
-# MikroTik & Bot WhatsApp Python
-MIKROTIK_HOST=your_mikrotik_ip
-MIKROTIK_PORT=your_mikrotik_port
-MIKROTIK_USER=your_mikrotik_user
-MIKROTIK_PASS=your_mikrotik_password
-
-BOT_URL=http://IP_BOT:5000
-BOT_WEBHOOK_URL=http://IP_BOT:5000/api/webhook/lab-session
-```
-
-> ⚠️ **Catatan:** file `env.example` di root repo saat ini masih berisi kredensial contoh dari project lain (host/IP & password MikroTik yang tampak asli) dan nama database `eduzone`. Sebaiknya file ini dibersihkan/diganti placeholder sebelum di-commit ulang, dan gunakan `.env.example` sebagai acuan utama karena sudah sesuai project ini.
-
----
-
-### 🐳 Opsi A — Instalasi via Docker (Direkomendasikan)
-
-**Prasyarat:** Docker & Docker Compose, network eksternal `network` (dipakai bareng service lain seperti Postgres/Redis).
+### 3. Buat file secret Reverb
 
 ```bash
-# Buat network eksternal jika belum ada
-docker network create network
-
-# Siapkan secret untuk Reverb app key (dipakai saat build asset)
 mkdir -p secrets
 echo "your-reverb-app-key" > secrets/vite_reverb_app_key.txt
-
-# Build & jalankan container (app, vite, nginx, queue/horizon, reverb)
-docker compose up -d --build
-
-# Generate app key, migrate, dan seed
-docker compose exec app php artisan key:generate
-docker compose exec app php artisan migrate --seed
-docker compose exec app php artisan storage:link
 ```
 
-Aplikasi dapat diakses di `http://localhost:${NGINX_PORT:-8083}` (sesuaikan dengan `NGINX_PORT` di `.env`).
+### 4. Jalankan Docker Compose
 
-Ada juga `Makefile` berisi shortcut command Docker (`dev-up`, `migrate`, `seed`, `shell`, dll) — sesuaikan nama file compose di dalamnya (`COMPOSE_FILE`) dengan `docker-compose.yml` yang tersedia di repo ini sebelum dipakai, atau jalankan langsung dengan `docker compose ...` seperti contoh di atas.
+```bash
+docker compose up -d
+```
 
-Untuk deployment skala lebih besar tersedia juga `docker-compose.swarm.yml` (Docker Swarm) dan `infrastructure/docker-compose.swarm.yml`.
+Container yang akan berjalan:
+| Container | Deskripsi | Port |
+|-----------|-----------|------|
+| `lab_app` | PHP-FPM Laravel | 9000 (internal) |
+| `lab_nginx` | Nginx reverse proxy | 8080 |
+| `lab_vite` | Vite dev server (HMR) | 5173 |
+| `lab_queue` | Laravel Horizon | — |
+| `lab_reverb` | WebSocket server | 8084 |
+
+### 5. Setup database
+
+```bash
+# Masuk ke container app
+docker exec -it lab_app sh
+
+# Jalankan migrasi
+php artisan migrate
+
+# Seed data awal (opsional)
+php artisan db:seed
+```
+
+### 6. Buat storage symlink
+
+```bash
+docker exec lab_app php artisan storage:link
+```
+
+Aplikasi tersedia di `http://localhost:8080`.
 
 ---
 
-### 💻 Opsi B — Instalasi Manual
+## Konfigurasi Environment
 
-**Prasyarat:** PHP 8.1+ (disarankan 8.3), Composer, Node.js 20+, PostgreSQL, Redis.
+Variabel kritis yang wajib dikonfigurasi:
 
-```bash
-composer install
-npm install && npm run build
+```env
+# Aplikasi
+APP_URL=http://localhost:8080
+APP_KEY=                          # generate dengan: php artisan key:generate
 
-php artisan key:generate
-php artisan migrate --seed
-php artisan storage:link
+# Database Utama
+DB_HOST=postgres
+DB_DATABASE=lab_management
+DB_USERNAME=laravel
+DB_PASSWORD=secret
+
+# Database Finance (opsional, modul terpisah)
+DB_FINANCE_HOST=postgres
+DB_FINANCE_DATABASE=finance
+
+# Redis
+REDIS_HOST=redis
+REDIS_PASSWORD=null
+
+# WebSocket (Reverb)
+REVERB_APP_KEY=your-key
+REVERB_APP_SECRET=your-secret
+REVERB_HOST=your-domain.com
+REVERB_PORT=8084
+
+# MikroTik Bot
+BOT_URL=http://bot-server:5000
+BOT_TOKEN=your-bot-token
+
+# WhatsApp (Baileys)
+BAILEYS_URL=http://baileys-server:3002
+BAILEYS_API_KEY=your-api-key
+
+# Vite HMR (penting untuk Docker)
+VITE_HMR_HOST=your-domain.com
 ```
 
-Jalankan proses pendukung di terminal terpisah (atau via Supervisor/systemd di server):
+Lihat [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) untuk konfigurasi production lengkap.
+
+---
+
+## Menjalankan Aplikasi
+
+### Development
+
 ```bash
-php artisan horizon           # queue worker
-php artisan reverb:start      # WebSocket server
-php artisan schedule:work     # scheduler (khusus dev; gunakan cron di produksi)
+# Start semua service
+docker compose up -d
+
+# Lihat log
+docker compose logs -f
+
+# Lihat log spesifik container
+docker logs lab_vite --tail 20
+docker logs lab_app --tail 20
+
+# Masuk ke container
+docker exec -it lab_app sh
+
+# Artisan commands
+docker exec lab_app php artisan migrate
+docker exec lab_app php artisan horizon
+docker exec lab_app php artisan reverb:start
 ```
 
-**Crontab (Scheduler) — untuk produksi manual:**
+### Artisan Commands Kustom
+
 ```bash
-crontab -e
-# Tambahkan:
-* * * * * cd /path/to/lab-management && php artisan schedule:run >> /dev/null 2>&1
+# Generate PIN untuk semua kelas
+docker exec lab_app php artisan pins:generate
+
+# Merge duplikasi data guru
+docker exec lab_app php artisan teachers:merge-duplicates
 ```
 
 ---
 
-## 🔄 Update / Deploy Ulang
+## Struktur Proyek
 
-**Docker:**
-```bash
-git pull
-docker compose up -d --build
-docker compose exec app php artisan migrate --force
-docker compose exec app php artisan config:clear
-docker compose exec app php artisan cache:clear
-docker compose exec app php artisan view:clear
 ```
-
-**Manual:**
-```bash
-git pull
-composer install --no-dev --optimize-autoloader
-npm run build
-php artisan migrate --force
-php artisan config:clear
-php artisan cache:clear
-php artisan view:clear
+lab-management/
+├── app/
+│   ├── Console/Commands/      # Artisan commands kustom
+│   ├── Events/                # BookingCreated, ScheduleUpdated
+│   ├── Http/
+│   │   ├── Controllers/       # 24 controllers utama + 7 Finance
+│   │   └── Middleware/        # CheckRole, CheckLabAccess, FinanceAuth, dll
+│   ├── Models/                # 23+ Eloquent models
+│   └── Services/              # Service layer (Booking, Schedule, Journal, dll)
+│       ├── Booking/           # BookingQueryService, ApprovalService, dll
+│       ├── Journal/           # JournalQueryService, AvailabilityService
+│       └── Schedule/          # ScheduleQueryService, dll
+├── database/
+│   ├── migrations/            # 28 migration files
+│   └── seeders/
+├── docker/
+│   ├── nginx/
+│   │   ├── default.conf       # Dev Nginx config
+│   │   └── default.swarm.conf # Production Swarm config
+│   ├── php/
+│   │   ├── php-dev.ini        # PHP config development
+│   │   ├── php-prod.ini       # PHP config production (OPcache)
+│   │   ├── php-fpm.conf       # PHP-FPM config
+│   │   └── entrypoint.sh      # Container startup script
+│   └── reverb/
+│       └── Dockerfile         # Reverb WebSocket container
+├── docs/                      # Dokumentasi lengkap
+│   ├── ARCHITECTURE.md
+│   ├── PRD.md
+│   ├── DEPLOYMENT.md
+│   ├── API.md
+│   └── CONTRIBUTING.md
+├── resources/
+│   ├── css/                   # Per-page CSS files
+│   ├── js/                    # Per-page JS files
+│   └── views/                 # Blade templates
+│       ├── assignments/       # Halaman tugas siswa
+│       ├── booking/           # Halaman booking + partials
+│       ├── journal/           # Halaman jurnal lab
+│       ├── admin/             # Halaman admin
+│       ├── finance/           # Modul keuangan
+│       └── layouts/           # Layout templates
+├── routes/
+│   ├── web.php                # 60+ web routes
+│   ├── finance.php            # Finance module routes
+│   └── api.php                # API routes (bot/internal)
+├── docker-compose.yml         # Dev stack
+├── docker-compose.swarm.yml   # Production Swarm stack
+├── Dockerfile                 # Multi-stage build
+└── vite.config.js             # Vite + Tailwind config
 ```
 
 ---
 
-## 🧪 Testing
+## Modul Sistem
+
+### Halaman Publik (tanpa login)
+| URL | Deskripsi |
+|-----|-----------|
+| `/` | Jadwal lab mingguan realtime |
+| `/inventaris` | Daftar inventaris lab |
+| `/rekap` | Rekap penggunaan lab |
+| `/journal` | Jurnal penggunaan harian |
+| `/tugas` | Kumpul tugas siswa (via PIN) |
+| `/lab-control/{token}` | Kontrol internet lab (via token) |
+
+### Panel Admin (butuh login)
+| URL | Deskripsi |
+|-----|-----------|
+| `/dashboard` | Overview statistik |
+| `/booking` | Manajemen booking mingguan |
+| `/jadwal-admin` | Kelola jadwal tetap |
+| `/inventaris-admin` | Kelola inventaris |
+| `/guru` | Data guru |
+| `/tugas-admin` | Admin tugas (via token guru) |
+| `/file-manager` | Kelola file upload & storage |
+| `/settings` | Pengaturan sistem |
+| `/settings/mikrotik` | Konfigurasi MikroTik |
+
+### Modul Finance
+| URL | Deskripsi |
+|-----|-----------|
+| `/finance/` | Dashboard keuangan |
+| `/finance/transactions` | CRUD transaksi |
+| `/finance/budgets` | Anggaran & budget |
+| `/finance/laporan` | Laporan keuangan |
+| `/finance/wa-settings` | Pengaturan notifikasi WA |
+
+---
+
+## Akun Default
+
+Setelah seeder dijalankan:
+
+| Role | Username | Password |
+|------|----------|----------|
+| Super Admin | `admin` | `password` |
+| Operator | `operator` | `password` |
+| Teknisi | `teknisi` | `password` |
+
+> **Ganti password default segera setelah pertama login di production.**
+
+---
+
+## Deployment Production
+
+Lihat [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) untuk panduan lengkap deployment ke Docker Swarm.
+
+Ringkasan cepat:
 
 ```bash
-php artisan test
-# atau
-./vendor/bin/phpunit
+# Build image production
+docker build --target production \
+  --secret id=vite_reverb_app_key,src=secrets/vite_reverb_app_key.txt \
+  -t iswant/lab-management:v2.x .
+
+# Push ke registry
+docker push iswant/lab-management:v2.x
+
+# Deploy ke Swarm
+docker stack deploy -c docker-compose.swarm.yml lab
 ```
 
 ---
 
-## 🔐 Catatan Keamanan
+## Dokumentasi Lanjutan
 
-- File `.env` (beserta isi kredensial asli) **tidak boleh** disertakan di repository.
-- File `env.example` di root saat ini memuat nilai yang tampak seperti kredensial asli (IP & password MikroTik) — sebaiknya diganti placeholder dan divalidasi ulang sebelum push ke remote publik.
-- Kredensial MikroTik & database disimpan di `.env`, bukan hardcode di kode.
-- Reverb app key untuk build asset di-mount sebagai Docker BuildKit secret (`secrets/vite_reverb_app_key.txt`), bukan ARG/ENV biasa, agar tidak tersimpan permanen di layer image.
-- Token WA disimpan & dikelola di bot Python terpisah.
-- Rate limiting (`throttle`) aktif pada endpoint publik seperti booking, submit tugas, dan verifikasi PIN.
-- Laravel Telescope aktif (`TELESCOPE_ENABLED=true`) — pastikan dibatasi aksesnya atau dimatikan di lingkungan produksi publik.
+| Dokumen | Deskripsi |
+|---------|-----------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arsitektur sistem, diagram, keputusan teknis |
+| [docs/PRD.md](docs/PRD.md) | Product Requirements Document |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Panduan deployment production |
+| [docs/API.md](docs/API.md) | Referensi API endpoints |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Panduan kontribusi & development |
+| [CHANGELOG.md](CHANGELOG.md) | Riwayat perubahan |
 
 ---
 
-## 📞 Kontak
+## Lisensi
 
-**Nuris Jember** — Sistem Informasi Laboratorium Komputer
+MIT License — lihat file [LICENSE](LICENSE) untuk detail.

@@ -52,65 +52,6 @@ function selectTeacher(name, phone) {
     document.getElementById('inp_teacher_name').value  = name;
     document.getElementById('inp_teacher_phone').value = phone;
     document.getElementById('teacher_suggestions').style.display = 'none';
-    updateQuotaInfo(name, phone);
-}
-
-function calculateUsedQuota(teacherName, teacherPhone) {
-    var used = 0;
-    // Count regular bookings
-    if (window.BOOKINGS_THIS_WEEK) {
-        window.BOOKINGS_THIS_WEEK.forEach(function(b) {
-            if (b.teacher_name === teacherName || b.teacher_phone === teacherPhone) {
-                if (b.status === 'pending' || b.status === 'approved') {
-                    used++;
-                }
-            }
-        });
-    }
-    // Count Sunday bookings
-    if (window.SUNDAY_BOOKINGS_THIS_WEEK) {
-        window.SUNDAY_BOOKINGS_THIS_WEEK.forEach(function(b) {
-            if (b.teacher_name === teacherName || b.teacher_phone === teacherPhone) {
-                if (b.status === 'pending' || b.status === 'approved') {
-                    used++;
-                }
-            }
-        });
-    }
-    return used;
-}
-
-function updateQuotaInfo(teacherName, teacherPhone) {
-    var quotaInfoDiv = document.getElementById('quota_info');
-    var quotaBar = document.getElementById('quota_bar');
-    var quotaText = document.getElementById('quota_text');
-
-    // Find teacher in window.TEACHERS
-    var teacher = window.TEACHERS.find(function(t) {
-        return t.name === teacherName || t.phone === teacherPhone;
-    });
-
-    if (!teacher) {
-        quotaInfoDiv.style.display = 'none';
-        return;
-    }
-
-    var weeklyQuota = teacher.weekly_quota || 5;
-    var usedQuota = calculateUsedQuota(teacherName, teacherPhone);
-    var percentage = Math.min((usedQuota / weeklyQuota) * 100, 100);
-
-    quotaInfoDiv.style.display = 'block';
-    quotaText.textContent = usedQuota + '/' + weeklyQuota;
-    quotaBar.style.width = percentage + '%';
-
-    // Change color if quota almost full or full
-    if (percentage >= 100) {
-        quotaBar.style.background = 'linear-gradient(90deg,#EF4444,#DC2626)';
-    } else if (percentage >= 70) {
-        quotaBar.style.background = 'linear-gradient(90deg,#F59E0B,#D97706)';
-    } else {
-        quotaBar.style.background = 'linear-gradient(90deg,#5DCA85,#4CAF50)';
-    }
 }
 
 function filterTeacherSunday(val) {
@@ -133,40 +74,6 @@ function selectTeacherSunday(name, phone) {
     document.getElementById('sb_teacher_name').value  = name;
     document.getElementById('sb_teacher_phone').value = phone;
     document.getElementById('sb_teacher_sug').style.display = 'none';
-    updateSundayQuotaInfo(name, phone);
-}
-
-function updateSundayQuotaInfo(teacherName, teacherPhone) {
-    var quotaInfoDiv = document.getElementById('sb_quota_info');
-    var quotaBar = document.getElementById('sb_quota_bar');
-    var quotaText = document.getElementById('sb_quota_text');
-
-    // Find teacher in window.TEACHERS
-    var teacher = window.TEACHERS.find(function(t) {
-        return t.name === teacherName || t.phone === teacherPhone;
-    });
-
-    if (!teacher) {
-        quotaInfoDiv.style.display = 'none';
-        return;
-    }
-
-    var weeklyQuota = teacher.weekly_quota || 5;
-    var usedQuota = calculateUsedQuota(teacherName, teacherPhone);
-    var percentage = Math.min((usedQuota + 1) / weeklyQuota * 100, 100); // +1 because Sunday booking counts as 1
-
-    quotaInfoDiv.style.display = 'block';
-    quotaText.textContent = (usedQuota + 1) + '/' + weeklyQuota;
-    quotaBar.style.width = percentage + '%';
-
-    // Change color if quota almost full or full
-    if (percentage >= 100) {
-        quotaBar.style.background = 'linear-gradient(90deg,#EF4444,#DC2626)';
-    } else if (percentage >= 70) {
-        quotaBar.style.background = 'linear-gradient(90deg,#F59E0B,#D97706)';
-    } else {
-        quotaBar.style.background = 'linear-gradient(90deg,#5DCA85,#4CAF50)';
-    }
 }
 
 // Tutup dropdown saat klik di luar

@@ -46,12 +46,10 @@ class UserController extends Controller
             'phone' => 'nullable|string|max:255',
             'role' => 'required|in:admin,operator,teknisi,guru',
             'password' => 'required|string|min:8',
-            'weekly_quota' => 'nullable|integer|min:1',
         ]);
 
         $validated['password_hash'] = Hash::make($validated['password']);
         $validated['is_active'] = true;
-        $validated['weekly_quota'] = $request->weekly_quota ?? 5;
 
         $user = User::create($validated);
 
@@ -72,14 +70,11 @@ class UserController extends Controller
             'phone' => 'nullable|string|max:255',
             'role' => 'required|in:admin,operator,teknisi,guru',
             'password' => 'nullable|string|min:8',
-            'weekly_quota' => 'nullable|integer|min:1',
         ]);
 
         if (!empty($validated['password'])) {
             $validated['password_hash'] = Hash::make($validated['password']);
         }
-
-        $validated['weekly_quota'] = $request->weekly_quota ?? 5;
 
         $user->update($validated);
 

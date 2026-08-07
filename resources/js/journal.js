@@ -186,9 +186,177 @@ document.querySelectorAll('.flash').forEach(el => {
     }, 4000);
 });
 
+/* ─── SHEETJS LAZY LOADER (Excel Export) ─────────────────────── */
+let xlsxLoaded    = false;
+let xlsxLoading   = false;
+let xlsxCallbacks = [];
+
+function loadXLSX(callback) {
+    if (xlsxLoaded) { callback(); return; }
+
+    const btn = document.getElementById('btn-export-excel');
+    const label = btn?.querySelector('.btn-export-label');
+
+    xlsxCallbacks.push(callback);
+    if (xlsxLoading) return;
+
+    xlsxLoading = true;
+    const prevHtml = label?.innerHTML || null;
+    if (label) {
+        label.innerHTML = `<span class="xlsx-loading" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg style="width:12px;height:12px;animation:spin 0.8s linear infinite;" fill="none" viewBox="0 0 24 24">
+                <circle style="opacity:.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path style="opacity:.75;" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            Memuat XLSX...
+        </span>`;
+    }
+
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src    = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = function () {
+        xlsxLoaded  = true;
+        xlsxLoading = false;
+        if (label && prevHtml) label.innerHTML = prevHtml;
+        xlsxCallbacks.forEach(cb => cb());
+        xlsxCallbacks = [];
+    };
+    script.onerror = function () {
+        xlsxLoading   = false;
+        xlsxCallbacks = [];
+        if (label && prevHtml) label.innerHTML = prevHtml;
+        alert('Gagal memuat library Excel (XLSX). Periksa koneksi internet Anda.');
+    };
+    document.body.appendChild(script);
+}
+
+/* ─── EXPORT EXCEL ───────────────────────────────────────────── */
+function buildExcelRowsForResource(resourceId, resourceName) {
+    const data = window.JOURNAL_DATA || {};
+    const rows = (data.resourceRows || {})[resourceId] || [];
+
+    const excelRows = [];
+    excelRows.push([resourceName]);
+    excelRows.push([
+        'Jam',
+        'Guru',
+        'Kelas',
+        'Materi / Mapel',
+        'Kegiatan',
+        'Catatan',
+        'Jumlah Foto',
+        'Status',
+    ]);
+
+    for (const row of rows) {
+        if (row.type === 'empty') {
+            excelRows.push([
+                `${row.slot_name} (${row.slot_time})`,
+                '-', '-', '-', 'Tidak ada kegiatan', '-', 0, '-',
+            ]);
+            continue;
+        }
+
+        const group = row.group || {};
+        const journal = group.journal || null;
+        const teacher = (journal?.teacher_name || group.teacher_name || '');
+        const className = (journal?.class_name || group.class_name || '');
+        const subject = (journal?.subject_name || group.subject_name || '');
+        const activity = (journal?.activity || group.activity || '');
+        const notes = (journal?.notes || '');
+        const photoCount = (journal?.photos || []).length;
+        const status = journal ? 'Sudah Diisi' : 'Belum Diisi';
+        const timeLabel = `${group.slot_name || ''} (${group.slot_time || ''})${group.slot_count > 1 ? ' · ' + group.slot_count + ' jam' : ''}`;
+
+        excelRows.push([
+            timeLabel,
+            teacher,
+            className,
+            subject,
+            activity,
+            notes,
+            photoCount,
+            status,
+        ]);
+    }
+
+    excelRows.push([]); // spacer
+    return excelRows;
+}
+
+function exportJournalExcel(scope = 'current') {
+    loadXLSX(function () {
+        const data = window.JOURNAL_DATA || {};
+        const resources = data.resources || [];
+        const dateParam = (data.date || new Date().toISOString().slice(0, 10));
+        const dateStr = String(dateParam).replace(/-/g, '');
+
+        if (scope === 'current') {
+            let currentResource = resources[0] || null;
+            const firstActiveTab = document.querySelector('.tab-btn.active');
+            if (firstActiveTab && firstActiveTab.id) {
+                const tabId = String(firstActiveTab.id).replace('tab-', '');
+                currentResource = resources.find(r => String(r.id) === tabId) || currentResource;
+            }
+
+            if (!currentResource) {
+                alert('Lab tidak ditemukan.');
+                return;
+            }
+
+            const rows = buildExcelRowsForResource(currentResource.id, currentResource.name);
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+
+            // Column widths
+            ws['!cols'] = [
+                { wch: 24 }, // Jam
+                { wch: 24 }, // Guru
+                { wch: 18 }, // Kelas
+                { wch: 22 }, // Materi
+                { wch: 40 }, // Kegiatan
+                { wch: 36 }, // Catatan
+                { wch: 10 }, // Foto
+                { wch: 12 }, // Status
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, currentResource.name.substring(0, 31));
+            XLSX.writeFile(wb, `Jurnal_${currentResource.name.replace(/\s+/g, '_')}_${dateStr}.xlsx`);
+            return;
+        }
+
+        // ── Scope: "all" (Semua Lab, 1 workbook dengan multi sheet) ──
+        const wb = XLSX.utils.book_new();
+
+        for (const resource of resources) {
+            const rows = buildExcelRowsForResource(resource.id, resource.name);
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+
+            ws['!cols'] = [
+                { wch: 24 }, // Jam
+                { wch: 24 }, // Guru
+                { wch: 18 }, // Kelas
+                { wch: 22 }, // Materi
+                { wch: 40 }, // Kegiatan
+                { wch: 36 }, // Catatan
+                { wch: 10 }, // Foto
+                { wch: 12 }, // Status
+            ];
+
+            const sheetName = resource.name.substring(0, 31);
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        }
+
+        XLSX.writeFile(wb, `Jurnal_Semua_Lab_${dateStr}.xlsx`);
+    });
+}
+
 // ─── EXPOSE TO GLOBAL (required for inline onclick in Blade) ───
 window.switchTab = switchTab;
 window.openAddModal = openAddModal;
 window.closeModal = closeModal;
 window.handleFileSelect = handleFileSelect;
 window.removeFile = removeFile;
+window.exportJournalExcel = exportJournalExcel;
+window.loadXLSX = loadXLSX;

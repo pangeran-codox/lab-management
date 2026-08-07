@@ -45,6 +45,7 @@ Route::get('/rekap/export/pdf', [RekapPublicController::class, 'exportPdf'])->na
 // Jurnal Lab (public: bisa dilihat dan diisi tanpa login)
 Route::get('/journal', [JournalController::class, 'index'])->name('journal.index');
 Route::post('/journal', [JournalController::class, 'store'])->name('journal.store');
+Route::get('/journal/export/pdf', [JournalController::class, 'exportPdf'])->name('journal.export.pdf');
 
 // ─── Tugas publik (dengan PIN) ────────────────────────────────────
 Route::get('/tugas', [AssignmentPublicController::class, 'index'])->name('assignment.public');
@@ -122,6 +123,8 @@ Route::middleware(['auth'])->group(function () {
 
    // Inventaris admin
     Route::get('/inventaris-admin', [InventoryAdminController::class, 'index'])->name('inventory.admin');
+    Route::get('/inventaris-admin/rusak', [InventoryAdminController::class, 'brokenItems'])->name('inventory.broken');
+    Route::post('/inventaris-admin/{inventory}/perbaiki', [InventoryAdminController::class, 'markFixed'])->name('inventory.mark-fixed');
     Route::post('/inventaris-admin', [InventoryAdminController::class, 'store'])->name('inventory.admin.store');
     Route::patch('/inventaris-admin/{inventory}', [InventoryAdminController::class, 'update'])->name('inventory.admin.update');
     Route::delete('/inventaris-admin/{inventory}', [InventoryAdminController::class, 'destroy'])->name('inventory.admin.destroy');

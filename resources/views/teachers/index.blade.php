@@ -87,12 +87,6 @@
                         <input name="phone" type="text" class="mg-input" placeholder="08xxxxxxxxxx" value="{{ old('phone') }}">
                     </div>
                 </div>
-                <div class="mg-field-row">
-                    <div class="mg-field">
-                        <label class="mg-label">Kuota Mingguan <span class="mg-required">*</span></label>
-                        <input name="weekly_quota" type="number" class="mg-input" value="{{ old('weekly_quota', 5) }}" min="1">
-                    </div>
-                </div>
                 <div class="mg-add-footer">
                     <button type="submit" class="mg-btn-submit">
                         <i class="ti ti-check"></i>
@@ -127,7 +121,6 @@
                         <th>Token</th>
                         <th>Guru</th>
                         <th>No. HP</th>
-                        <th>Kuota Mingguan</th>
                         <th class="text-center">Jadwal</th>
                         <th class="text-center">Booking</th>
                         <th class="text-center">Tugas</th>
@@ -161,11 +154,6 @@
                             </div>
                         </td>
                         <td class="mg-phone">{{ $t->phone ?? '—' }}</td>
-                        <td class="mg-count">
-                            <span class="mg-badge mg-badge--active">
-                                {{ $t->weekly_quota ?? 5 }} slot/minggu
-                            </span>
-                        </td>
                         <td class="text-center mg-count">{{ $t->schedules_count }}</td>
                         <td class="text-center mg-count">{{ $t->bookings_count }}</td>
                         <td class="text-center mg-count">{{ $t->assignments_count }}</td>
@@ -215,7 +203,6 @@
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="name" value="{{ $t->name }}">
                                     <input type="hidden" name="phone" value="{{ $t->phone }}">
-                                    <input type="hidden" name="weekly_quota" value="{{ $t->weekly_quota }}">
                                     <input type="hidden" name="is_active" value="1">
                                     <button type="submit" class="mg-btn-activate">Aktifkan</button>
                                 </form>
@@ -225,7 +212,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="mg-empty">
+                        <td colspan="8" class="mg-empty">
                             <i class="ti ti-mood-empty"></i>
                             <div>Belum ada data guru</div>
                         </td>
@@ -272,10 +259,6 @@
                 </div>
                 <div class="mg-field-row">
                     <div class="mg-field">
-                        <label class="mg-label">Kuota Mingguan <span class="mg-required">*</span></label>
-                        <input type="number" name="weekly_quota" id="edit-weekly-quota" class="mg-input" min="1" required>
-                    </div>
-                    <div class="mg-field">
                         <label class="mg-label">Status</label>
                         <select name="is_active" id="edit-is-active" class="mg-input">
                             <option value="1">Aktif</option>
@@ -310,7 +293,6 @@
 
         document.getElementById('edit-name').value = teacher.name;
         document.getElementById('edit-phone').value = teacher.phone || '';
-        document.getElementById('edit-weekly-quota').value = teacher.weekly_quota || 5;
         document.getElementById('edit-is-active').value = teacher.is_active ? '1' : '0';
 
         document.getElementById('edit-modal').classList.add('open');

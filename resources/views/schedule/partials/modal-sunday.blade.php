@@ -51,17 +51,6 @@
                 </div>
             </div>
 
-            {{-- Quota Info --}}
-            <div id="sb_quota_info" style="display:none;background:#f0f7ee;border:1.5px solid #ACC8A2;border-radius:10px;padding:12px 14px;margin-bottom:16px">
-                <div style="font-size:12px;font-weight:700;color:#1A2517;margin-bottom:6px">Kuota Mingguan</div>
-                <div style="display:flex;gap:10px;align-items:center">
-                    <div id="sb_quota_progress" style="flex:1;height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden">
-                        <div id="sb_quota_bar" style="height:100%;width:0;background:linear-gradient(90deg,#5DCA85,#4CAF50);border-radius:999px;transition:width .3s ease"></div>
-                    </div>
-                    <span id="sb_quota_text" style="font-size:13px;font-weight:600;color:#1A2517;white-space:nowrap">0/5</span>
-                </div>
-            </div>
-
             <div>
                 <label class="field-label">Unit Sekolah *</label>
                 <select name="organization_id" id="sb_org" class="inp" required

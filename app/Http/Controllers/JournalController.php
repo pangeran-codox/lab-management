@@ -403,4 +403,47 @@ class JournalController extends Controller
 
         return $end ? $start . '–' . $end : $start;
     }
+
+    public function exportPdf(Request $request)
+    {
+        $dateParam = $request->get('date');
+        $date = $dateParam ? Carbon::parse($dateParam) : Carbon::today();
+
+        $resources = $this->scheduleQuery->getActiveResources();
+        $timeSlots = $this->scheduleQuery->getActiveTimeSlots()->where('is_break', false)->values();
+        $resourceIds = $resources->pluck('id');
+
+        $schedules = $this->journalQuery->getSchedulesForDay($date, $resourceIds);
+        $bookings  = $this->journalQuery->getBookingsForDay($date, $resourceIds);
+        $journals  = $this->journalQuery->getJournalsForDay($date, $resourceIds);
+        $eligibility = collect([]);
+
+        [$resourceRows, $journalGroups] = $this->buildJournalRows(
+            $resources,
+            $timeSlots,
+            $schedules,
+            $bookings,
+            $journals,
+            $eligibility
+        );
+
+        $logo = \App\Models\Setting::get(\App\Models\Setting::SITE_LOGO);
+
+        return view('journal.reports.editor', [
+            'resources'     => $resources,
+            'timeSlots'     => $timeSlots,
+            'resourceRows'  => $resourceRows,
+            'date'          => $date->translatedFormat('d F Y'),
+            'dateRaw'       => $date->toDateString(),
+            'logo'          => $logo,
+            'siteName'      => \App\Models\Setting::get(\App\Models\Setting::SITE_NAME, config('app.name')),
+            'siteAddress'   => \App\Models\Setting::get(\App\Models\Setting::SITE_ADDRESS, ''),
+            'sitePhone'     => \App\Models\Setting::get(\App\Models\Setting::SITE_PHONE, ''),
+            'siteHeadName'  => \App\Models\Setting::get(\App\Models\Setting::SITE_HEAD_NAME, ''),
+            'reportFooter'  => \App\Models\Setting::get(\App\Models\Setting::REPORT_FOOTER, ''),
+            'kopNameSize'    => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_NAME_SIZE, 20),
+            'kopAddressSize' => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_ADDRESS_SIZE, 13),
+            'kopPhoneSize'   => (int) \App\Models\Setting::get(\App\Models\Setting::KOP_PHONE_SIZE, 12),
+        ]);
+    }
 }

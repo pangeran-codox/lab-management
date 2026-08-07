@@ -162,6 +162,134 @@ class InventoryAdminController extends Controller
     }
 
     /**
+     * Halaman barang rusak — tampilkan semua item yang punya quantity_broken > 0,
+     * dikelompokkan per lab, dengan statistik dan aksi cepat perbaikan.
+     */
+    public function brokenItems(Request $request)
+    {
+        $allowed   = $this->accessService->getAllowedResources();
+        $resources = $this->accessService->getAccessibleResources();
+
+        $query = LabInventory::with(['resource', 'maintenanceLogs' => function ($q) {
+                $q->orderByDesc('maintenance_date')->limit(3);
+            }])
+            ->whereNull('deleted_at')
+            ->where('quantity_broken', '>', 0);
+
+        if ($allowed !== null) {
+            $query->whereIn('resource_id', $allowed);
+        }
+
+        if ($request->filled('resource_id')) {
+            $query->where('resource_id', $request->resource_id);
+        }
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('item_name',      'like', "%{$search}%")
+                  ->orWhere('brand',        'like', "%{$search}%")
+                  ->orWhere('model',        'like', "%{$search}%")
+                  ->orWhere('specifications','like', "%{$search}%");
+            });
+        }
+
+        $brokenItems = $query
+            ->orderByDesc('quantity_broken')
+            ->orderBy('resource_id')
+            ->orderBy('item_name')
+            ->get();
+
+        // Statistik ringkasan
+        $totalBrokenUnits = $brokenItems->sum('quantity_broken');
+        $totalItems       = $brokenItems->count();
+        $byLab            = $brokenItems->groupBy('resource_id')->map(fn ($g) => [
+            'name'    => $g->first()->resource->name ?? '-',
+            'count'   => $g->count(),
+            'units'   => $g->sum('quantity_broken'),
+        ]);
+
+        $categories = $this->inventoryService->getCategories();
+
+        return view('inventory.broken', compact(
+            'brokenItems', 'resources', 'byLab',
+            'totalBrokenUnits', 'totalItems', 'categories'
+        ));
+    }
+
+    /**
+     * Proses perbaikan barang dari halaman rusak — update quantity_broken & quantity_good,
+     * dan catat ke maintenance log secara otomatis.
+     */
+    public function markFixed(Request $request, LabInventory $inventory)
+    {
+        if (!$this->accessService->checkResourceAccess($inventory->resource_id)) {
+            return back()->with('error', 'Anda tidak memiliki akses ke lab ini.');
+        }
+
+        $validated = $request->validate([
+            'fix_quantity'     => 'required|integer|min:1',
+            'maintenance_type' => 'required|string|max:100',
+            'description'      => 'required|string|max:500',
+            'cost'             => 'nullable|numeric|min:0',
+        ], [
+            'fix_quantity.required' => 'Jumlah unit yang diperbaiki wajib diisi.',
+            'fix_quantity.min'      => 'Minimal 1 unit.',
+            'description.required'  => 'Deskripsi perbaikan wajib diisi.',
+        ]);
+
+        $fixQty = (int) $validated['fix_quantity'];
+
+        if ($fixQty > $inventory->quantity_broken) {
+            return back()->withErrors([
+                'fix_quantity' => "Jumlah melebihi unit rusak ({$inventory->quantity_broken} unit).",
+            ])->withInput();
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($inventory, $fixQty, $validated) {
+            // Pindahkan rusak → baik
+            $inventory->quantity_broken -= $fixQty;
+            $inventory->quantity_good   += $fixQty;
+
+            // Auto-update kondisi
+            $total = $inventory->quantity;
+            $good  = $inventory->quantity_good;
+            $ratio = $total > 0 ? $good / $total : 0;
+            $inventory->condition = match (true) {
+                $inventory->quantity_broken === 0 => 'excellent',
+                $ratio >= 0.9  => 'good',
+                $ratio >= 0.7  => 'fair',
+                $ratio >= 0.4  => 'poor',
+                default        => 'broken',
+            };
+            $inventory->updated_by = auth()->id();
+            $inventory->save();
+
+            // Catat di maintenance log
+            \App\Models\InventoryMaintenanceLog::create([
+                'lab_inventory_id' => $inventory->id,
+                'user_id'          => auth()->id(),
+                'maintenance_date' => now()->toDateString(),
+                'maintenance_type' => $validated['maintenance_type'],
+                'description'      => $validated['description'],
+                'cost'             => $validated['cost'] ?? 0,
+                'status'           => 'Selesai',
+                'fix_quantity'     => $fixQty,
+            ]);
+        });
+
+        $remaining = $inventory->fresh()->quantity_broken;
+        $msg = "{$fixQty} unit \"{$inventory->item_name}\" berhasil diperbaiki.";
+        if ($remaining > 0) {
+            $msg .= " Sisa {$remaining} unit masih rusak.";
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
      * Auto-tentukan kondisi berdasarkan rasio baik/total.
      */
     private function autoCondition(int $good, int $broken, int $total): string

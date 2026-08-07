@@ -162,16 +162,6 @@ class BotController extends Controller
             ], 404);
         }
 
-        // VALIDASI KUOTA
-        if (!$teacher->hasRemainingQuota(1)) {
-            $usedQuota = $teacher->getUsedQuotaThisWeek();
-            $quota = $teacher->weekly_quota ?? 5;
-            return response()->json([
-                'success' => false,
-                'message' => "Kuota mingguan Anda sudah habis! Anda telah menggunakan {$usedQuota}/{$quota} slot.",
-            ], 403);
-        }
-
         $tanggal = Carbon::createFromFormat('d/m/Y', $request->tanggal)->toDateString();
         $dayEn   = Carbon::parse($tanggal)->format('l');
 

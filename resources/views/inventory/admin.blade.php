@@ -108,6 +108,16 @@
                         </svg>
                         Log Perbaikan
                     </a>
+                    <a href="{{ route('inventory.broken') }}" class="ia-btn-maintenance"
+                       style="background:linear-gradient(135deg,#991b1b,#dc2626)" title="Kelola Barang Rusak">
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                        Barang Rusak
+                        @if(($stats['total_broken'] ?? 0) > 0)
+                        <span style="background:rgba(255,255,255,.25);border-radius:999px;padding:0 6px;font-size:10px;font-weight:700">{{ $stats['total_broken'] }}</span>
+                        @endif
+                    </a>
                 </div>
                 <button id="ia-btn-add" class="ia-btn ia-btn-add"><span>+</span> Tambah Barang</button>
             </div>

@@ -60,14 +60,6 @@ class BookingSubmissionService
             $labClass = LabClass::findOrFail($request->class_id);
             $teacher  = $this->upsertTeacher($teacherName, $teacherPhone);
 
-            // VALIDASI KUOTA
-            $totalSlotsToBook = count($allSlotIds) - count(array_intersect($allSlotIds, $takenSlotIds));
-            if (!$teacher->hasRemainingQuota($totalSlotsToBook)) {
-                $usedQuota = $teacher->getUsedQuotaThisWeek();
-                $quota = $teacher->weekly_quota ?? 5;
-                throw new \Exception("Kuota mingguan Anda sudah habis! Anda telah menggunakan {$usedQuota}/{$quota} slot.");
-            }
-
             $bookingData = [
                 'session_id'        => $sessionId,
                 'resource_id'       => $request->resource_id,
@@ -157,13 +149,6 @@ class BookingSubmissionService
 
             $labClass = LabClass::findOrFail($request->class_id);
             $teacher  = $this->upsertTeacher($teacherName, $teacherPhone);
-
-            // VALIDASI KUOTA UNTUK BOOKING MINGGU
-            if (!$teacher->hasRemainingQuota(1)) {
-                $usedQuota = $teacher->getUsedQuotaThisWeek();
-                $quota = $teacher->weekly_quota ?? 5;
-                throw new \Exception("Kuota mingguan Anda sudah habis! Anda telah menggunakan {$usedQuota}/{$quota} slot.");
-            }
 
             Cache::forget('active_teachers');
 

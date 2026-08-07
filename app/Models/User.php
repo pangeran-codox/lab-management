@@ -16,7 +16,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'username', 'email', 'password_hash',
-        'full_name', 'phone', 'role', 'organization_id', 'is_active', 'metadata', 'weekly_quota',
+        'full_name', 'phone', 'role', 'organization_id', 'is_active', 'metadata',
     ];
 
     protected $casts = [
@@ -69,47 +69,6 @@ class User extends Authenticatable
     public function isGuru(): bool
     {
         return $this->role === 'guru';
-    }
-
-    /**
-     * Hitung kuota terpakai minggu ini (untuk user guru)
-     */
-    public function getUsedQuotaThisWeek(): int
-    {
-        if (!$this->isGuru()) {
-            return 0;
-        }
-
-        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
-
-        // Hitung booking biasa dan sunday booking yang status pending/approved
-        $bookingsCount = $this->bookings()
-            ->whereBetween('booking_date', [$startOfWeek, $endOfWeek])
-            ->whereIn('status', ['pending', 'approved'])
-            ->count();
-
-        $sundayBookingsCount = $this->sundayBookings()
-            ->whereBetween('booking_date', [$startOfWeek, $endOfWeek])
-            ->whereIn('status', ['pending', 'approved'])
-            ->count();
-
-        return $bookingsCount + $sundayBookingsCount;
-    }
-
-    /**
-     * Cek apakah masih ada kuota tersisa (untuk user guru)
-     */
-    public function hasRemainingQuota(int $additionalSlots = 1): bool
-    {
-        if (!$this->isGuru()) {
-            return true; // Bukan guru, tidak ada limit
-        }
-
-        $used = $this->getUsedQuotaThisWeek();
-        $quota = $this->weekly_quota ?? 5; // Default 5 jika tidak diset
-
-        return ($used + $additionalSlots) <= $quota;
     }
 
     // Helper: Get metadata resource IDs (cached)

@@ -298,9 +298,15 @@ tbody tr:hover .td-time { background: #f8fcff; }
 }
 
 .journal-subject {
-    font-size: 11px;
-    color: var(--sub);
-    margin-top: 2px;
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #1e40af;
+    background: #dbeafe;
+    border: 1px solid #bfdbfe;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 4px;
 }
 
 .journal-activity {
@@ -556,7 +562,18 @@ textarea.inp { resize: vertical; min-height: 80px; }
     line-height: 1;
 }
 
+/* ─── EXPORT ACTIONS ─────────────────────────────────────────── */
+.journal-export-wrap {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 @media (max-width: 768px) {
     .date-nav { flex-direction: column; }
     .date-nav-btn { width: 100%; justify-content: center; }
+    .journal-export-wrap { justify-content: center; }
+    .journal-export-wrap .btn { flex: 1; justify-content: center; }
 }
