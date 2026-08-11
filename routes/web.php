@@ -32,6 +32,11 @@ Route::post('/booking', [ScheduleController::class, 'storeBooking'])->name('book
 Route::post('/booking-minggu', [ScheduleController::class, 'storeSundayBooking'])->name('sunday.booking.store')->middleware('throttle:10,1');
 Route::get('/kelas', [ScheduleController::class, 'getClasses'])->name('classes.list')->middleware('throttle:30,1');
 
+// routes/web.php — route sementara, hapus setelah selesai test
+Route::get('/dev/report-editor-test', function () {
+    return view('dev.report-editor-test');
+});
+
 // ─── Laporan ───────────────────────────────────
 Route::get('/laporan', function() {
     return view('reports.public');
@@ -53,15 +58,26 @@ Route::post('/tugas/pin', [AssignmentPublicController::class, 'verifyPin'])->nam
 Route::post('/tugas/ganti-kelas', [AssignmentPublicController::class, 'clearPin'])->name('assignment.pin.clear');
 Route::get('/tugas/{assignment}', [AssignmentPublicController::class, 'show'])->name('assignment.show');
 Route::post('/tugas/{assignment}/submit', [AssignmentPublicController::class, 'submit'])->name('assignment.submit')->middleware('throttle:10,1');
+Route::get('/tugas/{assignment}/submission/{submission}/download', [AssignmentPublicController::class, 'downloadOwnSubmission'])->name('assignment.submission.download-own');
 
 // ─── Tugas admin (pakai token guru, tanpa login) ──────────────────
 Route::get('/tugas-admin', [AssignmentAdminController::class, 'index'])->name('assignment.admin');
 Route::post('/tugas-admin', [AssignmentAdminController::class, 'store'])->name('assignment.store');
 
+// Tugas berkelanjutan (materi lanjutan lintas pertemuan)
+Route::post('/tugas-admin/{previous}/lanjutan', [AssignmentAdminController::class, 'storeContinuation'])->name('assignment.continue');
+Route::post('/tugas-admin/{assignment}/toggle-akses', [AssignmentAdminController::class, 'toggleAccess'])->name('assignment.toggle-access');
+Route::post('/tugas-admin/{assignment}/buka-lagi', [AssignmentAdminController::class, 'reopen'])->name('assignment.reopen');
+
 Route::delete('/tugas-admin/{assignment}', [AssignmentAdminController::class, 'destroy'])->name('assignment.destroy');
+Route::patch('/tugas-admin/{assignment}', [AssignmentAdminController::class, 'update'])->name('assignment.update');
+Route::get('/tugas-admin/{assignment}/download-zip', [AssignmentAdminController::class, 'downloadZip'])->name('assignment.download-zip');
+Route::get('/tugas-admin/{assignment}/export-excel', [AssignmentAdminController::class, 'exportExcel'])->name('assignment.export-excel');
+Route::post('/tugas-admin/{assignment}/toggle-student-download', [AssignmentAdminController::class, 'toggleStudentDownload'])->name('assignment.toggle-student-download');
 Route::post('/tugas-admin/submission/{submission}/grade', [AssignmentAdminController::class, 'gradeSubmission'])->name('assignment.grade');
 Route::get('/tugas-admin/submission/{submission}/download', [AssignmentAdminController::class, 'downloadSubmission'])->name('assignment.download');
-Route::get('/tugas/{assignment}/download-attachment', [AssignmentAdminController::class, 'downloadAttachment'])->name('assignment.download.attachment');
+Route::delete('/tugas-admin/submission/{submission}', [AssignmentAdminController::class, 'destroySubmission'])->name('assignment.submission.destroy');
+Route::get('/tugas/{assignment}/download-attachment', [AssignmentPublicController::class, 'downloadAttachment'])->name('assignment.download.attachment');
 Route::get('/tugas-admin/logout', function() {
     session()->forget('teacher_token');
     return redirect()->route('assignment.admin');

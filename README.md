@@ -33,13 +33,50 @@ Sistem manajemen laboratorium komputer untuk SMKS Nuris Jember. Mengelola jadwal
 | **Jadwal Lab** | Tampilan mingguan jadwal tetap per lab, update realtime via WebSocket |
 | **Booking** | Guru booking lab untuk kegiatan insidental, approval workflow, notif WA |
 | **Jurnal Lab** | Pencatatan penggunaan harian lab dengan foto, tanpa login |
-| **Tugas Siswa** | Upload tugas dengan PIN kelas, grading oleh guru via token |
+| **📋 Tugas Siswa** | Sistem pengumpulan tugas lengkap — lihat detail di bawah |
 | **Inventaris** | CRUD aset lab, log perbaikan/maintenance, export PDF |
 | **Finance** | Pencatatan pemasukan/pengeluaran keuangan lab, budgeting, laporan |
 | **Kontrol Internet** | Toggle akses internet per lab via MikroTik API |
 | **Notifikasi WA** | Notifikasi booking dan transaksi keuangan via WhatsApp (Baileys) |
 | **File Manager** | Kelola semua file upload (foto jurnal + tugas), hitung kapasitas storage |
 | **Laporan** | Rekap penggunaan lab, inventaris, export PDF |
+
+---
+
+## 📋 Fitur Tugas Siswa
+
+Sistem pengumpulan tugas yang lengkap tanpa siswa perlu membuat akun.
+
+### Untuk Siswa (via PIN Kelas)
+
+| Fitur | Keterangan |
+|-------|-----------|
+| 🔑 **Masuk via PIN** | PIN 6 digit yang diberikan guru, tersimpan di sesi browser |
+| 📄 **Card tugas yang jelas** | Strip warna status (hijau/merah/abu), deadline besar dengan countdown realtime per detik |
+| ⚡ **Realtime tanpa reload** | Tugas baru muncul otomatis saat guru buka akses, hilang saat ditutup |
+| 📥 **Upload file** | PDF, Word, PPT, Excel, ZIP, RAR — maksimal 5MB |
+| 🔒 **Anti duplikat** | Sistem menolak submit ulang jika nama sudah ada (kecuali guru izinkan) |
+| 📎 **Unduh soal** | Download soal/lampiran dari guru langsung dari card tugas |
+| 👥 **Lihat yang sudah kumpul** | Daftar nama siswa yang sudah mengumpulkan, update realtime |
+| 🔗 **Tugas berkelanjutan** | Badge "Pertemuan X dari Y" untuk materi yang berlanjut antar sesi |
+| 🏆 **Lihat nilai** | Nilai dan feedback dari guru muncul realtime setelah dinilai |
+
+### Untuk Guru (via Token)
+
+| Fitur | Keterangan |
+|-------|-----------|
+| ✏️ **Buat tugas** | Satu form untuk banyak kelas sekaligus, bisa lampirkan soal |
+| 📝 **Edit tugas** | Ubah judul, mapel, deadline, keterangan, ganti soal |
+| 🔓 **Buka/tutup akses** | Kontrol kapan siswa bisa lihat dan kumpulkan tugas |
+| 📅 **Perpanjang deadline** | Buka ulang pengumpulan dengan deadline baru |
+| ⚡ **Tugas lanjutan** | Buat pertemuan berikutnya dalam satu rangkaian materi (series) |
+| 📬 **Notifikasi realtime** | Toast muncul saat ada siswa mengumpulkan, tanpa perlu refresh |
+| 🎯 **Beri nilai & feedback** | Per siswa, skala 0–100, dengan catatan guru |
+| 📦 **Download ZIP** | Semua submission satu kelas dikemas jadi satu file .zip |
+| 📊 **Export Excel** | Daftar nama + nilai dengan warna (hijau/kuning/merah) siap cetak |
+| 🗑️ **Hapus submission** | Hapus file + record jika siswa salah upload |
+| 🗑️ **Hapus tugas** | Beserta semua file submission secara permanen |
+| 🔐 **Keamanan** | Guru hanya bisa akses tugasnya sendiri (isolasi per token) |
 
 ---
 
@@ -298,7 +335,7 @@ lab-management/
 | `/inventaris` | Daftar inventaris lab |
 | `/rekap` | Rekap penggunaan lab |
 | `/journal` | Jurnal penggunaan harian |
-| `/tugas` | Kumpul tugas siswa (via PIN) |
+| `/tugas` | 📋 Kumpul tugas siswa (via PIN) — realtime, card deadline besar |
 | `/lab-control/{token}` | Kontrol internet lab (via token) |
 
 ### Panel Admin (butuh login)

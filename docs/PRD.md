@@ -131,18 +131,30 @@ Semua masalah ini menyebabkan inefisiensi, konflik penggunaan lab, dan sulitnya 
 ### FR-04: Tugas Siswa
 
 **Prioritas:** Wajib  
-**Deskripsi:** Platform pengumpulan tugas berbasis PIN kelas, tanpa perlu akun siswa.
+**Deskripsi:** Sistem pengumpulan tugas lengkap tanpa siswa perlu membuat akun.
 
 | ID | Requirement |
 |----|-------------|
 | FR-04.1 | Siswa akses halaman tugas dengan PIN 6 digit yang diberikan guru |
-| FR-04.2 | Tampilkan daftar tugas aktif untuk kelas tersebut setelah PIN valid |
+| FR-04.2 | Tampilkan daftar tugas aktif dengan card yang jelas: strip warna status, deadline besar, countdown realtime per detik |
 | FR-04.3 | Siswa upload file tugas (pdf/doc/docx/ppt/pptx/xls/xlsx/zip/rar, max 5MB) |
-| FR-04.4 | Tampilkan countdown deadline realtime |
+| FR-04.4 | Countdown deadline realtime per detik di card tugas |
 | FR-04.5 | Setelah deadline, form pengumpulan ditutup otomatis |
 | FR-04.6 | Guru akses portal admin tugas via token (tanpa login akun sistem) |
 | FR-04.7 | Guru bisa buat tugas, lihat siapa yang sudah kumpul, download file, beri nilai |
-| FR-04.8 | Guru bisa upload soal/attachment yang bisa diunduh siswa |
+| FR-04.8 | Guru bisa upload soal/attachment yang bisa diunduh siswa (guard: PIN kelas, tanpa token) |
+| FR-04.9 | Tugas baru muncul di halaman siswa realtime saat guru buka akses (tanpa reload) |
+| FR-04.10 | Tugas hilang dari halaman siswa realtime saat guru tutup akses (tanpa reload) |
+| FR-04.11 | Sistem tolak submit ulang jika nama sudah ada (kecuali guru aktifkan allow_resubmit) |
+| FR-04.12 | Guru bisa download semua submission satu kelas sebagai file ZIP |
+| FR-04.13 | Guru bisa export daftar nama + nilai ke Excel (.xls dengan warna nilai otomatis) |
+| FR-04.14 | Guru bisa hapus submission individual (file + record dihapus permanen) |
+| FR-04.15 | Guru bisa edit tugas: judul, mapel, deadline, keterangan, ganti soal |
+| FR-04.16 | Guru bisa buat tugas lanjutan (series) dalam satu rangkaian pertemuan |
+| FR-04.17 | Guru bisa perpanjang deadline / buka ulang pengumpulan dengan round baru |
+| FR-04.18 | Guru bisa aktifkan/nonaktifkan akses download submission untuk siswa (toggle) |
+| FR-04.19 | Saat download diaktifkan: tombol Download muncul realtime di tiap baris submission halaman siswa |
+| FR-04.20 | Semua aksi admin terlindungi — guru hanya bisa akses tugasnya sendiri (isolasi per token) |
 
 ### FR-05: Inventaris Lab
 
@@ -332,7 +344,7 @@ Sebagai teknisi, saya ingin:
 
 ## Roadmap
 
-### v2.1 (Current — Juli 2026)
+### v2.1 (Current — Agustus 2026)
 - [x] Jurnal lab dengan foto
 - [x] Refactor booking ke partial-based view + AJAX navigation
 - [x] Realtime update booking via WebSocket
@@ -341,6 +353,14 @@ Sebagai teknisi, saya ingin:
 - [x] Perbaikan tema halaman submit tugas
 - [x] Halaman barang rusak lintas lab dengan form perbaikan inline
 - [x] Badge counter barang rusak di sidebar dan inventaris admin
+- [x] Realtime tugas via Reverb WebSocket (submit, toggle akses, nilai, download toggle)
+- [x] Desain ulang halaman tugas siswa (card deadline besar, strip warna, countdown per detik)
+- [x] Security fix: semua endpoint admin tugas dilindungi access control + isolasi per guru
+- [x] Fix submit ulang: tugas biasa tanpa reopen sekarang dicek duplikat nama
+- [x] Download submission oleh siswa (toggle oleh guru, realtime)
+- [x] Fix download soal 403: dipindahkan ke public controller, guard PIN kelas
+- [x] Export nilai ke Excel (.xls dengan warna otomatis)
+- [x] Download ZIP semua submission per kelas
 
 ### v2.2 (Q3 2026)
 - [ ] File manager view lengkap (halaman admin)

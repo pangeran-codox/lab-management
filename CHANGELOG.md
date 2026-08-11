@@ -16,7 +16,73 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.1.1] — 2026-07-25
+## [2.1.5] — 2026-08-11
+
+### Added
+- **Download submission oleh siswa** — siswa bisa download ulang file yang sudah dikumpulkan, akses dikontrol guru
+  - Kolom `allow_student_download` (boolean, default false) di tabel `assignments`
+  - Migration: `add_allow_student_download_to_assignments_table`
+  - Panel guru (Tab Aksi Tugas): card baru "📥 Download Siswa" — toggle buka/tutup akses
+  - Default: **Nonaktif** — siswa tidak bisa download sampai guru aktifkan
+  - Saat aktif: banner hijau + tombol "Download" muncul di tiap baris submission di halaman siswa
+  - Saat dinonaktifkan: banner + tombol hilang **realtime via WebSocket** tanpa siswa perlu reload
+  - Guard keamanan: cukup PIN kelas valid di session, tidak perlu input nama siswa
+  - Route baru: `POST /tugas-admin/{assignment}/toggle-student-download` → `assignment.toggle-student-download`
+  - Route baru: `GET /tugas/{assignment}/submission/{submission}/download` → `assignment.submission.download-own`
+  - Payload event `AssignmentUpdated` diperkaya dengan field `allow_student_download` agar frontend bisa sinkronisasi realtime
+
+### Fixed
+- **Download soal (403 Forbidden)** — route `/tugas/{assignment}/download-attachment` sebelumnya diarahkan ke `AssignmentAdminController` yang memerlukan token guru, sehingga siswa mendapat 403 saat mencoba download soal
+  - Dipindahkan ke `AssignmentPublicController::downloadAttachment()` — cukup validasi PIN kelas di session
+  - Jika belum input PIN → redirect ke halaman PIN dengan pesan yang jelas
+  - Jika PIN valid tapi kelas tidak cocok → redirect + error
+  - Jika file tidak ada di storage → error yang informatif
+
+---
+
+## [2.1.4] — 2026-08-09
+
+### Added
+- **Realtime tugas via Reverb WebSocket** — fitur tugas kini tanpa reload
+  - Event `AssignmentSubmitted` — broadcast ke channel `assignments.{id}` saat siswa submit
+  - Event `AssignmentUpdated` — broadcast ke dua channel: `assignments.{id}` (panel guru) dan `class_assignments.{class_slug}` (halaman siswa)
+  - Panel guru: baris submission baru muncul langsung di tabel + toast "📥 NamaSiswa mengumpulkan" tanpa reload
+  - Halaman siswa (`/tugas`): kartu tugas baru muncul otomatis saat guru buka akses, kartu fade-out saat guru tutup akses
+  - Halaman show siswa: daftar yang sudah mengumpulkan update realtime, banner muncul saat akses ditutup atau deadline diubah guru
+  - Panel guru: badge nilai update realtime setelah guru simpan nilai
+
+### Changed
+- **Desain ulang halaman tugas siswa (`/tugas`)** — card baru yang jauh lebih jelas
+  - Strip warna di atas card: hijau (aktif), merah (mendesak <24 jam), abu (ditutup)
+  - Deadline block besar di tengah card: nama hari, tanggal lengkap, jam, countdown realtime per detik
+  - Tombol "Kumpulkan Sekarang" penuh lebar, mencolok — tidak bisa terlewat
+  - Chip info: jumlah yang sudah kumpul, badge pertemuan series, ada soal terlampir, cuplikan deskripsi
+  - Badge status pojok kanan atas dengan titik berkedip saat aktif
+
+### Fixed
+- **Celah keamanan kritis** — semua method di `AssignmentAdminController` sebelumnya tidak ada access control
+  - `destroy`, `update`, `gradeSubmission`, `destroySubmission`, `downloadSubmission`, `downloadZip`, `exportExcel`, `downloadAttachment` sekarang memanggil `authorizeAccess()` + `authorizeAssignment/Submission()`
+  - Guru A tidak bisa lagi akses/hapus tugas atau submission milik Guru B
+  - Request tanpa token valid di-abort 403
+- **Celah submit ulang** — tugas biasa (tanpa reopen) sebelumnya tidak dicek duplikat nama, siswa bisa submit berkali-kali
+  - Sekarang selalu cek `hasAlreadySubmitted()` terlepas dari ada tidaknya `open_period`
+
+---
+
+## [2.1.3] — 2026-08-09
+
+### Added
+- **Pilihan ukuran kertas di semua editor laporan** — custom dropdown yang tampil konsisten di semua browser (tidak lagi pakai `<select>` native yang tidak bisa di-style di toolbar gelap)
+  - Tersedia di 4 editor: Inventaris, Jurnal Lab, Rekap Penggunaan, Jadwal
+  - Pilihan: A4/A3/A5 Portrait & Landscape, Letter Portrait & Landscape, Legal Portrait & Landscape
+  - Default: A4 Portrait (inventaris, rekap) dan A4 Landscape (jurnal, jadwal)
+  - Pilihan aktif di-highlight hijau, ikon portrait (biru) dan landscape (ungu)
+  - Menutup otomatis saat klik di luar dropdown
+  - `@page` CSS dikontrol via `<style id="page-style">` sehingga perubahan langsung terlihat di print preview tanpa reload
+
+---
+
+## [2.1.2] — 2026-08-08
 
 ### Added
 - **Halaman Barang Rusak** (`GET /inventaris-admin/rusak`) — dashboard terpusat untuk mengelola semua barang rusak dari seluruh laboratorium

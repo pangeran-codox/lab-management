@@ -298,28 +298,25 @@
 
         /* ── Print Styles ───────────────────────────── */
         @media print {
-            body { 
-                background: white; 
-                padding: 0;
-            }
+            body { background: white; padding: 0; }
             .toolbar { display: none; }
-            .page { 
-                margin: 0; 
-                box-shadow: none; 
-                width: 100%; 
-                padding: 0; 
-                border-radius: 0;
-            }
-            [contenteditable="true"]:hover, [contenteditable="true"]:focus { 
-                outline: none; 
-                background: none; 
-            }
-            @page { size: A4; margin: 10mm; }
-            @page :first { margin-top: 10mm; }
-            /* Hilangkan header/footer bawaan browser saat print */
+            .page { margin: 0; box-shadow: none; width: 100%; padding: 0; border-radius: 0; }
+            [contenteditable="true"]:hover, [contenteditable="true"]:focus { outline: none; background: none; }
             html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
+
+        /* ── Paper dropdown ──────────────────────────── */
+        @keyframes dropIn { from { opacity:0; transform:translateY(-6px) scale(.97); } to { opacity:1; transform:none; } }
+        #paper-dropdown-menu { animation: dropIn .15s ease; }
+        .paper-opt { display:flex; align-items:center; gap:8px; width:100%; padding:8px 14px; border:none; background:none; font-size:13px; font-family:'DM Sans',sans-serif; cursor:pointer; color:#1e293b; text-align:left; transition:background .1s; }
+        .paper-opt:hover  { background:#f0fdf4; color:#003d24; }
+        .paper-opt-active { background:#dcfce7 !important; color:#15803d !important; font-weight:700; }
+        .popt-icon { display:inline-block; border:1.5px solid currentColor; border-radius:2px; flex-shrink:0; opacity:.7; }
+        .popt-icon.portrait  { width:10px; height:13px; color:#0284c7; }
+        .popt-icon.landscape { width:13px; height:10px; color:#7c3aed; }
     </style>
+    {{-- @page dikontrol via JS agar ukuran kertas bisa diubah dari toolbar --}}
+    <style id="page-style">@page { size: A4 portrait; margin: 10mm; }</style>
 </head>
 <body>
 
@@ -340,6 +337,32 @@
             <span id="kop-address-size-label" style="font-size:12px;color:#fff;min-width:28px;text-align:center">{{ $kopAddressSize }}px</span>
             <button onclick="changeSize('kop-address', +1)" title="Perbesar alamat" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:5px;cursor:pointer;font-size:11px">+a</button>
             <button id="btn-save-size" onclick="saveKopSize()" title="Simpan ukuran" style="background:#16a34a;border:none;color:#fff;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;margin-left:4px">💾 Simpan</button>
+        </div>
+
+        {{-- Pilihan ukuran kertas — custom dropdown agar konsisten di semua browser --}}
+        <div style="position:relative" id="paper-dropdown-wrap">
+            <button onclick="togglePaperDropdown()" id="paper-dropdown-btn"
+                style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span id="paper-dropdown-label">A4 Portrait</span>
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div id="paper-dropdown-menu"
+                style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;min-width:170px;overflow:hidden">
+                <div style="padding:6px 12px 4px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">Seri A</div>
+                <button onclick="selectPaperSize('A4 portrait','A4 Portrait')"    class="paper-opt paper-opt-active" data-value="A4 portrait">    <span class="popt-icon portrait"></span>A4 Portrait</button>
+                <button onclick="selectPaperSize('A4 landscape','A4 Landscape')"  class="paper-opt" data-value="A4 landscape">  <span class="popt-icon landscape"></span>A4 Landscape</button>
+                <button onclick="selectPaperSize('A3 portrait','A3 Portrait')"    class="paper-opt" data-value="A3 portrait">    <span class="popt-icon portrait"></span>A3 Portrait</button>
+                <button onclick="selectPaperSize('A3 landscape','A3 Landscape')"  class="paper-opt" data-value="A3 landscape">  <span class="popt-icon landscape"></span>A3 Landscape</button>
+                <button onclick="selectPaperSize('A5 portrait','A5 Portrait')"    class="paper-opt" data-value="A5 portrait">    <span class="popt-icon portrait"></span>A5 Portrait</button>
+                <button onclick="selectPaperSize('A5 landscape','A5 Landscape')"  class="paper-opt" data-value="A5 landscape">  <span class="popt-icon landscape"></span>A5 Landscape</button>
+                <div style="height:1px;background:#f1f5f9;margin:4px 0"></div>
+                <div style="padding:4px 12px 4px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">US</div>
+                <button onclick="selectPaperSize('letter portrait','Letter Portrait')"   class="paper-opt" data-value="letter portrait">   <span class="popt-icon portrait"></span>Letter Portrait</button>
+                <button onclick="selectPaperSize('letter landscape','Letter Landscape')" class="paper-opt" data-value="letter landscape"> <span class="popt-icon landscape"></span>Letter Landscape</button>
+                <button onclick="selectPaperSize('legal portrait','Legal Portrait')"     class="paper-opt" data-value="legal portrait">     <span class="popt-icon portrait"></span>Legal Portrait</button>
+                <button onclick="selectPaperSize('legal landscape','Legal Landscape')"   class="paper-opt" data-value="legal landscape">   <span class="popt-icon landscape"></span>Legal Landscape</button>
+            </div>
         </div>
 
         <button class="btn-print" onclick="window.print()">
@@ -509,6 +532,35 @@ function saveKopSize() {
         setTimeout(() => { btn.textContent = '💾 Simpan'; btn.disabled = false; }, 2000);
     });
 }
+
+/* ── Paper size custom dropdown ── */
+function togglePaperDropdown() {
+    const menu = document.getElementById('paper-dropdown-menu');
+    const isOpen = menu.style.display !== 'none';
+    menu.style.display = isOpen ? 'none' : 'block';
+}
+
+function selectPaperSize(value, label) {
+    // Update @page CSS
+    document.getElementById('page-style').textContent =
+        `@page { size: ${value}; margin: 10mm; }`;
+    // Update label tombol
+    document.getElementById('paper-dropdown-label').textContent = label;
+    // Update active state
+    document.querySelectorAll('.paper-opt').forEach(btn => {
+        btn.classList.toggle('paper-opt-active', btn.dataset.value === value);
+    });
+    // Tutup dropdown
+    document.getElementById('paper-dropdown-menu').style.display = 'none';
+}
+
+// Tutup dropdown saat klik di luar
+document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('paper-dropdown-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('paper-dropdown-menu').style.display = 'none';
+    }
+});
 </script>
 
 </body>
