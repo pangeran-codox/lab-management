@@ -185,7 +185,7 @@ class AssignmentPublicController extends Controller
 
         $path = $file->store("submissions/{$orgSlug}/{$safeClassName}/{$assignment->id}", 'local');
 
-        AssignmentSubmission::create([
+        $submission = AssignmentSubmission::create([
             'assignment_id'  => $assignment->id,
             'open_period_id' => $currentPeriod?->id,
             'student_name'   => $request->student_name,
